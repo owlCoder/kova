@@ -22,6 +22,7 @@ for (const name of [
   'LICENSE.txt',
   'THIRD-PARTY-NOTICES.txt',
   'SETUP.md',
+  'USAGE.md',
 ])
   assert(entries.includes(`extension/${name}`), `Missing ${name}`);
 assert(

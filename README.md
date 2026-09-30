@@ -64,7 +64,7 @@ Use **Add context** to attach a selection, the current file or chosen files. Whe
 
 ## Context and settings
 
-The default context budget is 8,192 tokens, with 1,024 reserved for output and a 10% safety margin. The context indicator shows estimated input before generation and measured input/output afterwards. Tool-definition cost remains an estimate.
+The default context budget is 32,768 tokens, with 4,096 reserved for output and a 10% safety margin. The context indicator shows estimated input before generation and measured input/output afterwards. Tool-definition cost remains an estimate. Larger local contexts require more memory; explicit VS Code settings override these defaults.
 
 Run **Kova: Open Settings** to change:
 
@@ -81,8 +81,8 @@ Run **Kova: Open Settings** to change:
 | `kova.openaiCompatible.baseUrl`       | `http://127.0.0.1:8000/v1`  |
 | `kova.openaiCompatible.model`         | empty; use discovered model |
 | `kova.openaiCompatible.supportsTools` | `true`                      |
-| `kova.context.maxTokens`              | `8192`                      |
-| `kova.context.reservedOutputTokens`   | `1024`                      |
+| `kova.context.maxTokens`              | `32768`                     |
+| `kova.context.reservedOutputTokens`   | `4096`                      |
 | `kova.context.safetyMarginRatio`      | `0.1`                       |
 | `kova.commands.allow`                 | Exact command list          |
 
@@ -91,6 +91,8 @@ Generic OpenAI-compatible thinking is disabled because reasoning wire formats ar
 ## Skills, MCP and hooks
 
 Select a skill from `.kova/skills/<id>/SKILL.md`; only its selected body enters context. Configure local stdio MCP servers in `.kova/mcp.json` and command hooks in `.kova/hooks.json`. MCP tools use the same permission and guardrail pipeline as built-in tools. Configuration changes take effect between runs.
+
+See the [usage guide](https://github.com/owlCoder/kova/blob/main/docs/USAGE.md) for skill and MCP examples, thinking display and permission modes.
 
 Use trusted projects. Configured MCP servers, hooks and project scripts run with your user privileges. They are not sandboxed. Kova adds no separate workspace-trust prompt. Writes to `.kova/mcp.json`, `.kova/hooks.json`, `.git/**` and `.vscode/**` require approval.
 
@@ -116,7 +118,7 @@ npm run package
 npm run verify:package
 ```
 
-Press F5 in VS Code to launch the development extension. Packaging writes `dist/kova-local-<version>.vsix`, using the name and version in `packages/vscode/extension.package.json`. The Marketplace extension identifier is `owlcoder.kova-local`; the current extension release is `0.3.0`.
+Press F5 in VS Code to launch the development extension. Packaging writes `dist/kova-local-<version>.vsix`, using the name and version in `packages/vscode/extension.package.json`. The Marketplace extension identifier is `owlcoder.kova-local`; the current extension release is `0.3.1`.
 
 Local integration checks are `smoke:ollama`, `smoke:vscode`, `smoke:vsix` and `smoke:ers`.
 
@@ -131,7 +133,7 @@ npm run package
 npm run verify:package
 ```
 
-Then upload `dist/kova-local-0.3.0.vsix` through the Visual Studio Marketplace publisher management portal for publisher `owlcoder`. No Marketplace PAT, repository secret or automatic publish workflow is required.
+Then upload `dist/kova-local-0.3.1.vsix` through the Visual Studio Marketplace publisher management portal for publisher `owlcoder`. No Marketplace PAT, repository secret or automatic publish workflow is required.
 
 [Setup](https://github.com/owlCoder/kova/blob/main/docs/SETUP.md) · [Providers](https://github.com/owlCoder/kova/blob/main/docs/PROVIDERS.md) · [Architecture](https://github.com/owlCoder/kova/blob/main/docs/ARCHITECTURE.md) · [Marketplace release](https://github.com/owlCoder/kova/blob/main/docs/MARKETPLACE.md) · [Release checks](https://github.com/owlCoder/kova/blob/main/docs/TESTING.md)
 

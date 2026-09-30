@@ -123,6 +123,7 @@ describe('shared chat session synchronization', () => {
     const secondView: HostMessage[] = [];
     session.connect((message) => secondView.push(message));
     await beginStream();
+    expect(fixture.chatBodies[0]?.options).toMatchObject({ num_ctx: 32768, num_predict: 4096 });
     expect(
       secondView.find(
         (message) => message.type === 'Snapshot' && message.requestId.startsWith('started-'),
@@ -148,7 +149,7 @@ describe('shared chat session synchronization', () => {
     expect(latestSnapshot()).toMatchObject({
       state: 'Streaming',
       thinkingEnabled: false,
-      contextMaxTokens: 8192,
+      contextMaxTokens: 32768,
       messages: [
         { role: 'user', content: 'A public test prompt', partial: false },
         { role: 'assistant', content: 'Hello', partial: true },

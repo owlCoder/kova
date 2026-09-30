@@ -5,10 +5,10 @@ Status: **Accepted**. ContextBuilder, TokenCounter and ConversationCompactor are
 ## Budget
 
 ```text
-total context = 8,192
-output reserve = 1,024
-safety margin = ceil(8,192 × 0.10) = 820
-estimated input budget = 8,192 − 1,024 − 820 = 6,348
+total context = 32,768
+output reserve = 4,096
+safety margin = ceil(32,768 × 0.10) = 3,277
+estimated input budget = 32,768 − 4,096 − 3,277 = 25,395
 ```
 
 Validate settings: positive integer maximum/reserve, reserve smaller than maximum, margin in [0, 1), positive output cap, and a positive resulting input budget. Default per-tool model output cap is 8,000 characters. ContextBuilder may shrink it further. The UI maximum and provider `num_ctx` are the same captured setting. Never silently reduce the configured window; if the model cannot support it, reject with a visible suggestion.

@@ -259,7 +259,7 @@ export class ChatSession {
         ? approvalView(this.approval.requestPending)
         : null,
       thinkingEnabled: activeRun?.thinkingEnabled ?? this.providers.thinkingEnabled(),
-      contextMaxTokens: activeRun?.contextMaxTokens ?? settings.get('context.maxTokens', 8192),
+      contextMaxTokens: activeRun?.contextMaxTokens ?? settings.get('context.maxTokens', 32768),
     };
     this.deliver({ ...this.envelope(), type: 'Snapshot', requestId, snapshot });
   }
@@ -372,7 +372,7 @@ export class ChatSession {
       const model = this.models.find((item) => item.id === message.modelId);
       if (!model) throw new Error('Selected model is unavailable. Retry model discovery.');
       const settings = vscode.workspace.getConfiguration('kova');
-      const maxTokens = settings.get('context.maxTokens', 8192);
+      const maxTokens = settings.get('context.maxTokens', 32768);
       if (model.maxContextTokens && maxTokens > model.maxContextTokens)
         throw new Error('Configured context exceeds the model context limit.');
       const thinking = this.providers.thinkingEnabled();
@@ -399,7 +399,7 @@ export class ChatSession {
         activeSkillId: message.skillId,
         context: {
           maxTokens,
-          reservedOutputTokens: settings.get('context.reservedOutputTokens', 1024),
+          reservedOutputTokens: settings.get('context.reservedOutputTokens', 4096),
           safetyMarginRatio: settings.get('context.safetyMarginRatio', 0.1),
           maxToolOutputCharacters: 8000,
         },

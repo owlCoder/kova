@@ -149,7 +149,7 @@ export async function run() {
       (message) =>
         message.type === 'Event' &&
         message.event.type === 'ContextUpdated' &&
-        message.event.usage.maxTokens === 8192 &&
+        message.event.usage.maxTokens === 32768 &&
         message.event.usage.actualInputTokens !== null,
     ),
     diagnostic(),

@@ -38,7 +38,7 @@ export function ChatFooter({
   const used = usage
     ? (usage.actualInputTokens ?? usage.estimatedInputTokens) + (usage.actualOutputTokens ?? 0)
     : 0;
-  const max = usage?.maxTokens ?? snapshot?.contextMaxTokens ?? 8192;
+  const max = usage?.maxTokens ?? snapshot?.contextMaxTokens ?? 32768;
   const attachContext = (source: 'Selection' | 'CurrentFile' | 'PickFiles') => {
     send({ type: 'AddContext', source });
     if (contextMenu.current) contextMenu.current.open = false;

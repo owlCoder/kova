@@ -4,11 +4,11 @@ Status: **Accepted with review changes, 2026-09-30**
 
 ## Context
 
-Qwen3 4B must operate in an explicit 8K window. Tools consume tokens, small models loop, and unbounded history/output would defeat the low-memory goal. Persistence beyond the session is unnecessary in v1.
+Qwen3 4B must operate in an explicit context window. Tools consume tokens, small models loop, and unbounded history/output would defeat the low-memory goal. Persistence beyond the session is unnecessary in v1.
 
 ## Decision
 
-Use 8,192 total tokens, reserve 1,024 output tokens plus a 10% safety margin (820 tokens), leaving 6,348 estimated input tokens. Count all serialized tool definitions and message framing. Reconcile the estimate with provider usage, retaining the reserve. Provider context equals the UI maximum; never rely on server defaults.
+From 0.3.1, default to 32,768 total tokens and reserve 4,096 output tokens plus a 10% safety margin (3,277 tokens), leaving 25,395 estimated input tokens. This replaces the initial 8,192/1,024 defaults at the user's request. Explicit settings override these defaults; larger local windows use more memory and must fit the selected model's limit. Count all serialized tool definitions and message framing. Reconcile the estimate with provider usage, retaining the reserve. Provider context equals the UI maximum; never rely on server defaults.
 
 Stub old tool/MCP outputs first, truncate explicitly attached files/selection second, compact complete old turns third. System, enabled tools, selected skill and current user text remain pinned. Current-step tool-result identities stay, with payload truncated as needed. Pinned context that still cannot fit is a structured overflow; do not issue a silently truncated request.
 

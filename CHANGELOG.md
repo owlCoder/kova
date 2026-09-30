@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.1
+
+- Increase default context to 32,768 tokens and output reserve to 4,096, keeping the 10% safety margin.
+- Document collapsed thinking display, workspace skills, stdio MCP configuration and permission modes.
+
 ## 0.3.0
 
 - Add multi-provider model support while keeping Ollama as the local-first default.
@@ -10,7 +15,7 @@
 - Separate provider composition, API transport, context attachment handling and Webview footer rendering into focused modules.
 - Enforce a 500-line runtime TypeScript/TSX source limit and retain the one-public-behavior-per-file architecture check.
 - Update README, setup and Marketplace copy for local and API-provider workflows.
-- Add a verified VSIX publish command and a manually triggered Marketplace publish workflow using `VSCE_PAT`.
+- Keep Marketplace publication manual through the publisher portal.
 - Bump the Marketplace extension package to `0.3.0` and refresh provider-focused metadata and keywords.
 
 ## 0.2.0
