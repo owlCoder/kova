@@ -5,7 +5,12 @@ import { OllamaConnection } from './OllamaConnection.js';
 
 export class OllamaModelCatalog implements ModelCatalog {
   constructor(private readonly connection: OllamaConnection) {}
+
   async listInstalled(cancellation: CancellationToken): Promise<readonly ModelInfo[]> {
+    return this.listAvailable(cancellation);
+  }
+
+  async listAvailable(cancellation: CancellationToken): Promise<readonly ModelInfo[]> {
     const raw = await this.connection.json('/api/tags', null, cancellation);
     if (!raw || typeof raw !== 'object' || !('models' in raw) || !Array.isArray(raw.models))
       throw new Error('Invalid Ollama model list.');

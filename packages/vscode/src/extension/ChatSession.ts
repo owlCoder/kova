@@ -1,38 +1,38 @@
-import * as vscode from 'vscode';
 import { randomUUID } from 'node:crypto';
-import { stat, readFile } from 'node:fs/promises';
-import { CancellationSource } from '../../../core/src/common/CancellationSource.js';
+import * as vscode from 'vscode';
 import { ChatAgent } from '../../../core/src/agents/ChatAgent.js';
 import type { AgentEvent } from '../../../core/src/agents/AgentEvent.js';
 import type { AgentMode } from '../../../core/src/agents/AgentMode.js';
 import type { AgentState } from '../../../core/src/agents/AgentState.js';
-import type { ModelInfo } from '../../../core/src/models/ModelInfo.js';
-import type { ContextAttachment } from '../../../core/src/context/ContextAttachment.js';
+import { CancellationSource } from '../../../core/src/common/CancellationSource.js';
 import type { ContextUsage } from '../../../core/src/context/ContextUsage.js';
 import { TokenCounter } from '../../../core/src/context/TokenCounter.js';
 import { InMemoryConversationRepository } from '../../../core/src/conversations/InMemoryConversationRepository.js';
-import { SkillLoader } from '../../../core/src/skills/SkillLoader.js';
+import type { ModelInfo } from '../../../core/src/models/ModelInfo.js';
 import type { SkillMetadata } from '../../../core/src/skills/Skill.js';
-import { OllamaConnection } from '../../../ollama/src/OllamaConnection.js';
-import { OllamaLlmProvider } from '../../../ollama/src/OllamaLlmProvider.js';
-import { OllamaModelCatalog } from '../../../ollama/src/OllamaModelCatalog.js';
+import { SkillLoader } from '../../../core/src/skills/SkillLoader.js';
 import type { HostMessage } from '../../../protocol/src/HostMessage.js';
 import type { SessionSnapshot } from '../../../protocol/src/SessionSnapshot.js';
 import type { WebviewMessage } from '../../../protocol/src/WebviewMessage.js';
-import { WorkspaceRuntime } from '../adapters/WorkspaceRuntime.js';
-import { NodeWorkspacePathGuard } from '../adapters/NodeWorkspacePathGuard.js';
 import { NodeProcessRunner } from '../adapters/NodeProcessRunner.js';
-import { WorkspaceSkillRepository } from '../skills/WorkspaceSkillRepository.js';
+import { NodeWorkspacePathGuard } from '../adapters/NodeWorkspacePathGuard.js';
+import { WorkspaceRuntime } from '../adapters/WorkspaceRuntime.js';
 import { ErsGuardrailAdapter } from '../integrations/ErsGuardrailAdapter.js';
+import { ProviderApiKeyStore } from '../providers/ProviderApiKeyStore.js';
+import { ProviderManager } from '../providers/ProviderManager.js';
+import { WorkspaceSkillRepository } from '../skills/WorkspaceSkillRepository.js';
 import { WebviewApprovalPort } from '../webview/WebviewApprovalPort.js';
-import { projectEvent, approvalView } from '../webview/projectEvent.js';
-
+import { approvalView, projectEvent } from '../webview/projectEvent.js';
+import { ContextAttachmentManager } from './ContextAttachmentManager.js';
+import { projectConversationMessages } from './projectConversationMessages.js';
 export class ChatSession {
   readonly hostSessionId = randomUUID();
   readonly approval = new WebviewApprovalPort();
   private sequence = 0;
   private readonly repository = new InMemoryConversationRepository();
   private readonly counters = new Map<string, TokenCounter>();
+  private readonly providers: ProviderManager;
+  private readonly contextAttachments: ContextAttachmentManager;
   private conversationId = randomUUID();
   private activeRun: {
     id: string;
@@ -52,8 +52,8 @@ export class ChatSession {
   private models: readonly ModelInfo[] = [];
   private skills: readonly SkillMetadata[] = [];
   private skillId: string | null = null;
-  private attachments: ContextAttachment[] = [];
   private selectedModel = '';
+  private providerFingerprint = '';
   private providerStatus: 'Available' | 'Unavailable' | 'ModelMissing' = 'Unavailable';
   private state: AgentState = 'Idle';
   private mode: AgentMode = 'Manual';
@@ -61,16 +61,27 @@ export class ChatSession {
   private partial = false;
   private disposed = false;
   private readonly listeners = new Set<(message: HostMessage) => void>();
-  private contextEditor: vscode.TextEditor | undefined;
   private readonly requests = new Set<string>();
   constructor(
     private readonly context: vscode.ExtensionContext,
     private readonly root: string | null,
     private readonly output: vscode.OutputChannel,
-  ) {}
+    providers?: ProviderManager,
+  ) {
+    this.providers =
+      providers ?? new ProviderManager(new ProviderApiKeyStore(this.context.secrets));
+    this.contextAttachments = new ContextAttachmentManager(root);
+  }
   connect(deliver: (message: HostMessage) => void): () => void {
     this.listeners.add(deliver);
     return () => this.listeners.delete(deliver);
+  }
+  captureEditor(editor: vscode.TextEditor | undefined): void {
+    this.contextAttachments.captureEditor(editor);
+  }
+  cancelActiveRun(): void {
+    this.preparingRun?.cancel();
+    this.activeRun?.cancellation.cancel();
   }
   private deliver(message: HostMessage): void {
     for (const listener of this.listeners) {
@@ -80,13 +91,6 @@ export class ChatSession {
         this.output.appendLine('[WebviewDeliveryFailed]');
       }
     }
-  }
-  captureEditor(editor: vscode.TextEditor | undefined): void {
-    if (editor?.document.uri.scheme === 'file') this.contextEditor = editor;
-  }
-  cancelActiveRun(): void {
-    this.preparingRun?.cancel();
-    this.activeRun?.cancellation.cancel();
   }
   private envelope() {
     return {
@@ -120,7 +124,17 @@ export class ChatSession {
       this.streamingResponse = { ...this.streamingResponse, partial: false };
     if (!['ResponseDelta', 'ThinkingDelta'].includes(event.type))
       this.output.appendLine(
-        `[${event.type}]${event.type === 'McpServerStarted' ? ` ${event.command} ${event.args.map((arg) => JSON.stringify(arg)).join(' ')}` : event.type === 'HookObserved' ? ` ${event.report.command} ${event.report.args.map((arg) => JSON.stringify(arg)).join(' ')} ${event.report.outcome} ${event.report.durationMs}ms` : event.type === 'ErrorOccurred' ? ` ${event.code}` : ''}`,
+        `[${event.type}]${
+          event.type === 'McpServerStarted'
+            ? ` ${event.command} ${event.args.map((arg) => JSON.stringify(arg)).join(' ')}`
+            : event.type === 'HookObserved'
+              ? ` ${event.report.command} ${event.report.args
+                  .map((arg) => JSON.stringify(arg))
+                  .join(' ')} ${event.report.outcome} ${event.report.durationMs}ms`
+              : event.type === 'ErrorOccurred'
+                ? ` ${event.code}`
+                : ''
+        }`,
       );
     this.deliver({
       ...this.envelope(),
@@ -130,7 +144,6 @@ export class ChatSession {
     });
   }
   initialize(): Promise<void> {
-    // A recreated Webview must resync the captured run, never reload its configuration.
     if (this.activeRun) return Promise.resolve();
     if (this.initialization) return this.initialization;
     if (this.preparingRun || this.disposed) return Promise.resolve();
@@ -188,24 +201,25 @@ export class ChatSession {
     const source = new CancellationSource();
     this.modelDiscovery = source;
     try {
-      const config = vscode.workspace.getConfiguration('kova');
-      const models = await new OllamaModelCatalog(
-        new OllamaConnection(config.get('ollama.baseUrl', 'http://127.0.0.1:11434'), fetch, 15_000),
-      ).listInstalled(source);
+      const discovered = await this.providers.discover(source);
       if (this.disposed || this.modelDiscovery !== source || source.isCancellationRequested) return;
-      this.models = models;
-      if (!this.selectedModel) this.selectedModel = config.get('ollama.model', 'qwen3:4b');
+      const changedProvider = this.providerFingerprint !== discovered.fingerprint;
+      this.providerFingerprint = discovered.fingerprint;
+      this.models = discovered.models;
+      if (!this.selectedModel || changedProvider) this.selectedModel = discovered.defaultModelId;
       this.providerStatus = this.models.some((model) => model.id === this.selectedModel)
         ? 'Available'
         : 'ModelMissing';
-    } catch {
+    } catch (error) {
       if (!source.isCancellationRequested) {
         this.models = [];
         this.providerStatus = 'Unavailable';
         this.emit({
           type: 'ErrorOccurred',
-          code: 'OllamaUnavailable',
-          message: 'Ollama is unavailable. Start the local runtime and press Retry.',
+          code: 'ProviderUnavailable',
+          message: `${this.providers.label()} is unavailable. ${
+            error instanceof Error ? error.message : 'Check provider configuration.'
+          }`,
           recoverable: true,
         });
       }
@@ -219,41 +233,18 @@ export class ChatSession {
     const activeRun = this.activeRun;
     const selected = this.models.find((model) => model.id === this.selectedModel);
     const settings = vscode.workspace.getConfiguration('kova');
-    const messages = (conversation?.entries ?? [])
-      .filter(
-        (entry) =>
-          entry.message.role !== 'tool' &&
-          entry.message.role !== 'system' &&
-          !entry.id.endsWith('-repair'),
-      )
-      .map((entry, index, all) => ({
-        id: entry.id,
-        role: entry.message.role as 'user' | 'assistant',
-        content: entry.message.content,
-        partial: this.partial && index === all.length - 1,
-      }));
-    if (activeRun && !messages.some((message) => message.id === `${activeRun.id}-user`))
-      messages.push({
-        id: `${activeRun.id}-user`,
-        role: 'user',
-        content: activeRun.prompt,
-        partial: false,
-      });
-    if (this.streamingResponse) {
-      const response = {
-        ...this.streamingResponse,
-        partial: this.streamingResponse.partial || this.partial,
-      };
-      const index = messages.findIndex((message) => message.id === response.id);
-      if (index === -1) messages.push(response);
-      else messages[index] = response;
-    }
+    const messages = projectConversationMessages(
+      conversation?.entries ?? [],
+      this.partial,
+      activeRun,
+      this.streamingResponse,
+    );
     const snapshot: SessionSnapshot = {
       conversationId: this.conversationId,
       activeRunId: activeRun?.id ?? null,
       state: this.state,
       mode: this.mode,
-      selectedModelId: this.selectedModel || settings.get('ollama.model', 'qwen3:4b'),
+      selectedModelId: this.selectedModel || this.providers.defaultModelId(),
       models: this.models.map((model) => ({ ...model })),
       providerStatus: this.providerStatus,
       toolsEnabled: Boolean(this.root && selected?.tools === 'Supported'),
@@ -261,11 +252,13 @@ export class ChatSession {
       activeSkillId: this.skillId,
       usage: this.usage ? structuredClone(this.usage) : null,
       messages,
-      contextAttachments: this.attachments.map((item) => ({ id: item.id, label: item.label })),
+      contextAttachments: this.contextAttachments
+        .list()
+        .map((item) => ({ id: item.id, label: item.label })),
       pendingApproval: this.approval.requestPending
         ? approvalView(this.approval.requestPending)
         : null,
-      thinkingEnabled: activeRun?.thinkingEnabled ?? settings.get('ollama.think', false),
+      thinkingEnabled: activeRun?.thinkingEnabled ?? this.providers.thinkingEnabled(),
       contextMaxTokens: activeRun?.contextMaxTokens ?? settings.get('context.maxTokens', 8192),
     };
     this.deliver({ ...this.envelope(), type: 'Snapshot', requestId, snapshot });
@@ -310,12 +303,12 @@ export class ChatSession {
         return;
       case 'AddContext':
         if (this.activeRun) throw new Error('Cannot change context during a run.');
-        await this.addContext(message.source);
+        await this.contextAttachments.add(message.source);
         await this.snapshot(message.requestId);
         return;
       case 'RemoveContext':
         if (this.activeRun) throw new Error('Cannot change context during a run.');
-        this.attachments = this.attachments.filter((item) => item.id !== message.attachmentId);
+        this.contextAttachments.remove(message.attachmentId);
         await this.snapshot(message.requestId);
         return;
       case 'ResolveApproval':
@@ -369,21 +362,20 @@ export class ChatSession {
     const cancellation = new CancellationSource();
     this.preparingRun = cancellation;
     try {
-      // Wait for an idle view initialization before starting the run's configuration capture.
       await this.initialization;
       cancellation.throwIfCancellationRequested();
       if (this.disposed) throw new Error('Kova session is closed.');
-      if (message.attachmentIds.some((id) => !this.attachments.some((item) => item.id === id)))
+      if (message.attachmentIds.some((id) => !this.contextAttachments.has(id)))
         throw new Error('Unknown context attachment.');
       if (message.skillId && !this.skills.some((skill) => skill.id === message.skillId))
         throw new Error('Unknown selected skill.');
       const model = this.models.find((item) => item.id === message.modelId);
-      if (!model) throw new Error('Selected model is not installed. Retry model discovery.');
+      if (!model) throw new Error('Selected model is unavailable. Retry model discovery.');
       const settings = vscode.workspace.getConfiguration('kova');
       const maxTokens = settings.get('context.maxTokens', 8192);
       if (model.maxContextTokens && maxTokens > model.maxContextTokens)
         throw new Error('Configured context exceeds the model context limit.');
-      const thinking = settings.get('ollama.think', false);
+      const thinking = this.providers.thinkingEnabled();
       if (thinking && model.thinking !== 'Supported')
         throw new Error(
           'This model does not report thinking support. Disable thinking in Kova settings.',
@@ -411,17 +403,16 @@ export class ChatSession {
           safetyMarginRatio: settings.get('context.safetyMarginRatio', 0.1),
           maxToolOutputCharacters: 8000,
         },
-        attachments: this.attachments.filter((item) => message.attachmentIds.includes(item.id)),
+        attachments: this.contextAttachments.selected(message.attachmentIds),
         thinkingEnabled: thinking,
-        keepAliveSeconds: settings.get('ollama.keepAliveSeconds', 300),
+        keepAliveSeconds:
+          this.providers.kind() === 'ollama' ? settings.get('ollama.keepAliveSeconds', 300) : 0,
         maxToolIterations: 10,
         commandAllowlist: settings.get<readonly string[]>('commands.allow', []),
         toolsEnabled: Boolean(this.root && model.tools === 'Supported'),
       };
       const agent = new ChatAgent(
-        new OllamaLlmProvider(
-          new OllamaConnection(settings.get('ollama.baseUrl', 'http://127.0.0.1:11434')),
-        ),
+        await this.providers.forConversation(this.conversationId),
         this.repository,
         counter,
         this.runtime,
@@ -465,61 +456,14 @@ export class ChatSession {
       if (this.preparingRun === cancellation) this.preparingRun = null;
     }
   }
-  private async addContext(source: 'Selection' | 'CurrentFile' | 'PickFiles'): Promise<void> {
-    if (!this.root) throw new Error('Open a workspace to attach context.');
-    if (this.attachments.length >= 10) throw new Error('At most 10 context attachments.');
-    if (source === 'PickFiles') {
-      const files = await vscode.window.showOpenDialog({
-        canSelectMany: true,
-        canSelectFiles: true,
-        canSelectFolders: false,
-      });
-      for (const uri of files ?? []) {
-        if (this.attachments.length >= 10) break;
-        const path = await new NodeWorkspacePathGuard(this.root).resolve(
-          this.root,
-          uri.fsPath,
-          'Read',
-          new CancellationSource(),
-        );
-        if ((await stat(path.canonicalPath)).size > 100_000)
-          throw new Error('Attachment is too large. Select a narrower text range.');
-        const content = await readFile(path.canonicalPath, 'utf8');
-        if (content.includes('\0')) throw new Error('Binary files cannot be attached.');
-        this.attachments.push({
-          id: randomUUID(),
-          source: 'ExplicitFile',
-          label: path.relativePath,
-          content,
-        });
-      }
-    } else {
-      const activeEditor = vscode.window.activeTextEditor;
-      const editor =
-        activeEditor?.document.uri.scheme === 'file' ? activeEditor : this.contextEditor;
-      if (!editor || editor.document.uri.scheme !== 'file' || editor.document.isClosed)
-        throw new Error('Open a text file first.');
-      const path = await new NodeWorkspacePathGuard(this.root).resolve(
-        this.root,
-        editor.document.uri.fsPath,
-        'Read',
-        new CancellationSource(),
-      );
-      const content =
-        source === 'Selection'
-          ? editor.document.getText(editor.selection)
-          : editor.document.getText();
-      if (!content || content.length > 100_000)
-        throw new Error('Select a nonempty text range under 100,000 characters.');
-      this.attachments.push({ id: randomUUID(), source, label: path.relativePath, content });
-    }
-  }
   async newConversation(): Promise<void> {
     this.preparingRun?.cancel();
     const active = this.activeRun;
     active?.cancellation.cancel();
     await active?.task;
-    await this.repository.remove(this.conversationId);
+    const previousConversationId = this.conversationId;
+    await this.repository.remove(previousConversationId);
+    this.providers.forgetConversation(previousConversationId);
     this.conversationId = randomUUID();
     this.state = 'Idle';
     this.usage = null;
@@ -536,7 +480,8 @@ export class ChatSession {
     await this.initialization?.catch(() => {});
     this.approval.dispose();
     await this.runtime?.dispose();
+    this.providers.clear();
+    this.contextAttachments.dispose();
     this.listeners.clear();
-    this.contextEditor = undefined;
   }
 }

@@ -1,37 +1,64 @@
-# Provider contract and Ollama mapping
+# Provider contract and adapters
 
-Status: **Accepted**. Milestone 1 implements chat streaming and model discovery; native tool mapping remains milestone 2.
+Status: **Accepted**.
 
-`LlmProvider.streamChat(ChatRequest, CancellationToken)` streams TextDelta, ThinkingDelta, complete ToolCallReady candidates, localized MalformedToolCall diagnostics, a final Finished event carrying provider usage. It never executes a tool. Model discovery is a separate `ModelCatalog` port. Core neither fetches nor parses Ollama JSON.
+`LlmProvider.streamChat(ChatRequest, CancellationToken)` is the Core boundary. It streams `TextDelta`, `ThinkingDelta`, complete `ToolCallReady` candidates, localized `MalformedToolCall` diagnostics and one final `Finished` event with normalized usage. Providers never execute tools. Model discovery remains separate from generation.
 
-## Mapping
+The VS Code host owns provider composition. Core has no HTTP, credential-storage or vendor SDK dependency.
 
-| Core field/event            | Ollama wire mapping                                                        |
-| --------------------------- | -------------------------------------------------------------------------- |
-| modelId                     | `model`                                                                    |
-| messages                    | Role/content; assistant `tool_calls`; tool `tool_name`                     |
-| tools                       | Native `{ type: "function", function: { name, description, parameters } }` |
-| contextWindowTokens         | `options.num_ctx`, always explicit                                         |
-| maxOutputTokens             | `options.num_predict`, always explicit                                     |
-| thinkingEnabled             | `think`, default false                                                     |
-| keepAliveSeconds            | Explicit `keep_alive`, default `"5m"`/equivalent duration                  |
-| streaming                   | `stream: true`                                                             |
-| TextDelta                   | `message.content` chunks                                                   |
-| ThinkingDelta               | `message.thinking` chunks, never historical messages                       |
-| Finished.usage.inputTokens  | Final `prompt_eval_count`                                                  |
-| Finished.usage.outputTokens | Final `eval_count`                                                         |
-| Finished                    | Final `done` / finish reason normalized into Complete, ToolCalls or Length |
+## Supported providers
 
-Risk/origin metadata is not sent as model tool schema. Provider assigns deterministic local call IDs when the wire format lacks them, retaining the same identity across complete fragments. Preserve valid assistant calls and matching tool-name results on continuation. Parse NDJSON across arbitrary byte boundaries, including split UTF-8, multiple lines/chunk and final no-newline records. Bound buffered records; transport/protocol errors are recoverable ErrorOccurred outcomes. Never execute a partially assembled call because generation was cancelled or length-limited.
+Kova supports three provider modes:
 
-Default endpoint: `http://127.0.0.1:11434`. Settings: `kova.provider` (only ollama in v1), `kova.ollama.baseUrl`, `.model` (`qwen3:4b`), `.think` (false), `.keepAliveSeconds` (`300`), `kova.context.maxTokens` (8192), `.reservedOutputTokens` (1024), `.safetyMarginRatio` (0.10), `kova.commands.allow`. Endpoint changes are explicit user configuration; no source is sent to cloud services by default.
+- **Ollama** is the default, discovers models through `/api/tags` and `/api/show`, and streams Ollama `/api/chat` NDJSON without credentials.
+- **DeepSeek** discovers models through the OpenAI-compatible `/models` endpoint and streams `/chat/completions` SSE with DeepSeek's thinking extension. Credentials live in VS Code `SecretStorage`.
+- **OpenAI-compatible** uses `/models` plus `/chat/completions` SSE and accepts an optional bearer token from `SecretStorage`.
 
-## Discovery and failures
+Ollama remains the local-first default (`qwen3:4b`). Selecting an API provider is explicit; Kova never silently sends workspace context to a cloud endpoint.
 
-Use `GET /api/tags` for installed models. Inspect available capability metadata, including `POST /api/show` when needed, before exposing tools. Unsupported/unknown tool capability means visible chat-only behavior; do not guess from a model name. Thinking support is checked before enabling it. Validate selected model existence and reported context capability where available. Unknown max context is reported as unknown, not a fabricated guarantee.
+## Core normalization
 
-Unavailable endpoint → visible Ollama unavailable with Retry and bundled setup instructions. Missing selected model → installed-model picker/setup guidance. No model download in v1. Failed discovery of one model's capability does not erase other installed models; that model stays conservative/unknown.
+Common request data is mapped by each adapter: model ID, role/content history, native function-tool schemas, context/output limits where supported, thinking where the provider defines a wire format, and cancellation.
 
-Mock HTTP/NDJSON tests cover mapped fields, tool/result continuation, usage, interrupted chunks, malformed arguments, timeout/abort, missing model and unavailable runtime. Real local smoke tests verify streaming and stop with qwen3:4b but do not become network-dependent CI tests.
+Common response data is normalized into text deltas, transient thinking deltas, complete tool-call candidates, finish reason and token usage. Provider wire objects never become Core contracts.
 
-Reference mapping is based on [Ollama chat](https://docs.ollama.com/api/chat), [native tool calling](https://docs.ollama.com/capabilities/tool-calling), [model listing](https://docs.ollama.com/api/tags) and [official API source for show](https://github.com/ollama/ollama/blob/main/docs/api.md#show-model-information). Reverify exact wire fixtures during implementation; SDK/wire objects never become Core contracts.
+## Ollama
+
+Ollama maps `contextWindowTokens` to `options.num_ctx`, `maxOutputTokens` to `options.num_predict`, `thinkingEnabled` to `think` and `keepAliveSeconds` to `keep_alive`. Streaming NDJSON is parsed across arbitrary byte boundaries. Tool calls are emitted only after complete records are received.
+
+Unknown capability metadata stays conservative: unknown or unsupported tools means chat-only behavior.
+
+## DeepSeek
+
+DeepSeek uses the OpenAI-compatible Chat Completions endpoint with the provider-specific `thinking` body field. The default model is `deepseek-flash`.
+
+DeepSeek requires prior assistant `reasoning_content` to be replayed when thinking mode and tools are combined. Kova therefore keeps reasoning in the in-memory provider instance for the active conversation and reattaches it to matching assistant turns. It is not written to the conversation repository, protocol snapshots or workspace files.
+
+Tool-call wire IDs are normalized by Core. On continuation, Kova sends internally consistent assistant tool-call IDs and matching `tool_call_id` values.
+
+## Generic OpenAI-compatible endpoints
+
+Generic endpoints use standard Chat Completions streaming and `/models`. Because reasoning formats are not standardized, generic thinking is disabled. Tool support is explicit through `kova.openaiCompatible.supportsTools`.
+
+The API key is optional so local compatible servers can run without credentials.
+
+## Credentials
+
+API keys are stored only through VS Code `SecretStorage`.
+
+Commands:
+
+- **Kova: Set Provider API Key**
+- **Kova: Clear Provider API Key**
+
+There is intentionally no `kova.*.apiKey` setting, preventing accidental source-control or workspace-settings exposure.
+
+## Failures and cancellation
+
+All adapters honor the shared cancellation token and abort in-flight HTTP. Provider/model failures are recoverable and surface through the existing session error path. Secrets are never included in diagnostic messages.
+
+Model discovery is bounded. Remote model size is represented as unknown (`null`) rather than fabricated.
+
+## Maintainability rules
+
+Runtime TypeScript is kept at or below 500 lines per file. Architecture tests also enforce package boundaries and at most one exported behavioral class/interface per source file. Provider composition, credential storage, transport parsing, attachment management and Webview footer rendering are separated into focused modules.

@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import logo from '../../assets/logo.png';
+import type { AgentMode } from '../../packages/protocol/src/AgentMode.js';
 import type { HostMessage } from '../../packages/protocol/src/HostMessage.js';
 import type { SessionSnapshot } from '../../packages/protocol/src/SessionSnapshot.js';
-import type { AgentMode } from '../../packages/protocol/src/AgentMode.js';
-import { send, inVscode } from './messaging/bridge.js';
-import { activityText, applyEvent } from './state/presentation.js';
-import { MessageContent } from './components/MessageContent.js';
+import { ChatFooter } from './components/ChatFooter.js';
 import { Icon } from './components/Icon.js';
+import { MessageContent } from './components/MessageContent.js';
+import { send } from './messaging/bridge.js';
+import { activityText, applyEvent } from './state/presentation.js';
 
 export function App() {
   const [snapshot, setSnapshot] = useState<SessionSnapshot | null>(null);
@@ -23,8 +24,8 @@ export function App() {
   const retired = useRef(new Set<string>());
   const scroller = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLTextAreaElement>(null);
-  const contextMenu = useRef<HTMLDetailsElement>(null);
   const nearBottom = useRef(true);
+
   useEffect(() => {
     const listener = (message: MessageEvent<HostMessage>) => {
       const data = message.data;
@@ -59,8 +60,6 @@ export function App() {
           }
           return data.snapshot;
         });
-        // Idle attachment/history updates must preserve choices for the next prompt.
-        // During a run, both views display the options captured by the host.
         if (
           !hostSelection.current ||
           data.snapshot.activeRunId ||
@@ -137,16 +136,13 @@ export function App() {
     send({ type: 'Ready' });
     return () => window.removeEventListener('message', listener);
   }, []);
+
   useEffect(() => {
     if (nearBottom.current && scroller.current)
       scroller.current.scrollTop = scroller.current.scrollHeight;
   }, [snapshot?.messages, activities]);
+
   const busy = submitting || Boolean(snapshot?.activeRunId);
-  const usage = snapshot?.usage;
-  const used = usage
-    ? (usage.actualInputTokens ?? usage.estimatedInputTokens) + (usage.actualOutputTokens ?? 0)
-    : 0;
-  const max = usage?.maxTokens ?? snapshot?.contextMaxTokens ?? 8192;
   const submit = () => {
     if (!prompt.trim() || busy || !snapshot) return;
     setError('');
@@ -174,10 +170,7 @@ export function App() {
     setPrompt(value);
     input.current?.focus();
   };
-  const attachContext = (source: 'Selection' | 'CurrentFile' | 'PickFiles') => {
-    send({ type: 'AddContext', source });
-    if (contextMenu.current) contextMenu.current.open = false;
-  };
+
   return (
     <main className="app">
       <header>
@@ -185,7 +178,7 @@ export function App() {
           <img className="brand-logo" src={logo} alt="" />
           <div>
             <strong>Kova</strong>
-            <span>Local coding assistant</span>
+            <span>Coding assistant</span>
           </div>
         </div>
         <div className="header-actions">
@@ -354,208 +347,20 @@ export function App() {
           </section>
         )}
       </div>
-      <footer>
-        {error && (
-          <div className="error-banner" role="alert">
-            {error}
-            <button aria-label="Dismiss error" onClick={() => setError('')}>
-              <Icon name="close" />
-            </button>
-          </div>
-        )}
-        {snapshot?.providerStatus !== 'Available' && (
-          <div className="connection">
-            <span className="status-dot" />
-            {!inVscode
-              ? 'Open this view in VS Code'
-              : !snapshot
-                ? 'Connecting to Ollama…'
-                : snapshot.providerStatus === 'ModelMissing'
-                  ? 'Selected model is not installed'
-                  : 'Ollama is unavailable'}
-            <div>
-              <button onClick={() => send({ type: 'RetryProvider' })}>Retry</button>
-              <button onClick={() => send({ type: 'OpenSetupInstructions' })}>Setup</button>
-            </div>
-          </div>
-        )}
-        {!!snapshot?.contextAttachments.length && (
-          <div className="attachments">
-            {snapshot.contextAttachments.map((item) => (
-              <button
-                key={item.id}
-                title={`Remove ${item.label}`}
-                disabled={busy}
-                onClick={() => send({ type: 'RemoveContext', attachmentId: item.id })}
-              >
-                <Icon name="code" />
-                <span>{item.label}</span>
-                <Icon name="close" />
-              </button>
-            ))}
-          </div>
-        )}
-        {!!snapshot?.skills.length && (
-          <label className="skill-picker">
-            Skill{' '}
-            <select
-              value={snapshot.activeSkillId ?? ''}
-              disabled={busy}
-              onChange={(event) =>
-                send({ type: 'SelectSkill', skillId: event.target.value || null })
-              }
-            >
-              <option value="">None</option>
-              {snapshot.skills.map((skill) => (
-                <option key={skill.id} value={skill.id}>
-                  {skill.name}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
-        <div className={`composer ${busy ? 'busy' : ''}`}>
-          <textarea
-            aria-label="Ask Kova"
-            placeholder="Ask Kova…"
-            value={prompt}
-            ref={input}
-            disabled={!inVscode}
-            maxLength={16000}
-            onChange={(event) => setPrompt(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
-                event.preventDefault();
-                submit();
-              }
-            }}
-          />
-          <div className="composer-actions">
-            <details className="attach-menu" ref={contextMenu}>
-              <summary title="Add context">
-                <Icon name="paperclip" />
-                <span>Add context</span>
-              </summary>
-              <div>
-                <button disabled={busy} onClick={() => attachContext('Selection')}>
-                  Selection
-                </button>
-                <button disabled={busy} onClick={() => attachContext('CurrentFile')}>
-                  Current file
-                </button>
-                <button disabled={busy} onClick={() => attachContext('PickFiles')}>
-                  Choose files…
-                </button>
-              </div>
-            </details>
-            {busy ? (
-              <button
-                className="send stop"
-                title="Stop generation"
-                aria-label="Stop generation"
-                onClick={() =>
-                  snapshot?.activeRunId && send({ type: 'CancelRun', runId: snapshot.activeRunId })
-                }
-              >
-                <Icon name="stop" />
-              </button>
-            ) : (
-              <button
-                className="send"
-                title="Send"
-                aria-label="Send"
-                disabled={!prompt.trim() || !snapshot?.models.some((item) => item.id === model)}
-                onClick={submit}
-              >
-                <Icon name="send" />
-              </button>
-            )}
-          </div>
-        </div>
-        <div className="selection-row">
-          <label>
-            <span>Model</span>
-            <select
-              aria-label="Local model"
-              title={model}
-              value={model}
-              disabled={busy}
-              onChange={(event) => setModel(event.target.value)}
-            >
-              {!snapshot?.models.some((item) => item.id === model) && (
-                <option value={model}>{model} · not installed</option>
-              )}
-              {snapshot?.models.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.displayName}
-                  {item.tools !== 'Supported' ? ' · chat only' : ''}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            <span>Mode</span>
-            <select
-              aria-label="Agent mode"
-              title={
-                {
-                  Plan: 'Read-only tools; no edits or commands',
-                  Manual: 'Approve edits and commands',
-                  Edit: 'Automatic workspace edits; approve commands',
-                  Auto: 'Automatic edits and exact allowlisted commands',
-                }[mode]
-              }
-              value={mode}
-              disabled={busy}
-              onChange={(event) => setMode(event.target.value as AgentMode)}
-            >
-              {(['Plan', 'Manual', 'Edit', 'Auto'] as const).map((item) => (
-                <option key={item}>{item}</option>
-              ))}
-            </select>
-          </label>
-        </div>
-        {snapshot && (
-          <details className="context">
-            <summary>
-              <span>
-                Context{' '}
-                <span className="context-count">
-                  {used.toLocaleString()} / {max.toLocaleString()}
-                </span>
-              </span>
-              <span>
-                {Math.min(100, Math.round((used / max) * 100))}% <Icon name="chevron" />
-              </span>
-            </summary>
-            <progress value={Math.min(used, max)} max={max} />
-            <div className="context-details">
-              <span>
-                {usage?.actualInputTokens === null || !usage ? 'Estimated input' : 'Measured input'}
-                <strong>{usage?.actualInputTokens ?? usage?.estimatedInputTokens ?? 0}</strong>
-              </span>
-              <span>
-                Tool definitions (estimated)<strong>{usage?.toolDefinitionTokens ?? 0}</strong>
-              </span>
-              <span>
-                Output<strong>{usage?.actualOutputTokens ?? '—'}</strong>
-              </span>
-              {!!usage?.evictions.length && (
-                <span>
-                  Context reductions<strong>{usage.evictions.length}</strong>
-                </span>
-              )}
-            </div>
-          </details>
-        )}
-        <div className="footer-note">
-          <span
-            className={`status-dot ${snapshot?.providerStatus === 'Available' ? 'online' : ''}`}
-          />
-          {snapshot?.toolsEnabled ? 'Local · tools enabled' : 'Local · chat only'}
-          <span>Enter to send</span>
-        </div>
-      </footer>
+      <ChatFooter
+        snapshot={snapshot}
+        busy={busy}
+        error={error}
+        prompt={prompt}
+        model={model}
+        mode={mode}
+        inputRef={input}
+        onDismissError={() => setError('')}
+        onPromptChange={setPrompt}
+        onSubmit={submit}
+        onModelChange={setModel}
+        onModeChange={setMode}
+      />
     </main>
   );
 }

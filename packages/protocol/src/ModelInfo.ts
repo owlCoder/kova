@@ -4,7 +4,7 @@ export type CapabilitySupport = 'Supported' | 'Unsupported' | 'Unknown';
 export interface ModelInfo {
   readonly id: string;
   readonly displayName: string;
-  readonly sizeBytes: number;
+  readonly sizeBytes: number | null;
   readonly tools: CapabilitySupport;
   readonly thinking: CapabilitySupport;
   readonly maxContextTokens: number | null;

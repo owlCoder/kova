@@ -1,16 +1,44 @@
 # Kova setup
 
-Install and start Ollama, then install the default model once:
+Kova is local-first. The default provider is Ollama with Qwen3 4B:
 
 ```sh
 ollama pull qwen3:4b
 ```
 
-Install Kova from its VSIX with **Extensions: Install from VSIX**. Run **Kova: Open Chat** or select Kova in the Activity Bar to open the sidebar, then select an installed model and enter a prompt. Use **Kova: Open Chat in Editor** for a movable editor tab. Both views share the session conversation. Opening the editor command again focuses the existing tab. Closing the tab cancels active work; hiding the sidebar does not. **Stop** cancels the active run. **New conversation** clears the current chat.
+Install Kova from its VSIX with **Extensions: Install from VSIX**. Run **Kova: Open Chat** or select Kova in the Activity Bar to open the sidebar. Use **Kova: Open Chat in Editor** for a movable editor tab. Both views share the session conversation. **Stop** cancels the active run and **New conversation** clears the current chat.
 
-The default endpoint is `http://127.0.0.1:11434`. If it is unavailable, start Ollama and press **Retry**. If the selected model is missing, select an installed model or install it through Ollama. Models without confirmed tool support run chat only.
+## Providers
 
-Use **Kova: Open Settings** to change the model, endpoint, thinking, keep-alive, context budget and exact Auto command allowlist. Context shows estimated input before generation and measured input/output after the final chunk.
+Open **Kova: Open Settings** and choose `kova.provider`.
+
+### Ollama
+
+`ollama` remains the default. The default endpoint is `http://127.0.0.1:11434` and the default model is `qwen3:4b`. Installed models are discovered from Ollama. Models without confirmed tool support run chat only.
+
+### DeepSeek
+
+Choose `deepseek`, then run **Kova: Set Provider API Key**. The key is stored with VS Code `SecretStorage`; it is never written to `settings.json`.
+
+The default endpoint is `https://api.deepseek.com` and the default model is `deepseek-flash`, which currently serves DeepSeek V4.1 Flash. Model discovery uses the provider `/models` endpoint. `kova.deepseek.think` controls thinking mode.
+
+When DeepSeek thinking and tools are both enabled, Kova keeps the provider-required `reasoning_content` only in the in-memory provider session and replays it for tool turns. It is not persisted in Kova conversation history.
+
+### OpenAI-compatible endpoints
+
+Choose `openaiCompatible` for an endpoint that implements OpenAI Chat Completions plus `/models`. Configure:
+
+- `kova.openaiCompatible.baseUrl`
+- `kova.openaiCompatible.model` (optional; the first discovered model is used when empty)
+- `kova.openaiCompatible.supportsTools`
+
+Run **Kova: Set Provider API Key** if the endpoint requires bearer authentication. Leaving the key unset supports local endpoints such as compatible vLLM deployments. Generic OpenAI-compatible thinking is disabled because reasoning wire formats are provider-specific.
+
+Use **Kova: Clear Provider API Key** to remove the stored key for the selected API provider.
+
+## Working with Kova
+
+Use **Kova: Open Settings** to change provider/model settings, context budget and the exact Auto command allowlist. Context shows estimated input before generation and measured input/output after the final chunk.
 
 Attach a selection, current file or chosen files with **+**. While either chat view has focus, selection/current-file attachments use the most recently active file editor. In Manual mode, inspect the file diff or command and choose **Allow once** or **Reject**. Stale file versions require a new preview. Editor Undo restores file edits; cancellation does not undo applied changes.
 
@@ -18,4 +46,4 @@ Use trusted projects. `.kova/mcp.json` can start local servers and `.kova/hooks.
 
 For source development, run `npm ci`, `npm run check` and `npm run build`, then press F5 in VS Code. `npm run package` creates `dist/kova-local-0.2.0.vsix`; the filename follows the extension manifest name and version. Run `npm run verify:package` to inspect the archive and `npm run smoke:vsix` to test an isolated installation.
 
-For tool use with the supplied Qwen3 installation, enable Thinking. The local Ollama 0.35.0/Qwen3 combination produced reasoning as ordinary text and reached its output limit with `think: false`; `think: true` returned native tool calls. Kova preserves the requested setting and does not execute tool-like text.
+For tool use with the supplied Qwen3 installation, enable Thinking. The local Ollama 0.35.0/Qwen3 combination previously produced reasoning as ordinary text and reached its output limit with `think: false`; `think: true` returned native tool calls. Kova preserves the requested setting and does not execute tool-like text.

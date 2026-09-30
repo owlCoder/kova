@@ -1,14 +1,17 @@
 {
   "name": "kova-local",
-  "displayName": "Kova \u2014 Local Coding Agent",
-  "description": "Local coding assistant for VS Code using Ollama",
+  "displayName": "Kova — Local Coding Agent",
+  "description": "Local-first coding assistant for VS Code with Ollama and optional API providers",
   "version": "0.2.0",
   "publisher": "owlcoder",
   "license": "MIT",
   "engines": {
     "vscode": "^1.100.0"
   },
-  "categories": ["Machine Learning", "Other"],
+  "categories": [
+    "Machine Learning",
+    "Other"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/owlCoder/kova.git"
@@ -23,6 +26,8 @@
     "onCommand:kova.openInEditor",
     "onCommand:kova.newConversation",
     "onCommand:kova.settings",
+    "onCommand:kova.setProviderApiKey",
+    "onCommand:kova.clearProviderApiKey",
     "onView:kova.chat"
   ],
   "capabilities": {
@@ -68,6 +73,14 @@
       {
         "command": "kova.settings",
         "title": "Kova: Open Settings"
+      },
+      {
+        "command": "kova.setProviderApiKey",
+        "title": "Kova: Set Provider API Key"
+      },
+      {
+        "command": "kova.clearProviderApiKey",
+        "title": "Kova: Clear Provider API Key"
       }
     ],
     "configuration": {
@@ -75,8 +88,13 @@
       "properties": {
         "kova.provider": {
           "type": "string",
-          "enum": ["ollama"],
-          "default": "ollama"
+          "enum": [
+            "ollama",
+            "deepseek",
+            "openaiCompatible"
+          ],
+          "default": "ollama",
+          "description": "LLM provider. Ollama remains the local-first default."
         },
         "kova.ollama.baseUrl": {
           "type": "string",
@@ -98,17 +116,47 @@
           "minimum": 0,
           "maximum": 3600
         },
+        "kova.deepseek.baseUrl": {
+          "type": "string",
+          "default": "https://api.deepseek.com",
+          "description": "DeepSeek OpenAI-compatible API endpoint."
+        },
+        "kova.deepseek.model": {
+          "type": "string",
+          "default": "deepseek-flash",
+          "description": "DeepSeek model ID. deepseek-flash currently serves DeepSeek V4.1 Flash."
+        },
+        "kova.deepseek.think": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable DeepSeek thinking mode. Reasoning is streamed transiently and is not saved in conversation history."
+        },
+        "kova.openaiCompatible.baseUrl": {
+          "type": "string",
+          "default": "http://127.0.0.1:8000/v1",
+          "description": "Base URL for an OpenAI Chat Completions-compatible endpoint."
+        },
+        "kova.openaiCompatible.model": {
+          "type": "string",
+          "default": "",
+          "description": "Preferred model ID. Leave empty to use the first model returned by /models."
+        },
+        "kova.openaiCompatible.supportsTools": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether the configured endpoint/model supports OpenAI-style function tool calls."
+        },
         "kova.context.maxTokens": {
           "type": "integer",
           "default": 8192,
           "minimum": 512,
-          "maximum": 131072
+          "maximum": 1048576
         },
         "kova.context.reservedOutputTokens": {
           "type": "integer",
           "default": 1024,
           "minimum": 128,
-          "maximum": 8192
+          "maximum": 393216
         },
         "kova.context.safetyMarginRatio": {
           "type": "number",
@@ -140,12 +188,22 @@
     }
   },
   "icon": "media/logo.png",
-  "keywords": ["ollama", "local ai", "coding assistant", "offline", "mcp"],
+  "keywords": [
+    "ollama",
+    "deepseek",
+    "openai compatible",
+    "local ai",
+    "coding assistant",
+    "offline",
+    "mcp"
+  ],
   "galleryBanner": {
     "color": "#17191d",
     "theme": "dark"
   },
-  "extensionKind": ["workspace"],
+  "extensionKind": [
+    "workspace"
+  ],
   "files": [
     "extension.cjs",
     "extension.cjs.LEGAL.txt",
