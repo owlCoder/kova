@@ -1,6 +1,6 @@
 # Architecture review
 
-Status: **Proposed**. This is a reviewable baseline fulfilling the original specification's architecture-only first step. Implementation is deliberately pending review, not silently marked approved.
+Status: **Accepted with [amendments](REVIEW-CHANGES.md)**. This is a reviewable baseline fulfilling the original specification's architecture-only first step. Milestone 1 is authorized; later milestones require individual confirmation.
 
 ## Scope delivered
 
@@ -61,6 +61,6 @@ Status: **Proposed**. This is a reviewable baseline fulfilling the original spec
 
 ## Review gate
 
-The source specification §41 says: **“Do not generate broad production implementation until this architecture is reviewed and approved.”** That instruction is the reason runtime implementation remains pending after this deliverable. Review this baseline and confirm it (or specify changes); the next action is milestone 1, Foundation/chat.
+The source specification §41 says: **“Do not generate broad production implementation until this architecture is reviewed and approved.”** That instruction is the reason runtime implementation remains pending after this deliverable. The user approved the amended baseline on 2026-09-30 and authorized milestone 1, Foundation/chat. Stop for a report/confirmation at each milestone.
 
 Automated checks establish compile-time consistency and package boundaries. They do not establish runtime security, model quality, OS containment, successful ERS integration or an installable extension. Those require the milestone acceptance evidence above.

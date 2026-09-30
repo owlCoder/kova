@@ -1,6 +1,6 @@
 # ADR 004: Prepared tools and approval binding
 
-Status: **Proposed**
+Status: **Accepted with review changes, 2026-09-30**
 
 ## Context
 
@@ -12,7 +12,7 @@ Each `Tool` defines `prepare` and `execute`. Preparation is read-only: validate/
 
 `edit_file` requires exactly one literal occurrence, including whitespace; it does not apply unified diffs. `write_file` creates or fully replaces a bounded text file. Both use VS Code `WorkspaceEdit` for editor undo. Approval is AllowOnce or Reject, tied to run/call/preparation key. The adapter compares document versions and re-resolves paths immediately before applying. Stale preparation returns `StalePreparation`; the call must be prepared and approved again where policy requires it.
 
-Full diff contents stay in host-owned virtual documents. The UI receives paths and a diff-open intent. No checkpoint system, persistent approval, or model-supplied diff is used.
+`WorkspaceWriter` takes the expected content version/hash. If content changed after preview/approval, it returns a structured `StaleContent` error and **does not overwrite**. A retry requires a new preparation/preview and any required approval. Full diff contents stay in host-owned virtual documents. No checkpoint system, persistent approval, or model-supplied diff is used.
 
 ## Consequences
 

@@ -1,6 +1,6 @@
 # ADR 005: Four modes and monotonic safety decisions
 
-Status: **Proposed**
+Status: **Accepted with review changes, 2026-09-30**
 
 ## Context
 
@@ -12,7 +12,9 @@ Modes are exactly Plan, Manual (default), Edit and Auto. Dynamic invocation risk
 
 Plan exposes read-only tools only and also blocks unexpected write calls in code. Manual approves state changes. Edit automatically permits ordinary in-workspace writes. Auto permits nonprotected writes and exact parsed allowlisted commands. Shell chaining, redirection, substitution, ambiguous parsing and any extra argv prevent allowlist matching. Unknown MCP state-changing tools require approval in Auto. Destructive invocations are always blocked. Protected writes always require approval unless an existing stronger block applies.
 
-Pre-hook failure/timeout is a veto; post-hook failure is reported after the fact and cannot retroactively undo an executed operation. Guardrail failure is fail-closed. After approval, recheck safety and preparation immediately before execution. Approval satisfies one RequireApproval decision; it never turns Block into Allow.
+Every hook has a timeout. A BeforeToolExecution crash, timeout or invalid output vetoes the call with a visible reason. An AfterToolExecution failure is logged and shown, without changing a decision already taken. `CommandHook` uses `ProcessRunner` outside run_command policy: it is user-configured executable code, like mcp.json. Guardrail failure is fail-closed. A guardrail's RequireApproval, **including in Auto**, always passes through ApprovalPort. After approval, recheck safety and preparation immediately before execution; approval never turns Block into Allow.
+
+At each run's start, while idle, compare content hashes of `.kova/mcp.json` and `.kova/hooks.json` with the loaded versions. Restart only added/changed MCP servers, stop removed ones, and reload changed hooks. Emit a visible **configuration reloaded** activity row. Never reload during a run; changes made in that run become effective at the next idle run start.
 
 ## Consequences
 

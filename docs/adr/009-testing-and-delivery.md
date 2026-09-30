@@ -1,6 +1,6 @@
 # ADR 009: Architectural fitness and incremental delivery
 
-Status: **Proposed**
+Status: **Accepted with review changes, 2026-09-30**
 
 ## Context
 

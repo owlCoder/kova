@@ -1,6 +1,6 @@
 # Context budget and memory
 
-Status: **Proposed**. ContextBuilder/TokenCounter/ConversationCompactor are ports; these algorithms are implementation acceptance criteria.
+Status: **Accepted**. ContextBuilder, TokenCounter and ConversationCompactor are concrete pure classes; IO/model boundaries retain ports. Milestone 1 implements the chat-only budget and bounded conversation.
 
 ## Budget
 
@@ -52,4 +52,4 @@ Keep no permanent event log in memory. History across chats is not required: New
 
 Truncation marker includes the exact omitted character count and a useful hint: `output truncated (omitted 21,400 characters; narrow the search or read a line range)`. Marker/framing cost is included inside the cap. `read_file` line ranges and bounded `search_files` results let the model narrow requests.
 
-These limits are proposed defaults to test with Qwen3 4B, not measured performance results. The architecture phase performs no ingestion or compaction at runtime.
+These limits remain defaults to validate with Qwen3 4B; milestone 1 performs no workspace ingestion. Tool-result eviction is implemented with the tools milestone.

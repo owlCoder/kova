@@ -1,26 +1,26 @@
 # Provider contract and Ollama mapping
 
-Status: **Proposed**. No provider implementation or HTTP connection is part of this scaffold.
+Status: **Accepted**. Milestone 1 implements chat streaming and model discovery; native tool mapping remains milestone 2.
 
-`LlmProvider.streamChat(ChatRequest, CancellationToken)` streams TextDelta, ThinkingDelta, complete ToolCallReady candidates, localized MalformedToolCall diagnostics, Usage and Finished. It never executes a tool. Model discovery is a separate `ModelCatalog` port. Core neither fetches nor parses Ollama JSON.
+`LlmProvider.streamChat(ChatRequest, CancellationToken)` streams TextDelta, ThinkingDelta, complete ToolCallReady candidates, localized MalformedToolCall diagnostics, a final Finished event carrying provider usage. It never executes a tool. Model discovery is a separate `ModelCatalog` port. Core neither fetches nor parses Ollama JSON.
 
 ## Mapping
 
-| Core field/event    | Ollama wire mapping                                                        |
-| ------------------- | -------------------------------------------------------------------------- |
-| modelId             | `model`                                                                    |
-| messages            | Role/content; assistant `tool_calls`; tool `tool_name`                     |
-| tools               | Native `{ type: "function", function: { name, description, parameters } }` |
-| contextWindowTokens | `options.num_ctx`, always explicit                                         |
-| maxOutputTokens     | `options.num_predict`, always explicit                                     |
-| thinkingEnabled     | `think`, default false                                                     |
-| keepAliveSeconds    | Explicit `keep_alive`, default `"5m"`/equivalent duration                  |
-| streaming           | `stream: true`                                                             |
-| TextDelta           | `message.content` chunks                                                   |
-| ThinkingDelta       | `message.thinking` chunks, never historical messages                       |
-| Usage.inputTokens   | Final `prompt_eval_count`                                                  |
-| Usage.outputTokens  | Final `eval_count`                                                         |
-| Finished            | Final `done` / finish reason normalized into Complete, ToolCalls or Length |
+| Core field/event            | Ollama wire mapping                                                        |
+| --------------------------- | -------------------------------------------------------------------------- |
+| modelId                     | `model`                                                                    |
+| messages                    | Role/content; assistant `tool_calls`; tool `tool_name`                     |
+| tools                       | Native `{ type: "function", function: { name, description, parameters } }` |
+| contextWindowTokens         | `options.num_ctx`, always explicit                                         |
+| maxOutputTokens             | `options.num_predict`, always explicit                                     |
+| thinkingEnabled             | `think`, default false                                                     |
+| keepAliveSeconds            | Explicit `keep_alive`, default `"5m"`/equivalent duration                  |
+| streaming                   | `stream: true`                                                             |
+| TextDelta                   | `message.content` chunks                                                   |
+| ThinkingDelta               | `message.thinking` chunks, never historical messages                       |
+| Finished.usage.inputTokens  | Final `prompt_eval_count`                                                  |
+| Finished.usage.outputTokens | Final `eval_count`                                                         |
+| Finished                    | Final `done` / finish reason normalized into Complete, ToolCalls or Length |
 
 Risk/origin metadata is not sent as model tool schema. Provider assigns deterministic local call IDs when the wire format lacks them, retaining the same identity across complete fragments. Preserve valid assistant calls and matching tool-name results on continuation. Parse NDJSON across arbitrary byte boundaries, including split UTF-8, multiple lines/chunk and final no-newline records. Bound buffered records; transport/protocol errors are recoverable ErrorOccurred outcomes. Never execute a partially assembled call because generation was cancelled or length-limited.
 

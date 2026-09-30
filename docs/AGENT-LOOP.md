@@ -1,6 +1,6 @@
 # Agent execution state machine
 
-Status: **Proposed**. `Agent` is a contract; `AgentLoop` is not implemented in this phase.
+Status: **Accepted**. `Agent` is a contract; `AgentLoop` is not implemented in this phase.
 
 ## States
 
@@ -13,7 +13,7 @@ stateDiagram-v2
   Streaming --> Completed: complete answer without calls
   Streaming --> ValidatingTool: assembled call candidates
   ValidatingTool --> BuildingContext: repairable malformed/repeated call result
-  ValidatingTool --> Stopped: third malformed / third repeat / iteration limit
+  ValidatingTool --> Stopped: MalformedToolCall / RepeatedToolCall / IterationLimit
   ValidatingTool --> PreparingTool: validated call
   PreparingTool --> EvaluatingPolicy: immutable preview ready
   PreparingTool --> RecordingToolResult: preparation error
@@ -72,4 +72,4 @@ Ten attempted calls are the maximum; an eleventh is refused before preparation/e
 
 Stop aborts fetch, rejects pending approval, terminates a running command tree, cancels MCP calls where supported, marks streamed text partial and emits GenerationCancelled. Already-applied edits remain; cancellation is not rollback. The host discards later events for the old run. No unresolved calls are replayed on the next turn; cancelled pending valid calls receive a bounded cancellation result so native call/result framing remains complete.
 
-Folder switching or NewConversation cancels before disposing run resources. Settings changes do not affect the captured run. Guardrail failures fail closed. Hook programs are trusted executable configuration, so a pre-hook can itself have side effects even when the requested tool will be blocked; that accepted risk is explicit in ADR 008.
+Folder switching or NewConversation cancels before disposing run resources. At idle run start hash MCP/hook config, reload changed hooks/restart only changed servers and show ConfigurationReloaded. Never reload during a run. Settings changes do not affect the captured run. Guardrail failures fail closed. Hook programs are trusted executable configuration, so a pre-hook can itself have side effects even when the requested tool will be blocked; that accepted risk is explicit in ADR 008.

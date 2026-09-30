@@ -1,6 +1,6 @@
 # ADR 001: Inward dependencies
 
-Status: **Proposed**
+Status: **Accepted with review changes, 2026-09-30**
 
 ## Context
 
@@ -8,9 +8,9 @@ Kova is both a usable extension and an example of Clean Architecture. Platform, 
 
 ## Decision
 
-Use npm workspaces with `@kova/core`, `@kova/ollama`, `@kova/mcp`, `@kova/vscode`, `@kova/protocol` and `@kova/webview`. Core has zero external dependencies and no Node or DOM ambient types. Infrastructure imports Core. VS Code composes implementations. Protocol contains only JSON DTOs and type-only Core data imports. Webview depends on Protocol, React and Vite, without VS Code/Node/provider imports.
+Use npm workspaces with `@kova/core`, `@kova/ollama`, `@kova/mcp`, `@kova/vscode`, `@kova/protocol` and `@kova/webview`. Core has zero external dependencies and no Node or DOM ambient types. Infrastructure imports Core. VS Code composes implementations. Protocol defines self-contained JSON DTOs and imports **nothing from Core**, including type imports. The host explicitly maps Core values to protocol DTOs. Webview depends on Protocol, React and Vite, without VS Code/Node/provider imports.
 
-One public class or behavioral interface per file; implementation and interface separate. Group only cohesive DTOs. No dependency-injection framework, cross-package event bus or generic services package. Public barrel files may re-export; do not hide boundary violations behind them.
+One public class or behavioral interface per file; implementation and interface separate. Group only cohesive DTOs. Introduce interfaces at IO, process, model or UI boundaries, or for an actual test fake. Single-implementation pure policies, classifiers, evaluators, compactor and loader may be concrete classes. No speculative interfaces, dependency-injection framework, cross-package event bus or generic services package.
 
 ## Consequences
 

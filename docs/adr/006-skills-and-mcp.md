@@ -1,6 +1,6 @@
 # ADR 006: Selected skills and stdio MCP tools
 
-Status: **Proposed**
+Status: **Accepted with review changes, 2026-09-30**
 
 ## Context
 

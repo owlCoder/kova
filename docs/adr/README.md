@@ -1,6 +1,6 @@
 # Architecture Decision Records
 
-All decisions are **Proposed**. Accept them through the architecture review before implementing the runtime. A later ADR supersedes an accepted decision; do not silently rewrite its rationale.
+All decisions are **Accepted with the amendments in [REVIEW-CHANGES.md](../REVIEW-CHANGES.md)**. Implementation proceeds one milestone at a time. A later ADR supersedes an accepted decision; do not silently rewrite its rationale.
 
 | ADR                                         | Decision                                                         |
 | ------------------------------------------- | ---------------------------------------------------------------- |

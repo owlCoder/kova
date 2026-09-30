@@ -1,6 +1,6 @@
 # ADR 002: Provider-independent streaming
 
-Status: **Proposed**
+Status: **Accepted with review changes, 2026-09-30**
 
 ## Context
 

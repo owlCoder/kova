@@ -1,6 +1,6 @@
 # Architecture baseline
 
-Status: **Proposed — architecture review required before runtime implementation.** This delivers specification §41. Source contracts compile; adapters and application implementations described below are planned.
+Status: **Accepted with [review amendments](REVIEW-CHANGES.md), 2026-09-30.** This delivers specification §41. Source contracts compile; adapters and application implementations described below are planned.
 
 ## Dependency direction
 
@@ -13,10 +13,9 @@ flowchart BT
   V --> M
   V --> P["@kova/protocol · JSON DTOs"]
   W["@kova/webview · React presentation"] --> P
-  P -. "type-only data contracts" .-> C
 ```
 
-Arrows denote imports/dependencies. Core imports only Core. Protocol imports only Core data contracts, using `import type`; it contains no classes, functions or behavioral interfaces. Webview imports only Protocol and its UI libraries. Ollama and MCP cannot import one another or VS Code. VS Code is the only composition root. Root tooling is not part of the runtime graph.
+Arrows denote imports/dependencies. Core imports only Core. Protocol owns self-contained DTOs, imports nothing from Core, and contains no classes, functions or behavioral interfaces. Host maps between the two. Webview imports only Protocol and its UI libraries. Ollama and MCP cannot import one another or VS Code. VS Code is the only composition root. Root tooling is not part of the runtime graph.
 
 The one addition to the suggested repository is `packages/protocol`, justified by the host/UI boundary. Filesystem, process and VS Code tool adapters stay in `packages/vscode`; a separate generic infrastructure package is unnecessary at this size. No runtime dependency is installed during architecture review.
 
@@ -103,7 +102,7 @@ Each public class/behavioral interface lives alone in its file. Cohesive DTOs/un
 | `McpClient`                                                             | Start configured stdio servers and return normal tools               | MCP package                              |
 | `AgentEventSink`                                                        | Observability channel; no permission authority                       | Host projection + redacted Output logger |
 
-Provider/SDK JSON validation libraries are adapters, never Core dependencies. File tools remain in infrastructure because they perform platform IO through workspace ports; policy and orchestration remain in Core. The Core knows origin metadata for context accounting/observability, but execution is always through `Tool`, without origin-specific branches.
+Use interfaces only at real IO/process/model/UI boundaries or for actual test fakes; pure single-implementation policies, compactor and loader are concrete classes. Provider/SDK JSON validation libraries are adapters, never Core dependencies. File tools remain in infrastructure because they perform platform IO through workspace ports; policy and orchestration remain in Core. The Core knows origin metadata for context accounting/observability, but execution is always through `Tool`, without origin-specific branches.
 
 ## Composition and lifetime
 
@@ -111,7 +110,7 @@ The future extension activates on opening Kova (no hidden eager repository inges
 
 One run at a time per selected workspace. A busy host rejects a second submission. A run captures mode, model, active skill, context settings, configuration and tool definitions. Changes take effect on the next run, and cannot grant additional permissions during an existing run. New chat cancels the old run, removes its pending approval and starts empty history. Conversation storage lasts until extension shutdown; explicit new chat clears the active conversation.
 
-MCP initialization and hook configuration loading happen when a workspace session is initialized. Stdio MCP commands start without an extra trust dialog. Hook programs run at their configured lifecycle event, not merely because the configuration is read. Config changes become effective at the next session/config refresh after the current run, never midway through the approving run. Agent writes to executable configs remain protected.
+MCP initialization and hook configuration loading happen when a workspace session is initialized. Stdio MCP commands start without an extra trust dialog. Hook programs run at their configured lifecycle event, not merely because the configuration is read. At each idle run start, compare MCP/hook config content hashes. Reload changed hooks, restart only changed MCP servers, stop removed ones and emit ConfigurationReloaded. Never reload midway through a run. Agent writes to executable configs remain protected.
 
 Adapters translate cancellation to fetch abort, VS Code tokens, pending-approval rejection and process-tree termination. Disposal terminates MCP processes and process resources. Core receives only `CancellationToken`. Cancellation callbacks must also fire for already-cancelled tokens; `throwIfCancellationRequested()` uses one recognizable cancellation error, distinguished from failure by the adapter/Core boundary.
 

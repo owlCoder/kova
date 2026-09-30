@@ -1,6 +1,6 @@
 # ADR 008: Accepted risks, including no workspace trust prompt
 
-Status: **Proposed**
+Status: **Accepted with review changes, 2026-09-30**
 
 ## Context
 

@@ -1,6 +1,6 @@
 # ADR 003: Bounded context and conversation
 
-Status: **Proposed**
+Status: **Accepted with review changes, 2026-09-30**
 
 ## Context
 

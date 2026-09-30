@@ -1,6 +1,6 @@
 # ADR 007: Host-owned state and a JSON protocol
 
-Status: **Proposed**
+Status: **Accepted with review changes, 2026-09-30**
 
 ## Context
 
@@ -8,7 +8,7 @@ A Webview can reload while streaming or waiting for approval. React state cannot
 
 ## Decision
 
-Core emits `AgentEvent`; host projects into `PresentationEvent`, redacting payload summaries and keeping full diff documents in the host. Shared protocol version 1 uses JSON DTOs, request IDs, host-session IDs, sequence numbers, workspace IDs and run IDs. Ready returns an authoritative bounded snapshot. The UI discards stale-session/run events and resynchronizes on a sequence gap.
+Core emits `AgentEvent`; the host explicitly maps it to self-contained protocol DTOs, redacting payload summaries and keeping full diff documents in the host. Protocol has no Core imports, even type-only. Version 1 uses request IDs, host-session IDs, sequence numbers, workspace IDs and run IDs. Ready returns an authoritative bounded snapshot. The UI discards stale-session/run events and resynchronizes on a sequence gap.
 
 Host validates every incoming message, rejects unknown types/fields/oversized payloads and stale approval/run IDs, and owns all tool execution and lifecycle state. UI approval is an input to `ApprovalPort`, not a tool executor. Webview cannot contact Ollama, run a command, or provide arbitrary filesystem paths. Content renders as escaped text/Markdown with raw HTML disabled; CSP, local resources and nonces constrain scripts.
 

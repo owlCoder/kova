@@ -68,11 +68,11 @@ Canonical `.kova/hooks.json`:
 }
 ```
 
-Use executable + argv, active-root cwd and shell disabled. Maximum 20 hooks/event, default timeout 5 seconds, maximum 30 seconds, bounded stdin/output. JSON stdin contains lifecycle, tool name/ID, normalized relative path labels, risk and bounded status metadata; omit full file contents, previews, environment secrets and unrestricted argument/output dumps. Tool arguments passed to hooks are observational sanitized data only, never accepted back as replacement input.
+CommandHook runs through ProcessRunner outside run_command policy, as user-configured code. Use executable + argv, active-root cwd and shell disabled. Maximum 20 hooks/event, default timeout 5 seconds, maximum 30 seconds, bounded stdin/output. JSON stdin contains lifecycle, tool name/ID, normalized relative path labels, risk and bounded status metadata; omit full file contents, previews, environment secrets and unrestricted argument/output dumps. Tool arguments passed to hooks are observational sanitized data only, never accepted back as replacement input.
 
 Exit 0 observes. Before-hook exit 2 vetoes with bounded plain-text stdout reason. Other nonzero exit, timeout or malformed/unexpected output is a failed pre-hook and blocks the requested tool. After-hook exit 2/nonzero is reported as failure; no veto can change the already-completed execution. Stdout never expresses approval or new tool arguments. A hook can run arbitrary local code itself, an explicitly accepted trust risk; it is not executed through run_command or recursively through the tool loop.
 
-Config changes are read between runs/session refreshes; approved agent edits to config do not silently start new processes during the editing run. No extra workspace trust prompt is added. UI shows executable/argv, bounded reason/status and duration for every hook run. Output logs executable/argv, hook ID, outcome and duration; it excludes hook reason text, raw stdin, process output and secret file contents.
+At each idle run start compare hashes of both config files, reload changed hooks and only changed MCP servers, and show configuration reloaded; approved agent edits to config do not silently start new processes during the editing run. No extra workspace trust prompt is added. UI shows executable/argv, bounded reason/status and duration for every hook run. Output logs executable/argv, hook ID, outcome and duration; it excludes hook reason text, raw stdin, process output and secret file contents.
 
 ## ERS teaching example
 

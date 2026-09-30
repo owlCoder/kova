@@ -1,6 +1,6 @@
 # Extension host ↔ Webview protocol
 
-Status: **Proposed**, version **1**. Typed source is in `packages/protocol/src`. Runtime schema validation and message routing come in the foundation milestone.
+Status: **Accepted**, version **1**. Typed source is in `packages/protocol/src`. Protocol types are self-contained with no Core imports; the host maps Core values explicitly. Foundation implements chat intents; later-milestone intents are rejected as unavailable.
 
 ## Ownership
 
