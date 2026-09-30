@@ -8,10 +8,10 @@ Kova opens in the Activity Bar sidebar, with an optional editor tab. It can answ
 
 ## Providers
 
-| Provider | Default | API key | Notes |
-| --- | --- | --- | --- |
-| Ollama | `qwen3:4b` | No | Local-first default. Can run fully offline after the model is installed. |
-| DeepSeek | `deepseek-flash` | Yes | OpenAI-compatible API with DeepSeek thinking/tool-loop support. |
+| Provider          | Default                           | API key  | Notes                                                                    |
+| ----------------- | --------------------------------- | -------- | ------------------------------------------------------------------------ |
+| Ollama            | `qwen3:4b`                        | No       | Local-first default. Can run fully offline after the model is installed. |
+| DeepSeek          | `deepseek-flash`                  | Yes      | OpenAI-compatible API with DeepSeek thinking/tool-loop support.          |
 | OpenAI-compatible | First discovered/configured model | Optional | For compatible hosted or local endpoints such as vLLM-style deployments. |
 
 API keys are stored with VS Code `SecretStorage`, not in `settings.json`, workspace files or the repository.
@@ -45,12 +45,12 @@ Thinking/reasoning is displayed separately when supported and is not persisted i
 
 ## Modes
 
-| Mode | Behavior |
-| --- | --- |
-| Plan | Read-only tools. No edits or commands. |
-| Manual | Reads run automatically. Edits and commands require approval. |
-| Edit | Ordinary workspace edits run automatically. Commands require approval. |
-| Auto | Ordinary workspace edits and exact allowlisted commands run automatically. Other commands require approval. |
+| Mode   | Behavior                                                                                                    |
+| ------ | ----------------------------------------------------------------------------------------------------------- |
+| Plan   | Read-only tools. No edits or commands.                                                                      |
+| Manual | Reads run automatically. Edits and commands require approval.                                               |
+| Edit   | Ordinary workspace edits run automatically. Commands require approval.                                      |
+| Auto   | Ordinary workspace edits and exact allowlisted commands run automatically. Other commands require approval. |
 
 Protected configuration writes require approval in every mode. Destructive commands are blocked. Approvals apply once to the prepared operation; a file changed after preview requires a new preview.
 
@@ -68,23 +68,23 @@ The default context budget is 8,192 tokens, with 1,024 reserved for output and a
 
 Run **Kova: Open Settings** to change:
 
-| Setting | Default |
-| --- | --- |
-| `kova.provider` | `ollama` |
-| `kova.ollama.baseUrl` | `http://127.0.0.1:11434` |
-| `kova.ollama.model` | `qwen3:4b` |
-| `kova.ollama.think` | `false` |
-| `kova.ollama.keepAliveSeconds` | `300` |
-| `kova.deepseek.baseUrl` | `https://api.deepseek.com` |
-| `kova.deepseek.model` | `deepseek-flash` |
-| `kova.deepseek.think` | `false` |
-| `kova.openaiCompatible.baseUrl` | `http://127.0.0.1:8000/v1` |
-| `kova.openaiCompatible.model` | empty; use discovered model |
-| `kova.openaiCompatible.supportsTools` | `true` |
-| `kova.context.maxTokens` | `8192` |
-| `kova.context.reservedOutputTokens` | `1024` |
-| `kova.context.safetyMarginRatio` | `0.1` |
-| `kova.commands.allow` | Exact command list |
+| Setting                               | Default                     |
+| ------------------------------------- | --------------------------- |
+| `kova.provider`                       | `ollama`                    |
+| `kova.ollama.baseUrl`                 | `http://127.0.0.1:11434`    |
+| `kova.ollama.model`                   | `qwen3:4b`                  |
+| `kova.ollama.think`                   | `false`                     |
+| `kova.ollama.keepAliveSeconds`        | `300`                       |
+| `kova.deepseek.baseUrl`               | `https://api.deepseek.com`  |
+| `kova.deepseek.model`                 | `deepseek-flash`            |
+| `kova.deepseek.think`                 | `false`                     |
+| `kova.openaiCompatible.baseUrl`       | `http://127.0.0.1:8000/v1`  |
+| `kova.openaiCompatible.model`         | empty; use discovered model |
+| `kova.openaiCompatible.supportsTools` | `true`                      |
+| `kova.context.maxTokens`              | `8192`                      |
+| `kova.context.reservedOutputTokens`   | `1024`                      |
+| `kova.context.safetyMarginRatio`      | `0.1`                       |
+| `kova.commands.allow`                 | Exact command list          |
 
 Generic OpenAI-compatible thinking is disabled because reasoning wire formats are not standardized. Auto allowlisting matches the whole command; chaining, pipes, redirection, substitutions and backticks never match.
 
