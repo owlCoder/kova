@@ -17,6 +17,8 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      - run: npx prettier --write packages/vscode/src/extension/ContextAttachmentManager.ts tests/unit/openai-compatible.test.ts webview/src/components/ChatFooter.tsx
+      - run: git diff -- packages/vscode/src/extension/ContextAttachmentManager.ts tests/unit/openai-compatible.test.ts webview/src/components/ChatFooter.tsx
       - run: npm run check
       - run: npm run package
       - run: npm run verify:package
