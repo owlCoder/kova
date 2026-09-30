@@ -8,10 +8,10 @@ Kova opens in the Activity Bar sidebar, with an optional editor tab. It can answ
 
 ## Providers
 
-| Provider          | Default                           | API key  | Notes                                                                     |
-| ----------------- | --------------------------------- | -------- | ------------------------------------------------------------------------- |
-| Ollama            | `qwen3:4b`                        | No       | Local-first default. Can run fully offline after the model is installed.  |
-| DeepSeek          | `deepseek-flash`                  | Yes      | OpenAI-compatible API with DeepSeek thinking/tool-loop support.           |
+| Provider          | Default                           | API key  | Notes                                                                    |
+| ----------------- | --------------------------------- | -------- | ------------------------------------------------------------------------ |
+| Ollama            | `qwen3:4b`                        | No       | Local-first default. Can run fully offline after the model is installed. |
+| DeepSeek          | `deepseek-flash`                  | Yes      | OpenAI-compatible API with DeepSeek thinking/tool-loop support.          |
 | OpenAI-compatible | First discovered/configured model | Optional | For compatible hosted or local endpoints such as vLLM-style deployments. |
 
 API keys are stored with VS Code `SecretStorage`, not in `settings.json`, workspace files or the repository.
