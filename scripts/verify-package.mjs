@@ -66,13 +66,19 @@ for (const command of [
   'kova.setProviderApiKey',
   'kova.clearProviderApiKey',
 ])
-  assert(manifest.contributes.commands.some((item) => item.command === command), `Missing ${command}`);
+  assert(
+    manifest.contributes.commands.some((item) => item.command === command),
+    `Missing ${command}`,
+  );
 assert(manifest.activationEvents.includes('onCommand:kova.open'));
 const readme = contents('readme.md').toString('utf8');
 assert.match(readme, /Ollama/);
 assert.match(readme, /DeepSeek/);
 assert.match(readme, /OpenAI-compatible/);
-assert.match(contents('changelog.md').toString('utf8'), new RegExp(`## ${manifest.version.replaceAll('.', '\\.')}`));
+assert.match(
+  contents('changelog.md').toString('utf8'),
+  new RegExp(`## ${manifest.version.replaceAll('.', '\\.')}`),
+);
 const icon = contents(manifest.icon);
 assert(icon.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])));
 assert(icon.readUInt32BE(16) >= 128 && icon.readUInt32BE(20) >= 128);
