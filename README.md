@@ -8,10 +8,10 @@ Kova opens in the Activity Bar sidebar, with an optional editor tab. It can answ
 
 ## Providers
 
-| Provider          | Default                           | API key  | Notes                                                                    |
-| ----------------- | --------------------------------- | -------- | ------------------------------------------------------------------------ |
-| Ollama            | `qwen3:4b`                        | No       | Local-first default. Can run fully offline after the model is installed. |
-| DeepSeek          | `deepseek-flash`                  | Yes      | OpenAI-compatible API with DeepSeek thinking/tool-loop support.          |
+| Provider          | Default                           | API key  | Notes                                                                     |
+| ----------------- | --------------------------------- | -------- | ------------------------------------------------------------------------- |
+| Ollama            | `qwen3:4b`                        | No       | Local-first default. Can run fully offline after the model is installed.  |
+| DeepSeek          | `deepseek-flash`                  | Yes      | OpenAI-compatible API with DeepSeek thinking/tool-loop support.           |
 | OpenAI-compatible | First discovered/configured model | Optional | For compatible hosted or local endpoints such as vLLM-style deployments. |
 
 API keys are stored with VS Code `SecretStorage`, not in `settings.json`, workspace files or the repository.
@@ -122,13 +122,16 @@ Local integration checks are `smoke:ollama`, `smoke:vscode`, `smoke:vsix` and `s
 
 ## Marketplace publishing
 
-A publish always builds and verifies a fresh VSIX first. With a Marketplace PAT available only in your environment:
+Publishing is intentionally manual. Build and verify the exact archive you intend to upload:
 
 ```sh
-VSCE_PAT=... npm run publish:vsix
+npm ci
+npm run check
+npm run package
+npm run verify:package
 ```
 
-`VSCE_PAT` is consumed by `@vscode/vsce`; the publish script never writes it to the repository. The repository also includes a manually triggered **Publish Marketplace extension** GitHub Actions workflow. Configure the repository secret `VSCE_PAT`, then run that workflow when the release is ready.
+Then upload `dist/kova-local-0.3.0.vsix` through the Visual Studio Marketplace publisher management portal for publisher `owlcoder`. No Marketplace PAT, repository secret or automatic publish workflow is required.
 
 [Setup](https://github.com/owlCoder/kova/blob/main/docs/SETUP.md) · [Providers](https://github.com/owlCoder/kova/blob/main/docs/PROVIDERS.md) · [Architecture](https://github.com/owlCoder/kova/blob/main/docs/ARCHITECTURE.md) · [Marketplace release](https://github.com/owlCoder/kova/blob/main/docs/MARKETPLACE.md) · [Release checks](https://github.com/owlCoder/kova/blob/main/docs/TESTING.md)
 

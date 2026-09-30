@@ -22,7 +22,6 @@
     "check": "npm run typecheck && npm run lint && npm run format:check && npm test",
     "build": "node scripts/build.mjs",
     "package": "node scripts/package.mjs",
-    "publish:vsix": "node scripts/publish-vsix.mjs",
     "smoke:ollama": "node scripts/smoke-ollama.mjs",
     "smoke:vscode": "node scripts/smoke-vscode.mjs",
     "smoke:ers": "node scripts/smoke-ers.mjs",

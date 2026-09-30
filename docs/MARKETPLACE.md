@@ -40,29 +40,18 @@ The verifier checks required package files, manifest identity, provider settings
 
 For local installations, uninstall the previous development extension `owlcoder.kova` before installing `owlcoder.kova-local`. They use the same commands and view IDs and must not run together. Existing `kova.*` settings and workspace `.kova` configuration continue to apply.
 
-## Publish from a workstation
+## Publish manually
 
-A publish command builds and verifies a fresh archive before invoking `@vscode/vsce`:
+Marketplace publication is intentionally manual. After the release checks are green:
 
-```sh
-VSCE_PAT=... npm run publish:vsix
-```
+1. Confirm `packages/vscode/extension.package.json` has the intended version and `CHANGELOG.md` contains the matching entry.
+2. Run `npm run package` and `npm run verify:package` from a clean checkout.
+3. Optionally run `npm run smoke:vsix` on the release machine.
+4. Open the Visual Studio Marketplace publisher management portal and select publisher `owlcoder`.
+5. Upload `dist/kova-local-0.3.0.vsix`.
+6. Confirm the Marketplace page shows the expected version, README, changelog, icon and provider metadata.
 
-`VSCE_PAT` is read from the process environment by `vsce`; do not pass it as a command-line argument, commit it, paste it into settings, or store it in a repository file.
-
-The Marketplace account represented by the PAT must have permission to publish under `owlcoder`. The publish command uses the already-built VSIX through `vsce publish --packagePath`, so the reviewed archive is the archive that is uploaded.
-
-## Publish from GitHub Actions
-
-The repository contains `.github/workflows/publish.yml`. It is intentionally `workflow_dispatch` only: publishing never occurs on an ordinary push to `main`.
-
-1. Add `VSCE_PAT` as an encrypted repository secret.
-2. Confirm `packages/vscode/extension.package.json` has the intended new version and CHANGELOG entry.
-3. Confirm the normal **Kova checks** workflow is green on `main`.
-4. Manually run **Publish Marketplace extension**.
-5. Confirm the Marketplace page shows the expected version, README, changelog, icon and provider metadata.
-
-The workflow has read-only repository permissions. The PAT is exposed only to the publish step through the environment.
+No `VSCE_PAT`, repository secret or automatic publish workflow is required for this release process.
 
 ## Release checklist
 
@@ -78,4 +67,4 @@ Before publishing a new version:
 - No API keys, `.env` files, workspace `.kova` data, source maps, tests or source trees are present in the VSIX.
 - Native Windows/Linux checks are run before claiming those platforms as verified.
 
-References: [publishing extensions](https://code.visualstudio.com/api/working-with-extensions/publishing-extension), [continuous integration and publishing](https://code.visualstudio.com/api/working-with-extensions/continuous-integration), [extension manifest](https://code.visualstudio.com/api/references/extension-manifest).
+References: [publishing extensions](https://code.visualstudio.com/api/working-with-extensions/publishing-extension), [extension manifest](https://code.visualstudio.com/api/references/extension-manifest).
