@@ -1,8 +1,5 @@
 import type { CancellationToken } from '../../../core/src/common/CancellationToken.js';
-import type {
-  CapabilitySupport,
-  ModelInfo,
-} from '../../../core/src/models/ModelInfo.js';
+import type { CapabilitySupport, ModelInfo } from '../../../core/src/models/ModelInfo.js';
 import { OpenAiCompatibleConnection } from './OpenAiCompatibleConnection.js';
 
 export class OpenAiCompatibleModelCatalog {

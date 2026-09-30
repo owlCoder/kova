@@ -74,7 +74,9 @@ export class ContextAttachmentManager {
       new CancellationSource(),
     );
     const content =
-      source === 'Selection' ? editor.document.getText(editor.selection) : editor.document.getText();
+      source === 'Selection'
+        ? editor.document.getText(editor.selection)
+        : editor.document.getText();
     if (!content || content.length > 100_000)
       throw new Error('Select a nonempty text range under 100,000 characters.');
     this.attachments.push({ id: randomUUID(), source, label: path.relativePath, content });

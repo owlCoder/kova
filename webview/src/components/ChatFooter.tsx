@@ -240,7 +240,9 @@ export function ChatFooter({
         </details>
       )}
       <div className="footer-note">
-        <span className={`status-dot ${snapshot?.providerStatus === 'Available' ? 'online' : ''}`} />
+        <span
+          className={`status-dot ${snapshot?.providerStatus === 'Available' ? 'online' : ''}`}
+        />
         {snapshot?.toolsEnabled ? 'Tools enabled' : 'Chat only'}
         <span>Enter to send</span>
       </div>

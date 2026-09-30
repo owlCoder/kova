@@ -111,7 +111,7 @@ describe('OpenAI-compatible provider', () => {
     });
   });
 
-  it('replays transient DeepSeek reasoning across tool turns without persisting wire ids', async () => {
+  it('replays transient DeepSeek reasoning across tool turns', async () => {
     const bodies: Record<string, unknown>[] = [];
     let call = 0;
     const fetcher = vi.fn<typeof fetch>(async (_url, init) => {

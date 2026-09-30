@@ -8,10 +8,7 @@
   "engines": {
     "vscode": "^1.100.0"
   },
-  "categories": [
-    "Machine Learning",
-    "Other"
-  ],
+  "categories": ["Machine Learning", "Other"],
   "repository": {
     "type": "git",
     "url": "https://github.com/owlCoder/kova.git"
@@ -88,11 +85,7 @@
       "properties": {
         "kova.provider": {
           "type": "string",
-          "enum": [
-            "ollama",
-            "deepseek",
-            "openaiCompatible"
-          ],
+          "enum": ["ollama", "deepseek", "openaiCompatible"],
           "default": "ollama",
           "description": "LLM provider. Ollama remains the local-first default."
         },
@@ -201,9 +194,7 @@
     "color": "#17191d",
     "theme": "dark"
   },
-  "extensionKind": [
-    "workspace"
-  ],
+  "extensionKind": ["workspace"],
   "files": [
     "extension.cjs",
     "extension.cjs.LEGAL.txt",
