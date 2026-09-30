@@ -92,9 +92,7 @@ export function ChatFooter({
           <select
             value={snapshot.activeSkillId ?? ''}
             disabled={busy}
-            onChange={(event) =>
-              send({ type: 'SelectSkill', skillId: event.target.value || null })
-            }
+            onChange={(event) => send({ type: 'SelectSkill', skillId: event.target.value || null })}
           >
             <option value="">None</option>
             {snapshot.skills.map((skill) => (
