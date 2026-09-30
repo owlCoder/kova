@@ -36,6 +36,21 @@ assert.equal(manifest.publisher, 'owlcoder');
 assert.equal(manifest.version, extensionManifest.version);
 assert.equal(manifest.license, 'MIT');
 assert.equal(manifest.icon, 'media/logo.png');
+assert.match(manifest.displayName, /Local-first/);
+assert.match(manifest.description, /Ollama/);
+assert.match(manifest.description, /DeepSeek/);
+assert.deepEqual(manifest.contributes.configuration.properties['kova.provider'].enum, [
+  'ollama',
+  'deepseek',
+  'openaiCompatible',
+]);
+assert.equal(manifest.contributes.configuration.properties['kova.provider'].default, 'ollama');
+assert(
+  !Object.keys(manifest.contributes.configuration.properties).some((key) =>
+    key.toLowerCase().includes('apikey'),
+  ),
+  'API keys must not be declared as plaintext settings',
+);
 assert.equal(manifest.contributes.viewsContainers.activitybar[0].icon, 'media/activity-icon.svg');
 const activityIcon = contents('media/activity-icon.svg').toString('utf8');
 assert(activityIcon.includes('mask-type:luminance'));
@@ -45,9 +60,19 @@ assert(
   ),
 );
 assert.equal(manifest.contributes.views.kova[0].id, 'kova.chat');
-assert(manifest.contributes.commands.some(({ command }) => command === 'kova.open'));
-assert(manifest.contributes.commands.some(({ command }) => command === 'kova.openInEditor'));
+for (const command of [
+  'kova.open',
+  'kova.openInEditor',
+  'kova.setProviderApiKey',
+  'kova.clearProviderApiKey',
+])
+  assert(manifest.contributes.commands.some((item) => item.command === command), `Missing ${command}`);
 assert(manifest.activationEvents.includes('onCommand:kova.open'));
+const readme = contents('readme.md').toString('utf8');
+assert.match(readme, /Ollama/);
+assert.match(readme, /DeepSeek/);
+assert.match(readme, /OpenAI-compatible/);
+assert.match(contents('changelog.md').toString('utf8'), new RegExp(`## ${manifest.version.replaceAll('.', '\\.')}`));
 const icon = contents(manifest.icon);
 assert(icon.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])));
 assert(icon.readUInt32BE(16) >= 128 && icon.readUInt32BE(20) >= 128);
@@ -63,5 +88,5 @@ for (const name of ['logo.png', 'logo_mono.png'])
   );
 execFileSync(process.execPath, ['--check', resolve('dist/extension/extension.cjs')]);
 console.log(
-  `PASS VSIX: ${entries.length} entries, valid manifest/icons, original logos, bundled runtime, license notices and no development/secret files.`,
+  `PASS VSIX: ${entries.length} entries, provider-aware manifest/README, original logos, bundled runtime, license notices and no development/secret files.`,
 );

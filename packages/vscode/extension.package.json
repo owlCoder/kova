@@ -1,8 +1,8 @@
 {
   "name": "kova-local",
-  "displayName": "Kova — Local Coding Agent",
-  "description": "Local-first coding assistant for VS Code with Ollama and optional API providers",
-  "version": "0.2.0",
+  "displayName": "Kova — Local-first AI Coding Agent",
+  "description": "Local-first AI coding agent for VS Code with Ollama, DeepSeek and OpenAI-compatible providers",
+  "version": "0.3.0",
   "publisher": "owlcoder",
   "license": "MIT",
   "engines": {
@@ -117,7 +117,7 @@
         "kova.deepseek.model": {
           "type": "string",
           "default": "deepseek-flash",
-          "description": "DeepSeek model ID. deepseek-flash currently serves DeepSeek V4.1 Flash."
+          "description": "Default DeepSeek model ID."
         },
         "kova.deepseek.think": {
           "type": "boolean",
@@ -182,11 +182,14 @@
   },
   "icon": "media/logo.png",
   "keywords": [
+    "ai agent",
+    "coding assistant",
     "ollama",
+    "qwen",
+    "qwen3",
     "deepseek",
     "openai compatible",
     "local ai",
-    "coding assistant",
     "offline",
     "mcp"
   ],

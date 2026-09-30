@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.3.0
+
+- Add multi-provider model support while keeping Ollama as the local-first default.
+- Add DeepSeek streaming, model discovery, tool calls, usage reporting and provider-specific thinking support.
+- Add generic OpenAI-compatible `/models` and Chat Completions support for hosted or local endpoints.
+- Store API credentials only in VS Code `SecretStorage`, with commands to set and clear the selected provider key.
+- Preserve DeepSeek `reasoning_content` only as transient in-memory state when a thinking + tool-call continuation requires it.
+- Separate provider composition, API transport, context attachment handling and Webview footer rendering into focused modules.
+- Enforce a 500-line runtime TypeScript/TSX source limit and retain the one-public-behavior-per-file architecture check.
+- Update README, setup and Marketplace copy for local and API-provider workflows.
+- Add a verified VSIX publish command and a manually triggered Marketplace publish workflow using `VSCE_PAT`.
+- Bump the Marketplace extension package to `0.3.0` and refresh provider-focused metadata and keywords.
+
 ## 0.2.0
 
 - Use the Marketplace package name `kova-local`; retain Kova as the displayed product name.
