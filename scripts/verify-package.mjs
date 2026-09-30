@@ -31,6 +31,7 @@ assert(
   'Development files in VSIX',
 );
 const manifest = JSON.parse(contents('package.json').toString('utf8'));
+assert.equal(manifest.name, extensionManifest.name);
 assert.equal(manifest.publisher, 'owlcoder');
 assert.equal(manifest.version, extensionManifest.version);
 assert.equal(manifest.license, 'MIT');

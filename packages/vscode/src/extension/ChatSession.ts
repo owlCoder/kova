@@ -333,7 +333,10 @@ export class ChatSession {
         await this.approval.openDiff(message.approvalId);
         break;
       case 'OpenSettings':
-        await vscode.commands.executeCommand('workbench.action.openSettings', '@ext:owlcoder.kova');
+        await vscode.commands.executeCommand(
+          'workbench.action.openSettings',
+          `@ext:${this.context.extension.id}`,
+        );
         break;
       case 'OpenSetupInstructions':
         await vscode.commands.executeCommand(

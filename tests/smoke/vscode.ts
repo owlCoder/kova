@@ -28,7 +28,7 @@ export async function run() {
   const extension = vscode.extensions.getExtension<{
     session: ChatSession;
     sidebar: KovaViewProvider;
-  }>('owlcoder.kova');
+  }>('owlcoder.kova-local');
   assert(extension, 'Extension installed in development host');
   const api = await extension.activate();
   assert((await vscode.commands.getCommands(true)).includes('kova.open'));

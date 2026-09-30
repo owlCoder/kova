@@ -80,7 +80,7 @@ npm run package
 npm run verify:package
 ```
 
-Press F5 in VS Code to launch the development extension. Packaging writes `dist/kova-<version>.vsix`, using the version in the extension manifest. The current release is `0.2.0`. Local integration checks are `smoke:ollama`, `smoke:vscode`, `smoke:vsix` and `smoke:ers`.
+Press F5 in VS Code to launch the development extension. Packaging writes `dist/kova-local-<version>.vsix`, using the name and version in the extension manifest. The extension identifier is `owlcoder.kova-local`; the current release is `0.2.0`. Local integration checks are `smoke:ollama`, `smoke:vscode`, `smoke:vsix` and `smoke:ers`.
 
 [Setup](https://github.com/owlCoder/kova/blob/main/docs/SETUP.md) · [Architecture](https://github.com/owlCoder/kova/blob/main/docs/ARCHITECTURE.md) · [Release checks](https://github.com/owlCoder/kova/blob/main/docs/TESTING.md)
 

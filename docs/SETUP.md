@@ -16,6 +16,6 @@ Attach a selection, current file or chosen files with **+**. While either chat v
 
 Use trusted projects. `.kova/mcp.json` can start local servers and `.kova/hooks.json` can execute local hooks without an additional Kova trust prompt. These processes use your user privileges. Protected configuration writes always require approval.
 
-For source development, run `npm ci`, `npm run check` and `npm run build`, then press F5 in VS Code. `npm run package` creates `dist/kova-0.2.0.vsix`; the filename follows the extension manifest version. Run `npm run verify:package` to inspect the archive and `npm run smoke:vsix` to test an isolated installation.
+For source development, run `npm ci`, `npm run check` and `npm run build`, then press F5 in VS Code. `npm run package` creates `dist/kova-local-0.2.0.vsix`; the filename follows the extension manifest name and version. Run `npm run verify:package` to inspect the archive and `npm run smoke:vsix` to test an isolated installation.
 
 For tool use with the supplied Qwen3 installation, enable Thinking. The local Ollama 0.35.0/Qwen3 combination produced reasoning as ordinary text and reached its output limit with `think: false`; `think: true` returned native tool calls. Kova preserves the requested setting and does not execute tool-like text.

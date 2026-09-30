@@ -2,6 +2,7 @@
 
 ## 0.2.0
 
+- Use the Marketplace package name `kova-local`; retain Kova as the displayed product name.
 - Redesign the sidebar with readable model/mode controls, a larger composer and compact activity rows.
 - Keep the sidebar as the default chat view and add **Kova: Open Chat in Editor** for a movable editor tab.
 - Share session conversation between the sidebar and editor tab; reuse the existing tab when opening it again.

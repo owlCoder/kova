@@ -1,5 +1,5 @@
 {
-  "name": "kova",
+  "name": "kova-local",
   "displayName": "Kova \u2014 Local Coding Agent",
   "description": "Local coding assistant for VS Code using Ollama",
   "version": "0.2.0",

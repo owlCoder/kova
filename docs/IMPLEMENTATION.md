@@ -50,6 +50,7 @@ Shared-view synchronization now snapshots the active prompt and bounded partial 
 
 Current release verification:
 
+- The first Marketplace upload rejected the package name `kova` as already registered. The distribution name is now `kova-local` (`owlcoder.kova-local`); commands, settings and workspace configuration keep the `kova` prefix. Settings links resolve the active extension's actual identifier. The native manual checks below preceded this identity change; no second copy was installed in the user's profile.
 - `npm run check`: strict typechecks, lint, formatting and 158 tests in 14 files pass, including 30 architecture tests and five host synchronization tests.
 - `npm run package` and `npm run verify:package`: 0.2.0 archive passes manifest, icon, original PNG hash, bundle and license checks; development files and secrets are excluded.
 - Installed the VSIX in the user's existing macOS VS Code profile. The sidebar opens, the new logo renders without a solid square, and the user verified it in both themes. The application stayed open; one window reload applied the icon contribution.

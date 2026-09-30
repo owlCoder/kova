@@ -38,7 +38,10 @@ export function activate(context: vscode.ExtensionContext) {
       await vscode.commands.executeCommand('kova.open');
     }),
     vscode.commands.registerCommand('kova.settings', () =>
-      vscode.commands.executeCommand('workbench.action.openSettings', '@ext:owlcoder.kova'),
+      vscode.commands.executeCommand(
+        'workbench.action.openSettings',
+        `@ext:${context.extension.id}`,
+      ),
     ),
   );
   return { session, sidebar };

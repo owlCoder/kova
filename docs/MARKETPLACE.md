@@ -1,6 +1,6 @@
 # Release and Marketplace
 
-Extension: `owlcoder.kova`, version `0.2.0`, MIT. Chat opens in the sidebar by default, with an optional movable editor tab. The color logo is used for the package icon and Webview. The Activity Bar uses an SVG luminance mask of the supplied monochrome logo, allowing its color to follow the theme. Both supplied PNG logos are included unchanged.
+Extension: `owlcoder.kova-local`, version `0.2.0`, MIT. The package name is `kova-local` because `kova` was rejected as already registered in the Marketplace. The displayed product name remains Kova. Chat opens in the sidebar by default, with an optional movable editor tab. The color logo is used for the package icon and Webview. The Activity Bar uses an SVG luminance mask of the supplied monochrome logo, allowing its color to follow the theme. Both supplied PNG logos are included unchanged.
 
 The VSIX is prepared for distribution and has not been published to the Marketplace. Repository visibility and Marketplace publication are separate operations.
 
@@ -14,7 +14,9 @@ npm run verify:package
 npm run smoke:vsix
 ```
 
-The package is written to `dist/kova-0.2.0.vsix`. Build, verification and smoke scripts derive this filename from `packages/vscode/extension.package.json`. Packaging removes older Kova VSIX files from `dist`; the production extension directory is rebuilt from scratch.
+The package is written to `dist/kova-local-0.2.0.vsix`. Build, verification and smoke scripts derive this filename from `packages/vscode/extension.package.json`. Packaging removes older archives with the same package name from `dist`; the production extension directory is rebuilt from scratch.
+
+For local installations, uninstall the previous development extension `owlcoder.kova` before installing `owlcoder.kova-local`. They use the same commands and view IDs and must not run together. Existing `kova.*` settings and workspace `.kova` configuration continue to apply.
 
 The verifier checks the manifest, sidebar and editor commands, original logo hashes, bundled runtime, license notices and absence of development files. CI runs deterministic checks, builds the VSIX and uploads it as an artifact. Local smoke checks require installed VS Code and Ollama.
 
