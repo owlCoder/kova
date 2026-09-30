@@ -29,15 +29,14 @@ const request: ChatRequest = {
 
 function stream(records: readonly unknown[]): Response {
   const text =
-    records
-      .map((record) => `data: ${JSON.stringify(record)}\n\n`)
-      .join('') + 'data: [DONE]\n\n';
+    records.map((record) => `data: ${JSON.stringify(record)}\n\n`).join('') + 'data: [DONE]\n\n';
   return new Response(text, { headers: { 'Content-Type': 'text/event-stream' } });
 }
 
 async function collect(provider: OpenAiCompatibleLlmProvider, input: ChatRequest = request) {
   const events = [];
-  for await (const event of provider.streamChat(input, new CancellationSource())) events.push(event);
+  for await (const event of provider.streamChat(input, new CancellationSource()))
+    events.push(event);
   return events;
 }
 
@@ -183,20 +182,17 @@ describe('OpenAI-compatible provider', () => {
 
   it('discovers remote models with provider capabilities and context size', async () => {
     const catalog = new OpenAiCompatibleModelCatalog(
-      new OpenAiCompatibleConnection(
-        'https://api.deepseek.com',
-        'secret',
-        async () =>
-          Response.json({
-            object: 'list',
-            data: [
-              {
-                id: 'deepseek-flash',
-                name: 'DeepSeek-V4.1-Flash',
-                context_window: 1_048_576,
-              },
-            ],
-          }),
+      new OpenAiCompatibleConnection('https://api.deepseek.com', 'secret', async () =>
+        Response.json({
+          object: 'list',
+          data: [
+            {
+              id: 'deepseek-flash',
+              name: 'DeepSeek-V4.1-Flash',
+              context_window: 1_048_576,
+            },
+          ],
+        }),
       ),
       'Supported',
       'Supported',
