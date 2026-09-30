@@ -1,6 +1,6 @@
 # Implementation and acceptance evidence
 
-Implemented on 2026-09-30 after architecture approval and the user's authorization to complete all milestones without intermediate stops. The original pasted specification remains unchanged. The approved changes were applied to docs/ADRs in commit `1de4254` before runtime implementation.
+Initial implementation verified on 2026-09-30. The original pasted specification remains unchanged. The approved changes were applied to docs/ADRs in commit `1de4254` before runtime implementation.
 
 ## Delivered
 
@@ -8,7 +8,7 @@ All seven milestones are represented in the extension: local chat/context/thinki
 
 | Milestone | Verified acceptance criteria and method                                                                                                                                                                                                                                                           | Deviations / remaining risk                                                                                                                                                              |
 | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1         | Real `qwen3:4b` discovery and streamed answer; real generation cancellation; separate thinking and measured usage; exact num_ctx=8192/think/keep_alive payload assertions; native VS Code sidebar activation and context events; Core/protocol architecture checks                                | Token estimation is heuristic. Local Qwen3 with think:false can emit reasoning as content and exhaust output; the model-driven tool demo enables Thinking.                               |
+| 1         | Real `qwen3:4b` discovery and streamed answer; real generation cancellation; separate thinking and measured usage; exact num_ctx=8192/think/keep_alive payload assertions; native VS Code activation and context events; Core/protocol architecture checks                                        | Token estimation is heuristic. Local Qwen3 with think:false can emit reasoning as content and exhaust output; the model-driven tool demo enables Thinking.                               |
 | 2         | Four read tools tested on temporary workspaces; native-call/result continuation, schema/unknown rejection, two repairs, repeat suppression/third stop and hard limit of 10 attempts tested with fake providers; real ERS MCP diff call                                                            | Text that resembles a tool call is never executed. Model selection and review quality remain probabilistic.                                                                              |
 | 3         | Containment, absolute paths, traversal, external/protected/dangling symlinks, exact match counts and stale versions tested; native WorkspaceEdit create/replace, editor Undo and denied approval verified in actual VS Code                                                                       | Stale writes return StaleContent and require another tool request/preview. Editor edits can remain dirty; Save is controlled by VS Code/user. Residual OS races remain an accepted risk. |
 | 4         | Required frontmatter/name/description, unsafe/duplicate/oversized metadata and explicit load/clear tested; only the selected skill body enters context; real ERS review emits SkillLoaded                                                                                                         | Minimal plain frontmatter parser; arbitrary YAML and compatibility directories are intentionally unsupported.                                                                            |
@@ -16,7 +16,7 @@ All seven milestones are represented in the extension: local chat/context/thinki
 | 6         | Complete mode/risk matrix, compound-command allowlist exclusion, fail-closed pre-hooks, immutable observational input, post-hook failure/cancellation preserving results, final guardrail recheck, approval escalation in Auto, timeout/process-tree cleanup and idle configuration reload tested | Command classification is heuristic; allowed project scripts can have arbitrary effects. Hooks run directly via ProcessRunner as trusted configuration.                                  |
 | 7         | Actual ERS structure/diff and approval-gated unit-test calls; nine .NET tests pass; pre/post hooks observe; rm -rf ., force push and sensitive-file requests are blocked before execution; real Qwen3 selected-skill review consumes MCP results                                                  | Baseline tracked diff was empty, so the observed review reports no code changes. This verifies the integration, not its ability to identify arbitrary bugs.                              |
 
-## Observed local checks
+## 0.1.0 baseline verification
 
 - `npm run check`: strict project/Core typecheck, ESLint, Prettier and the full deterministic suite (153 tests in 13 files, including 30 architecture tests) pass. Architecture checks remain mandatory.
 - `npm run package` and `npm run verify:package`: installable 0.1.0 VSIX, original logos, publisher owlcoder, MIT, bundled code and 16 dependency license notices; no source maps, node_modules, tests, project configs or secrets in the package.
@@ -24,7 +24,7 @@ All seven milestones are represented in the extension: local chat/context/thinki
 - `npm run smoke:vscode` / `npm run smoke:vsix`: actual VS Code activation, native editor behavior and Webview resync without mid-run config reload pass; the VSIX was installed in a separate profile and tested from its installed directory.
 - `dotnet build EquipmentReservation.sln --configuration Release` and `dotnet test ... --no-build`: build succeeds with zero warnings/errors; 9 tests pass.
 - `npm run smoke:ers`: actual ERS tools, hooks, guardrail executable and local-model review pass. This opt-in test uses 8192 context, 2048 output reserve and Thinking enabled.
-- Webview preview: supplied logo renders, sidebar layout/text fit, browser console has no warnings/errors. Native host behavior is verified separately above.
+- Webview preview: supplied logo renders, Webview layout and text fit, browser console has no warnings/errors. Native host behavior is verified separately above.
 
 Real ERS review evidence:
 
@@ -38,7 +38,25 @@ Real ERS review evidence:
 }
 ```
 
-The actual example is `/Users/danijel/Desktop/ers/ers-motion-web/examples/ers-ai-workflow`. Only Kova configuration, the canonical review skill, audit hook and optional guardrail setting were added; ERS business source is untouched. Reusable templates are under `examples/ers`.
+The actual example is `ers-motion-web/examples/ers-ai-workflow`. Only Kova configuration, the canonical review skill, audit hook and optional guardrail setting were added; ERS business source is untouched. Reusable templates are under `examples/ers`.
+
+## 0.2.0 changes
+
+Chat opens in the sidebar by default. Kova: Open Chat in Editor opens or focuses a movable tab sharing the same session conversation. Closing the editor tab cancels active work; hiding the sidebar does not. Reopening either view restores session history. File attachments retain the most recently active file editor. Both logos are replaced with the supplied originals. Packaging derives filenames from the extension manifest and rebuilds the extension output directory from scratch.
+
+Run the release checks in [TESTING.md](TESTING.md) and [MARKETPLACE.md](MARKETPLACE.md) for the updated package. The baseline results above describe 0.1.0 and do not substitute for those checks.
+
+Shared-view synchronization now snapshots the active prompt and bounded partial response while streaming, preserving the run's captured thinking/context settings. Idle initialization is serialized before submission, and a closed view cannot interrupt delivery to another view. Five deterministic host tests and 30 architecture tests pass, alongside strict typecheck and focused lint. These tests use fake Ollama HTTP streams and a controlled runtime boundary; they do not launch VS Code.
+
+Current release verification:
+
+- `npm run check`: strict typechecks, lint, formatting and 158 tests in 14 files pass, including 30 architecture tests and five host synchronization tests.
+- `npm run package` and `npm run verify:package`: 0.2.0 archive passes manifest, icon, original PNG hash, bundle and license checks; development files and secrets are excluded.
+- Installed the VSIX in the user's existing macOS VS Code profile. The sidebar opens, the new logo renders without a solid square, and the user verified it in both themes. The application stayed open; one window reload applied the icon contribution.
+- Manual native checks with local `qwen3:4b`: streamed content, measured input/output (405/150 tokens), shared completed history, prompt and active response synchronization between sidebar/editor, Stop from the other view, retained partial response and visible cancellation, and New conversation clearing both views. Current-file attachments resolve the active README editor; adding/removing context preserves a newly selected Manual mode after an earlier Plan run.
+- Webview preview at 280 and 340 pixels: readable controls and composer, no horizontal overflow or browser console errors.
+
+The earlier combined sidebar/editor automated native smoke failed its final usage assertion after receiving response text, without an event trace. The smoke now records event types, error codes and usage counts. It was not rerun to avoid opening and closing another VS Code test host during the user's session; the installed manual checks above verify current usage delivery. Rerun the complete native smoke before Marketplace publication.
 
 ## Release limits
 
@@ -46,4 +64,4 @@ Native integration is verified on macOS with local Ollama 0.35.0, qwen3:4b, Node
 
 No non-goal was added, including an extra workspace-trust prompt. MCP and hook configurations execute with user privileges and are not sandboxed. The accepted risks are in ADR 008.
 
-Marketplace preparation is in MARKETPLACE.md. The package has not been published. Publisher account authorization/availability must be verified before upload; GitHub source remains private until its owner changes visibility.
+Marketplace preparation is in MARKETPLACE.md. The package has not been published. Publisher account access must be verified before upload.

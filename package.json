@@ -1,6 +1,6 @@
 {
   "name": "kova",
-  "version": "0.0.0",
+  "version": "0.2.0",
   "private": true,
   "description": "Offline-first local AI coding agent for VS Code",
   "type": "module",
@@ -21,7 +21,7 @@
     "test:architecture": "vitest run tests/architecture",
     "check": "npm run typecheck && npm run lint && npm run format:check && npm test",
     "build": "node scripts/build.mjs",
-    "package": "npm run build && cd dist/extension && ../../node_modules/.bin/vsce package --no-dependencies --out ../kova-0.1.0.vsix",
+    "package": "node scripts/package.mjs",
     "smoke:ollama": "node scripts/smoke-ollama.mjs",
     "smoke:vscode": "node scripts/smoke-vscode.mjs",
     "smoke:ers": "node scripts/smoke-ers.mjs",

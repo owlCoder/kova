@@ -16,4 +16,4 @@ One public class or behavioral interface per file; implementation and interface 
 
 Architecture tests inspect static imports, re-exports, import types, dynamic imports, `require` and package dependency declarations. Core compiles separately with an ES-only library. Protocol adds one small package to the proposed tree, with a concrete purpose. IO adapters remain in VS Code rather than creating another package prematurely.
 
-TypeScript 6.0.3 is selected for this scaffold because the chosen typescript-eslint release supports versions below 6.1; using the newer TypeScript release would exceed that tool's declared compatibility. Revisit compiler/tool versions together.
+TypeScript 6.0.3 is selected for this project because the chosen typescript-eslint release supports versions below 6.1; using the newer TypeScript release would exceed that tool's declared compatibility. Revisit compiler/tool versions together.

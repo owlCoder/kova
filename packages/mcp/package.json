@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Reserved for the stdio MCP adapter; no runtime implementation yet",
+  "description": "Stdio MCP client and tool adapter",
   "dependencies": {
     "@kova/core": "0.0.0",
     "@modelcontextprotocol/client": "2.2.0"

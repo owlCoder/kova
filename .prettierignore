@@ -1,5 +1,9 @@
 node_modules
 dist
 coverage
+.vscode-test
+.tmp
+tmp
+temp
 package-lock.json
 docs/SPECIFICATION.md

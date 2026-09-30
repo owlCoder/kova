@@ -14,4 +14,4 @@ After architecture approval, implement the specified milestones sequentially. Ea
 
 ## Consequences
 
-The initial tests prove contract shape, import boundaries and organization only. No fake tests for unimplemented behavior or placeholder application are presented as MVP completion. [TESTING.md](../TESTING.md) and [MILESTONES.md](../MILESTONES.md) define the future acceptance gates.
+Architecture tests prove contract shape, import boundaries and organization. Behavior tests and native smoke checks verify the application. [TESTING.md](../TESTING.md) defines the release checks; [MILESTONES.md](../MILESTONES.md) records delivered scope.

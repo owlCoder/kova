@@ -27,9 +27,8 @@ import { TokenCounter } from '../../packages/core/src/context/TokenCounter.js';
 import { OllamaConnection } from '../../packages/ollama/src/OllamaConnection.js';
 import { OllamaLlmProvider } from '../../packages/ollama/src/OllamaLlmProvider.js';
 
-const root = resolve(
-  process.env.KOVA_ERS_ROOT ?? '/Users/danijel/Desktop/ers/ers-motion-web/examples/ers-ai-workflow',
-);
+assert(process.env.KOVA_ERS_ROOT, 'Set KOVA_ERS_ROOT to the ERS example workspace.');
+const root = resolve(process.env.KOVA_ERS_ROOT);
 const source = new CancellationSource(),
   observed: AgentEvent[] = [],
   events = {

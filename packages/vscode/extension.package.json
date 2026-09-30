@@ -2,7 +2,7 @@
   "name": "kova",
   "displayName": "Kova \u2014 Local Coding Agent",
   "description": "Local coding assistant for VS Code using Ollama",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "publisher": "owlcoder",
   "license": "MIT",
   "engines": {
@@ -13,8 +13,18 @@
     "type": "git",
     "url": "https://github.com/owlCoder/kova.git"
   },
+  "homepage": "https://github.com/owlCoder/kova#readme",
+  "bugs": {
+    "url": "https://github.com/owlCoder/kova/issues"
+  },
   "main": "./extension.cjs",
-  "activationEvents": ["onView:kova.chat"],
+  "activationEvents": [
+    "onCommand:kova.open",
+    "onCommand:kova.openInEditor",
+    "onCommand:kova.newConversation",
+    "onCommand:kova.settings",
+    "onView:kova.chat"
+  ],
   "capabilities": {
     "untrustedWorkspaces": {
       "supported": true
@@ -29,7 +39,7 @@
         {
           "id": "kova",
           "title": "Kova",
-          "icon": "media/logo_mono.png"
+          "icon": "media/activity-icon.svg"
         }
       ]
     },
@@ -46,6 +56,10 @@
       {
         "command": "kova.open",
         "title": "Kova: Open Chat"
+      },
+      {
+        "command": "kova.openInEditor",
+        "title": "Kova: Open Chat in Editor"
       },
       {
         "command": "kova.newConversation",

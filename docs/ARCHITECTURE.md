@@ -17,7 +17,7 @@ flowchart BT
 
 Arrows denote imports/dependencies. Core imports only Core. Protocol owns self-contained DTOs, imports nothing from Core, and contains no classes, functions or behavioral interfaces. Host maps between the two. Webview imports only Protocol, its UI libraries and shared PNG branding assets. Ollama and MCP cannot import one another or VS Code. VS Code is the only composition root. Root tooling is not part of the runtime graph.
 
-The one addition to the suggested repository is `packages/protocol`, justified by the host/UI boundary. Filesystem, process and VS Code tool adapters stay in `packages/vscode`; a separate generic infrastructure package is unnecessary at this size. No runtime dependency is installed during architecture review.
+The one addition to the suggested repository is `packages/protocol`, justified by the host/UI boundary. Filesystem, process and VS Code tool adapters stay in `packages/vscode`; a separate generic infrastructure package is unnecessary at this size. Runtime dependencies belong to the adapter or UI package that uses them.
 
 ## Repository map
 
@@ -53,7 +53,8 @@ kova/
 │   │   │                           GetGitDiffTool, WriteFileTool, EditFileTool, RunCommandTool
 │   │   ├── skills/          WorkspaceSkillRepository
 │   │   ├── integrations/    ErsGuardrailAdapter
-│   │   └── webview/         KovaViewProvider, validated message router, event projection
+│   │   └── webview/         KovaViewProvider, KovaPanelController, KovaWebviewHost,
+│   │                               validated message router, event projection
 │   └── protocol/src/        WebviewMessage, HostMessage, SessionSnapshot,
 │                           PresentationEvent, ApprovalView
 ├── webview/src/             components/, state/, messaging/
@@ -111,6 +112,6 @@ Adapters translate cancellation to fetch abort, VS Code tokens, pending-approval
 
 The host translates validated UI intent into `AgentRequest`, then calls `Agent.run`. The Agent retrieves conversation, loads selected skill, builds bounded context, streams the provider, resolves tool calls through the safety pipeline, records bounded results and continues. Tool execution is serial in v1. The host projects `AgentEvent` into safe protocol DTOs; React renders conversation, thinking, context cost, approvals and an activity list.
 
-There is one conversation panel, with prompt, send/stop, model selector, four-mode picker and context meter. Tool definition token cost is separate. Skills, tools, MCP, hooks, guardrails and errors are visible in expandable activity rows. There is no dashboard and no React-owned business state. Diff preview uses host-side virtual documents and VS Code's diff editor.
+Kova: Open Chat opens the sidebar. Kova: Open Chat in Editor creates or focuses one movable editor WebviewPanel. Both views share the same host-owned session through KovaWebviewHost. Closing the editor tab cancels an active run; hiding the sidebar does not. Reopening either view restores the session conversation. Selection/current-file attachments use the most recently active file editor while chat has focus. Both views contain prompt, send/stop, model selector, four-mode picker and context meter. Tool definition token cost is separate. Skills, tools, MCP, hooks, guardrails and errors are visible in expandable activity rows. There is no dashboard and no React-owned business state. Diff preview uses host-side virtual documents and VS Code's diff editor.
 
 Details: [state machine](AGENT-LOOP.md), [protocol](PROTOCOL.md), [context](CONTEXT.md), [policy](TOOLS-AND-POLICY.md), [providers](PROVIDERS.md), [integrations](INTEGRATIONS.md), [testing](TESTING.md).

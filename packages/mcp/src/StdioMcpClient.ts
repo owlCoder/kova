@@ -59,7 +59,7 @@ export class StdioMcpClient implements McpClient {
         }
         continue;
       }
-      const client = new Client({ name: 'kova', version: '0.1.0' }, { capabilities: {} });
+      const client = new Client({ name: 'kova', version: '0.2.0' }, { capabilities: {} });
       const transport = new StdioClientTransport({
         command: config.command,
         args: [...config.args],

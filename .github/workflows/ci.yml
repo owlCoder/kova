@@ -23,5 +23,5 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: kova-vsix
-          path: dist/kova-0.1.0.vsix
+          path: dist/kova-*.vsix
           if-no-files-found: error

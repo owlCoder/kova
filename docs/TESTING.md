@@ -57,7 +57,7 @@ Verify interface/implementation separation for each new class, module direction,
 
 ## Manual/local checks
 
-Foundation: launch the VS Code extension development host, open sidebar, discover qwen3:4b, stream a response, stop generation, see context/definition cost and thinking collapse when enabled. Test unavailable runtime and missing model without crashing. Check installation/VSIX packaging only once the extension exists.
+Foundation: launch the VS Code extension development host, run Kova: Open Chat to open the sidebar, discover qwen3:4b, stream a response, stop generation, see context/definition cost and thinking collapse when enabled. Test unavailable runtime and missing model without crashing. Run Kova: Open Chat in Editor and verify shared conversation state, single-tab reuse, moving between editor groups, close/reopen state and cancellation, sidebar hiding without cancellation, captured file attachments and isolated VSIX installation.
 
 Editing: approve/reject a computed diff, observe editor undo and Git, verify stale document handling. Hooks/MCP: visible exact commands, lifecycle events and clean disposal. Auto: destructive guardrail demonstration and exact allowlisted command behavior. Measure bounded memory using long fixture conversations/output instead of claiming it from class names.
 

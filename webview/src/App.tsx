@@ -6,6 +6,7 @@ import type { AgentMode } from '../../packages/protocol/src/AgentMode.js';
 import { send, inVscode } from './messaging/bridge.js';
 import { activityText, applyEvent } from './state/presentation.js';
 import { MessageContent } from './components/MessageContent.js';
+import { Icon } from './components/Icon.js';
 
 export function App() {
   const [snapshot, setSnapshot] = useState<SessionSnapshot | null>(null);
@@ -17,9 +18,12 @@ export function App() {
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const serial = useRef({ session: '', sequence: 0 });
+  const hostSelection = useRef<{ modelId: string; mode: AgentMode } | null>(null);
   const active = useRef<string | null>(null);
   const retired = useRef(new Set<string>());
   const scroller = useRef<HTMLDivElement>(null);
+  const input = useRef<HTMLTextAreaElement>(null);
+  const contextMenu = useRef<HTMLDetailsElement>(null);
   const nearBottom = useRef(true);
   useEffect(() => {
     const listener = (message: MessageEvent<HostMessage>) => {
@@ -28,6 +32,7 @@ export function App() {
       if (serial.current.session !== data.hostSessionId) {
         serial.current = { session: data.hostSessionId, sequence: 0 };
         active.current = null;
+        hostSelection.current = null;
         retired.current.clear();
         setThinking({});
       }
@@ -54,8 +59,24 @@ export function App() {
           }
           return data.snapshot;
         });
-        setModel(data.snapshot.selectedModelId);
-        setMode(data.snapshot.mode);
+        // Idle attachment/history updates must preserve choices for the next prompt.
+        // During a run, both views display the options captured by the host.
+        if (
+          !hostSelection.current ||
+          data.snapshot.activeRunId ||
+          hostSelection.current.modelId !== data.snapshot.selectedModelId
+        )
+          setModel(data.snapshot.selectedModelId);
+        if (
+          !hostSelection.current ||
+          data.snapshot.activeRunId ||
+          hostSelection.current.mode !== data.snapshot.mode
+        )
+          setMode(data.snapshot.mode);
+        hostSelection.current = {
+          modelId: data.snapshot.selectedModelId,
+          mode: data.snapshot.mode,
+        };
         setSubmitting(false);
       } else if (data.type === 'Rejected') {
         setError(data.message);
@@ -149,13 +170,23 @@ export function App() {
     setPrompt('');
   };
   const approval = snapshot?.pendingApproval;
+  const choosePrompt = (value: string) => {
+    setPrompt(value);
+    input.current?.focus();
+  };
+  const attachContext = (source: 'Selection' | 'CurrentFile' | 'PickFiles') => {
+    send({ type: 'AddContext', source });
+    if (contextMenu.current) contextMenu.current.open = false;
+  };
   return (
     <main className="app">
       <header>
         <div className="brand">
           <img className="brand-logo" src={logo} alt="" />
-          <strong>KOVA</strong>
-          <span className="local">LOCAL</span>
+          <div>
+            <strong>Kova</strong>
+            <span>Local coding assistant</span>
+          </div>
         </div>
         <div className="header-actions">
           <button
@@ -166,14 +197,14 @@ export function App() {
               setError('');
             }}
           >
-            ＋
+            <Icon name="plus" />
           </button>
           <button
             title="Settings"
             aria-label="Settings"
             onClick={() => send({ type: 'OpenSettings' })}
           >
-            ⚙
+            <Icon name="settings" />
           </button>
         </div>
       </header>
@@ -188,34 +219,52 @@ export function App() {
       >
         {!snapshot?.messages.length && (
           <section className="welcome">
-            <img className="welcome-logo" src={logo} alt="Kova" />
-            <h1>Kova</h1>
-            <p>
-              Local coding assistant for VS Code.
-              <br />
-              Ask a question or attach code to get started.
-            </p>
+            <h1>Ask about your code</h1>
+            <p>Attach a file or selection, then tell Kova what you need.</p>
             <div className="suggestions">
               <button
-                onClick={() => setPrompt('Explain the code I attach and suggest improvements.')}
+                onClick={() => choosePrompt('Explain the code I attach and suggest improvements.')}
               >
-                Explain code <span>↗</span>
+                <Icon name="code" />
+                <span>
+                  <strong>Explain code</strong>
+                  <small>Understand a file or selection</small>
+                </span>
+                <Icon name="arrow" />
               </button>
               <button
                 onClick={() =>
-                  setPrompt('Review my current changes for bugs and architecture issues.')
+                  choosePrompt('Review my current changes for bugs and architecture issues.')
                 }
               >
-                Review my changes <span>↗</span>
+                <Icon name="review" />
+                <span>
+                  <strong>Review changes</strong>
+                  <small>Check the current Git diff</small>
+                </span>
+                <Icon name="arrow" />
+              </button>
+              <button
+                onClick={() =>
+                  choosePrompt(
+                    'Help me plan this change. Inspect relevant code before suggesting an implementation.',
+                  )
+                }
+              >
+                <Icon name="plan" />
+                <span>
+                  <strong>Plan a change</strong>
+                  <small>Work out the next steps</small>
+                </span>
+                <Icon name="arrow" />
               </button>
             </div>
-            <small>Runs locally with Ollama</small>
           </section>
         )}
         {snapshot?.messages.map((message) => (
           <article className={`message ${message.role}`} key={message.id}>
             <div className="message-label">
-              {message.role === 'user' ? 'YOU' : 'KOVA'}
+              {message.role === 'user' ? 'You' : 'Kova'}
               {message.partial && (
                 <span className="muted"> {busy ? '· generating' : '· partial'}</span>
               )}
@@ -227,23 +276,39 @@ export function App() {
               </details>
             )}
             <MessageContent text={message.content} />
+            {message.partial && busy && !message.content && !thinking[message.id] && (
+              <div className="generating">
+                <span />
+                <span />
+                <span />
+                <span>Generating</span>
+              </div>
+            )}
           </article>
         ))}
         {!!activities.length && (
-          <details className="activity" open={Boolean(approval)}>
+          <details className="activity" open={Boolean(approval) || busy}>
             <summary>
-              Activity <span>{activities.length}</span>
+              <Icon name="chevron" /> Activity <span>{activities.length}</span>
             </summary>
             {activities.map((item) => (
-              <div key={item.id} className={`activity-row ${item.error ? 'error' : ''}`}>
-                <pre>{item.text}</pre>
-              </div>
+              <details key={item.id} className={`activity-row ${item.error ? 'error' : ''}`}>
+                <summary>
+                  <span className="activity-dot" />
+                  {item.text.split('\n')[0]}
+                </summary>
+                {item.text.includes('\n') && (
+                  <pre>{item.text.slice(item.text.indexOf('\n') + 1)}</pre>
+                )}
+              </details>
             ))}
           </details>
         )}
         {approval && (
           <section className="approval">
-            <div className="eyebrow">APPROVAL REQUIRED</div>
+            <div className="eyebrow">
+              <Icon name="warning" /> Approval required
+            </div>
             <strong>{approval.toolName}</strong>
             <p>{approval.reasons.join(' · ')}</p>
             {approval.preview?.kind === 'FileChanges' && (
@@ -252,7 +317,7 @@ export function App() {
                 <button
                   onClick={() => send({ type: 'OpenDiffPreview', approvalId: approval.approvalId })}
                 >
-                  Inspect diff ↗
+                  Inspect diff <Icon name="arrow" />
                 </button>
               </>
             )}
@@ -294,7 +359,7 @@ export function App() {
           <div className="error-banner" role="alert">
             {error}
             <button aria-label="Dismiss error" onClick={() => setError('')}>
-              ×
+              <Icon name="close" />
             </button>
           </div>
         )}
@@ -314,33 +379,18 @@ export function App() {
             </div>
           </div>
         )}
-        {snapshot && (
-          <div className="context">
-            <div>
-              <span>
-                Context {used.toLocaleString()} / {max.toLocaleString()}
-              </span>
-              <span>{usage?.actualInputTokens === null || !usage ? 'estimated' : 'measured'}</span>
-            </div>
-            <progress value={Math.min(used, max)} max={max} />
-            <small>
-              Tool definitions {usage?.toolDefinitionTokens ?? 0} tokens
-              {usage?.actualOutputTokens !== null && usage
-                ? ` · Output ${usage.actualOutputTokens}`
-                : ''}
-              {usage?.evictions.length ? ` · ${usage.evictions.length} context reductions` : ''}
-            </small>
-          </div>
-        )}
         {!!snapshot?.contextAttachments.length && (
           <div className="attachments">
             {snapshot.contextAttachments.map((item) => (
               <button
                 key={item.id}
+                title={`Remove ${item.label}`}
                 disabled={busy}
                 onClick={() => send({ type: 'RemoveContext', attachmentId: item.id })}
               >
-                {item.label} ×
+                <Icon name="code" />
+                <span>{item.label}</span>
+                <Icon name="close" />
               </button>
             ))}
           </div>
@@ -369,6 +419,7 @@ export function App() {
             aria-label="Ask Kova"
             placeholder="Ask Kova…"
             value={prompt}
+            ref={input}
             disabled={!inVscode}
             maxLength={16000}
             onChange={(event) => setPrompt(event.target.value)}
@@ -379,56 +430,24 @@ export function App() {
               }
             }}
           />
-          <div className="composer-bar">
-            <details className="attach-menu">
-              <summary title="Add context">＋</summary>
+          <div className="composer-actions">
+            <details className="attach-menu" ref={contextMenu}>
+              <summary title="Add context">
+                <Icon name="paperclip" />
+                <span>Add context</span>
+              </summary>
               <div>
-                <button
-                  disabled={busy}
-                  onClick={() => send({ type: 'AddContext', source: 'Selection' })}
-                >
+                <button disabled={busy} onClick={() => attachContext('Selection')}>
                   Selection
                 </button>
-                <button
-                  disabled={busy}
-                  onClick={() => send({ type: 'AddContext', source: 'CurrentFile' })}
-                >
+                <button disabled={busy} onClick={() => attachContext('CurrentFile')}>
                   Current file
                 </button>
-                <button
-                  disabled={busy}
-                  onClick={() => send({ type: 'AddContext', source: 'PickFiles' })}
-                >
+                <button disabled={busy} onClick={() => attachContext('PickFiles')}>
                   Choose files…
                 </button>
               </div>
             </details>
-            <select
-              aria-label="Local model"
-              value={model}
-              disabled={busy}
-              onChange={(event) => setModel(event.target.value)}
-            >
-              {!snapshot?.models.some((item) => item.id === model) && (
-                <option value={model}>{model} · not installed</option>
-              )}
-              {snapshot?.models.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.displayName} · {(item.sizeBytes / 1e9).toFixed(1)} GB
-                  {item.tools !== 'Supported' ? ' · chat only' : ''}
-                </option>
-              ))}
-            </select>
-            <select
-              aria-label="Agent mode"
-              value={mode}
-              disabled={busy}
-              onChange={(event) => setMode(event.target.value as AgentMode)}
-            >
-              {(['Plan', 'Manual', 'Edit', 'Auto'] as const).map((item) => (
-                <option key={item}>{item}</option>
-              ))}
-            </select>
             {busy ? (
               <button
                 className="send stop"
@@ -438,7 +457,7 @@ export function App() {
                   snapshot?.activeRunId && send({ type: 'CancelRun', runId: snapshot.activeRunId })
                 }
               >
-                ■
+                <Icon name="stop" />
               </button>
             ) : (
               <button
@@ -448,17 +467,93 @@ export function App() {
                 disabled={!prompt.trim() || !snapshot?.models.some((item) => item.id === model)}
                 onClick={submit}
               >
-                ↑
+                <Icon name="send" />
               </button>
             )}
           </div>
         </div>
+        <div className="selection-row">
+          <label>
+            <span>Model</span>
+            <select
+              aria-label="Local model"
+              title={model}
+              value={model}
+              disabled={busy}
+              onChange={(event) => setModel(event.target.value)}
+            >
+              {!snapshot?.models.some((item) => item.id === model) && (
+                <option value={model}>{model} · not installed</option>
+              )}
+              {snapshot?.models.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.displayName}
+                  {item.tools !== 'Supported' ? ' · chat only' : ''}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span>Mode</span>
+            <select
+              aria-label="Agent mode"
+              title={
+                {
+                  Plan: 'Read-only tools; no edits or commands',
+                  Manual: 'Approve edits and commands',
+                  Edit: 'Automatic workspace edits; approve commands',
+                  Auto: 'Automatic edits and exact allowlisted commands',
+                }[mode]
+              }
+              value={mode}
+              disabled={busy}
+              onChange={(event) => setMode(event.target.value as AgentMode)}
+            >
+              {(['Plan', 'Manual', 'Edit', 'Auto'] as const).map((item) => (
+                <option key={item}>{item}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+        {snapshot && (
+          <details className="context">
+            <summary>
+              <span>
+                Context{' '}
+                <span className="context-count">
+                  {used.toLocaleString()} / {max.toLocaleString()}
+                </span>
+              </span>
+              <span>
+                {Math.min(100, Math.round((used / max) * 100))}% <Icon name="chevron" />
+              </span>
+            </summary>
+            <progress value={Math.min(used, max)} max={max} />
+            <div className="context-details">
+              <span>
+                {usage?.actualInputTokens === null || !usage ? 'Estimated input' : 'Measured input'}
+                <strong>{usage?.actualInputTokens ?? usage?.estimatedInputTokens ?? 0}</strong>
+              </span>
+              <span>
+                Tool definitions (estimated)<strong>{usage?.toolDefinitionTokens ?? 0}</strong>
+              </span>
+              <span>
+                Output<strong>{usage?.actualOutputTokens ?? '—'}</strong>
+              </span>
+              {!!usage?.evictions.length && (
+                <span>
+                  Context reductions<strong>{usage.evictions.length}</strong>
+                </span>
+              )}
+            </div>
+          </details>
+        )}
         <div className="footer-note">
           <span
             className={`status-dot ${snapshot?.providerStatus === 'Available' ? 'online' : ''}`}
           />
-          {snapshot?.toolsEnabled ? 'Local model · tools available' : 'Local model · chat only'}
-          <span>↵ send · ⇧↵ newline</span>
+          {snapshot?.toolsEnabled ? 'Local · tools enabled' : 'Local · chat only'}
+          <span>Enter to send</span>
         </div>
       </footer>
     </main>

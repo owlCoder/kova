@@ -10,6 +10,8 @@ A Webview can reload while streaming or waiting for approval. React state cannot
 
 Core emits `AgentEvent`; the host explicitly maps it to self-contained protocol DTOs, redacting payload summaries and keeping full diff documents in the host. Protocol has no Core imports, even type-only. Version 1 uses request IDs, host-session IDs, sequence numbers, workspace IDs and run IDs. Ready returns an authoritative bounded snapshot. The UI discards stale-session/run events and resynchronizes on a sequence gap.
 
+Kova: Open Chat opens the default sidebar. Kova: Open Chat in Editor creates or focuses one movable editor WebviewPanel. KovaViewProvider and KovaPanelController share KovaWebviewHost and the same session. Closing the editor tab cancels the active run; hiding the sidebar does not. Reopening either view restores host-owned conversation state. Attachment intent uses the most recently active file editor while chat has focus.
+
 Host validates every incoming message, rejects unknown types/fields/oversized payloads and stale approval/run IDs, and owns all tool execution and lifecycle state. UI approval is an input to `ApprovalPort`, not a tool executor. Webview cannot contact Ollama, run a command, or provide arbitrary filesystem paths. Content renders as escaped text/Markdown with raw HTML disabled; CSP, local resources and nonces constrain scripts.
 
 ## Consequences

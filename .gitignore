@@ -4,6 +4,10 @@ coverage/
 *.tsbuildinfo
 *.vsix
 .DS_Store
+.vscode-test/
+.tmp/
+tmp/
+temp/
 .env
 .env.*
 !.env.example
