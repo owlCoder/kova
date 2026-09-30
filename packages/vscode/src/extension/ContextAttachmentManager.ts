@@ -63,8 +63,7 @@ export class ContextAttachmentManager {
     }
 
     const activeEditor = vscode.window.activeTextEditor;
-    const editor =
-      activeEditor?.document.uri.scheme === 'file' ? activeEditor : this.contextEditor;
+    const editor = activeEditor?.document.uri.scheme === 'file' ? activeEditor : this.contextEditor;
     if (!editor || editor.document.uri.scheme !== 'file' || editor.document.isClosed)
       throw new Error('Open a text file first.');
     const path = await new NodeWorkspacePathGuard(this.root).resolve(
