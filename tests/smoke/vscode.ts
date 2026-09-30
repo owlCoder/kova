@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import assert from 'node:assert/strict';
-import { writeFile } from 'node:fs/promises';
+import { writeFile, mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { CancellationSource } from '../../packages/core/src/common/CancellationSource.js';
 import { NodeWorkspacePathGuard } from '../../packages/vscode/src/adapters/NodeWorkspacePathGuard.js';
@@ -43,6 +43,33 @@ export async function run() {
     skillId: null,
     attachmentIds: [],
   });
+  const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+  assert(workspaceRoot);
+  const streamingDeadline = Date.now() + 120000;
+  while (
+    !messages.some(
+      (message) => message.type === 'Event' && message.event.type === 'ResponseStarted',
+    )
+  ) {
+    if (Date.now() > streamingDeadline) throw new Error('Stream did not start.');
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  await mkdir(resolve(workspaceRoot, '.kova'), { recursive: true });
+  await writeFile(
+    resolve(workspaceRoot, '.kova/hooks.json'),
+    JSON.stringify({ BeforeToolExecution: [], AfterToolExecution: [] }),
+  );
+  const reloaded = () =>
+    messages.filter(
+      (message) => message.type === 'Event' && message.event.type === 'ConfigurationReloaded',
+    ).length;
+  const capturedReloads = reloaded();
+  await api.session.initialize();
+  assert.equal(
+    reloaded(),
+    capturedReloads,
+    'Webview initialization during a stream cannot reload changed config',
+  );
   const deadline = Date.now() + 120000;
   while (
     !messages.some(
@@ -63,6 +90,11 @@ export async function run() {
         message.event.usage.maxTokens === 8192 &&
         message.event.usage.actualInputTokens !== null,
     ),
+  );
+  await api.session.initialize();
+  assert.equal(reloaded(), capturedReloads + 1, 'Changed hooks become effective once idle');
+  console.log(
+    'PASS Webview resync preserves run configuration; changed hooks reload only while idle.',
   );
   await api.session.handle({
     protocolVersion: 1,

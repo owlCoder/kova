@@ -21,7 +21,7 @@ All seven milestones are represented in the extension: local chat/context/thinki
 - `npm run check`: strict project/Core typecheck, ESLint, Prettier and the full deterministic suite (153 tests in 13 files, including 30 architecture tests) pass. Architecture checks remain mandatory.
 - `npm run package` and `npm run verify:package`: installable 0.1.0 VSIX, original logos, publisher owlcoder, MIT, bundled code and 16 dependency license notices; no source maps, node_modules, tests, project configs or secrets in the package.
 - `npm run smoke:ollama`: installed model, streaming, explicit parameters, actual usage, Stop and thinking/history separation pass.
-- `npm run smoke:vscode` / `npm run smoke:vsix`: actual VS Code activation and native editor behavior pass; the VSIX was installed in a separate profile and tested from its installed directory.
+- `npm run smoke:vscode` / `npm run smoke:vsix`: actual VS Code activation, native editor behavior and Webview resync without mid-run config reload pass; the VSIX was installed in a separate profile and tested from its installed directory.
 - `dotnet build EquipmentReservation.sln --configuration Release` and `dotnet test ... --no-build`: build succeeds with zero warnings/errors; 9 tests pass.
 - `npm run smoke:ers`: actual ERS tools, hooks, guardrail executable and local-model review pass. This opt-in test uses 8192 context, 2048 output reserve and Thinking enabled.
 - Webview preview: supplied logo renders, sidebar layout/text fit, browser console has no warnings/errors. Native host behavior is verified separately above.

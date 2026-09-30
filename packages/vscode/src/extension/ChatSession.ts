@@ -86,6 +86,8 @@ export class ChatSession {
     });
   }
   initialize(): Promise<void> {
+    // A recreated Webview must resync the captured run, never reload its configuration.
+    if (this.activeRun) return Promise.resolve();
     if (this.initialization) return this.initialization;
     const task = this.initializeSession();
     this.initialization = task;
