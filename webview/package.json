@@ -1,0 +1,10 @@
+{
+  "name": "@kova/webview",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Reserved for the React conversation presentation",
+  "dependencies": {
+    "@kova/protocol": "0.0.0"
+  }
+}

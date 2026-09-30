@@ -1,0 +1,13 @@
+{
+  "name": "@kova/vscode",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Reserved for the extension composition root and workspace adapters",
+  "dependencies": {
+    "@kova/core": "0.0.0",
+    "@kova/ollama": "0.0.0",
+    "@kova/mcp": "0.0.0",
+    "@kova/protocol": "0.0.0"
+  }
+}

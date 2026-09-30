@@ -1,0 +1,9 @@
+{
+  "name": "@kova/core",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Provider-independent domain and application contracts",
+  "dependencies": {},
+  "devDependencies": {}
+}

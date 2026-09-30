@@ -1,0 +1,32 @@
+{
+  "name": "kova",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Architecture baseline for Kova, an offline-first local coding agent for VS Code",
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "webview"
+  ],
+  "engines": {
+    "node": ">=24 <25",
+    "npm": ">=11"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit && tsc --noEmit -p packages/core/tsconfig.json",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:architecture": "vitest run tests/architecture",
+    "check": "npm run typecheck && npm run lint && npm run format:check && npm test"
+  },
+  "devDependencies": {
+    "@types/node": "24.10.1",
+    "eslint": "10.11.0",
+    "prettier": "3.9.9",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.71.0",
+    "vitest": "5.0.2"
+  }
+}
