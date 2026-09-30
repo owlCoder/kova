@@ -5,6 +5,8 @@
   "type": "module",
   "description": "Reserved for the React conversation presentation",
   "dependencies": {
-    "@kova/protocol": "0.0.0"
+    "@kova/protocol": "0.0.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
   }
 }

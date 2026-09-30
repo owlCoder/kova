@@ -1,4 +1,4 @@
-import type { RiskLevel } from '../../core/src/permissions/RiskLevel.js';
+import type { RiskLevel } from './RiskLevel.js';
 
 /** Full file contents stay in host-side virtual diff documents. */
 export interface ApprovalView {

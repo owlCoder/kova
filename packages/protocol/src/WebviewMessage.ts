@@ -1,4 +1,4 @@
-import type { AgentMode } from '../../core/src/agents/AgentMode.js';
+import type { AgentMode } from './AgentMode.js';
 
 /** Untrusted UI intents; host validates shape, limits, IDs and current workspace/run. */
 export type WebviewMessage = {

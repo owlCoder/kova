@@ -11,4 +11,4 @@ Architecture is approved with these amendments; implement **one milestone at a t
 - `kova.commands.allow` is the Auto allowlist. `&&`, `||`, `;`, `|`, redirection, `$()` and backticks never match. A guardrail RequireApproval in Auto uses ApprovalPort.
 - State machine retains IterationLimit, RepeatedToolCall and MalformedToolCall: max 10 attempts, two malformed repair opportunities, second identical call suppressed, third stops (spec §9).
 
-No workspace-trust prompt or other non-goal is added. Milestone 1 adds only dependencies needed for sidebar, Ollama discovery/streaming/cancellation, explicit context/thinking/keep-alive, TokenCounter and context indicator. Tools, skills, MCP and hooks remain future milestones.
+No workspace-trust prompt or other non-goal is added. The later user instruction authorized all milestones without stopping; implementation and acceptance evidence are recorded in [IMPLEMENTATION.md](IMPLEMENTATION.md).

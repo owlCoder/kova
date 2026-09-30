@@ -4,7 +4,5 @@
   "private": true,
   "type": "module",
   "description": "JSON-only DTOs shared by the extension host and Webview",
-  "dependencies": {
-    "@kova/core": "0.0.0"
-  }
+  "dependencies": {}
 }

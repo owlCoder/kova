@@ -1,4 +1,4 @@
-name: Architecture checks
+name: Kova checks
 
 on:
   push:
@@ -18,3 +18,10 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run check
+      - run: npm run package
+      - run: npm run verify:package
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kova-vsix
+          path: dist/kova-0.1.0.vsix
+          if-no-files-found: error

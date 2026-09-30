@@ -1,6 +1,6 @@
 # Context budget and memory
 
-Status: **Accepted**. ContextBuilder, TokenCounter and ConversationCompactor are concrete pure classes; IO/model boundaries retain ports. Milestone 1 implements the chat-only budget and bounded conversation.
+Status: **Accepted**. ContextBuilder, TokenCounter and ConversationCompactor are concrete pure classes; IO/model boundaries retain ports. The budget includes native tool definitions, selected skill, explicit attachments and bounded conversation/tool results.
 
 ## Budget
 
@@ -46,10 +46,10 @@ ContextBuilder returns a ready request plus the bounded conversation to persist,
 
 Deterministic compaction produces Goal, Files inspected, Changes and Outstanding from previous summary, bounded user/assistant text and structured tool metadata. It is a lossy reference, not a verified claim that a plan was fulfilled. Do not infer successful changes from an attempted/denied tool. Summary entries from untrusted outputs remain clearly labeled data. There is no automatic LLM summarizer in v1.
 
-Proposed hard ceilings complement the token budget: stored transcript 65,536 characters and 24 complete recent turns; structured summary target 768 tokens; model-facing tool payload 8,000 characters; one UI tool result 30,000 characters; total retained UI tool-output text 256,000 characters; 200 activity rows; live thinking 16,000 characters, discarded after the run/reload rather than saved. Trim oldest retained data first. Compact/rebound after every tool batch and terminal turn, not only before a later user request.
+Retention ceilings complement the token budget: stored transcript 65,536 characters and 80 entries before the next provider request; structured summary target 768 tokens; model-facing tool payload 8,000 characters; one UI tool result 30,000 characters; total retained UI tool-output text 256,000 characters; 200 activity rows; live thinking 16,000 characters, retained only for the current visible response until the next prompt/chat or Webview reload. Trim oldest retained data first. Rebound before every provider request, including continuations after tool batches; generation text is independently capped.
 
-Keep no permanent event log in memory. History across chats is not required: NewConversation releases the previous active transcript. Prompt is capped at 16,000 characters at the host boundary; this is an input-size ceiling, not a promise it fits with a large skill/tool set. Limit attachments to 10 and previewed editable files to 1 MiB each; binary/oversized files are refused with a narrow-read suggestion. Output buffering stops at bounded caps even when subprocesses keep writing.
+Keep no permanent event log in memory. History across chats is not required: NewConversation releases the previous active transcript. Prompt is capped at 16,000 characters at the host boundary; this is an input-size ceiling, not a promise it fits with a large skill/tool set. Limit attachments to 10 and text reads/previews to 2 MiB each; binary/oversized files are refused with a narrow-read suggestion. Output buffering stops at bounded caps even when subprocesses keep writing.
 
 Truncation marker includes the exact omitted character count and a useful hint: `output truncated (omitted 21,400 characters; narrow the search or read a line range)`. Marker/framing cost is included inside the cap. `read_file` line ranges and bounded `search_files` results let the model narrow requests.
 
-These limits remain defaults to validate with Qwen3 4B; milestone 1 performs no workspace ingestion. Tool-result eviction is implemented with the tools milestone.
+No background workspace ingestion occurs. Estimates remain conservative heuristics; real usage reconciles subsequent requests.

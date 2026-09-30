@@ -1,6 +1,6 @@
 # Extension host ↔ Webview protocol
 
-Status: **Accepted**, version **1**. Typed source is in `packages/protocol/src`. Protocol types are self-contained with no Core imports; the host maps Core values explicitly. Foundation implements chat intents; later-milestone intents are rejected as unavailable.
+Status: **Accepted**, version **1**. Typed source is in `packages/protocol/src`. Protocol types are self-contained with no Core imports; the host maps Core values explicitly. The host implements chat, context, skill, approval, preview and settings intents.
 
 ## Ownership
 
@@ -64,7 +64,7 @@ Events carry the Core lifecycle (response/thinking, tools, policy, hooks, guardr
 
 ## Validation and race handling
 
-Accept only known versions/types/fields with bounded strings, valid enum values and referenced IDs present in the current host session. Proposed inbound message cap: 64 KiB, prompt cap: 16,000 characters, at most 10 attachment IDs. Reject duplicate request IDs, stale/cross-run approval IDs, mismatched preparation keys and concurrent prompts. Unknown version returns ProtocolVersionMismatch and no execution.
+Accept only known versions/types/fields with bounded strings, valid enum values and referenced IDs present in the current host session. Inbound message cap: 64 KiB, prompt cap: 16,000 characters, at most 10 attachment IDs. Reject duplicate request IDs, stale/cross-run approval IDs, mismatched preparation keys and concurrent prompts. Unknown version returns ProtocolVersionMismatch and no execution.
 
 Sequence is global to the host session, including acknowledgments/snapshots. The UI applies only greater sequences in the same session; duplicate messages are ignored. A gap triggers Ready/resnapshot. Snapshot's sequence establishes the new baseline. A changed hostSessionId resets prior UI sequence/run state. Late ResponseDelta/approval events for a finished/cancelled run never append to a new run. Workspace-null session events may update runtime status; workspace events must match the active root.
 

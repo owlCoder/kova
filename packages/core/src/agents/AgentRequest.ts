@@ -14,6 +14,8 @@ export interface AgentRequest {
   readonly context: ContextSettings;
   readonly attachments: readonly ContextAttachment[];
   readonly thinkingEnabled: boolean;
+  readonly keepAliveSeconds: number;
+  readonly toolsEnabled: boolean;
   readonly maxToolIterations: number;
   readonly commandAllowlist: readonly string[];
 }

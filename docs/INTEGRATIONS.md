@@ -1,10 +1,10 @@
 # Skills, MCP and hooks
 
-Status: **Proposed**. Examples below are specifications for configuration, not files that are auto-executed by this scaffold.
+Status: **Implemented**. Configured commands execute as documented; use only trusted projects.
 
 ## Skills
 
-Discover only `.kova/skills/*/SKILL.md`. Bound metadata scanning to that directory and validate realpaths. Frontmatter requires a stable name matching the directory ID and a short description; no duplicate IDs, executable YAML tags or unknown executable properties. Proposed per-skill body cap is 16,000 characters and discovery cap is 100 entries. Invalid/oversized entries produce visible diagnostics and remain inactive.
+Discover only `.kova/skills/*/SKILL.md`. Bound metadata scanning to that directory and validate realpaths. Frontmatter requires a stable name matching the directory ID and a short description; no duplicate IDs, executable YAML tags or unknown executable properties. The per-skill body cap is 16,000 characters and discovery cap is 100 entries. Invalid/oversized entries produce visible diagnostics and remain inactive.
 
 ```md
 ---
@@ -30,9 +30,17 @@ Canonical `.kova/mcp.json`:
     "ers": {
       "transport": "stdio",
       "command": "dotnet",
-      "args": ["run", "--project", "src/EquipmentReservation.Mcp"],
+      "args": [
+        "run",
+        "--project",
+        "src/EquipmentReservation.Mcp",
+        "--configuration",
+        "Release",
+        "--no-build"
+      ],
       "toolRisks": {
-        "get_reservations": "ReadOnly",
+        "get_project_structure": "ReadOnly",
+        "get_git_diff": "ReadOnly",
         "run_unit_tests": "ProcessExecution"
       }
     }
@@ -48,7 +56,7 @@ Expose at most 64 discovered tools across the session. Count schemas against con
 
 McpClient returns `Tool` adapters. `prepare` does not call remote tools. `execute` invokes tools/call only after normal risk/policy/hooks/guardrails/approval. Tool content becomes bounded untrusted text/JSON data; unsupported image/resource/input-required payloads return a structured unsupported-result diagnostic, no browser/auth flow. Cancellation/timeout never replays calls automatically because side effects may have happened. Stop closes transports/processes and emits McpServerStopped. No HTTP/SSE or remote MCP support in v1.
 
-The planned SDK dependency is the current split v2 client package, isolated behind the adapter. Its stdio API and wire behavior are verified against pinned SDK fixtures at milestone 5; discovery/integration tests use a local fake server. Reference: [official SDK](https://github.com/modelcontextprotocol/typescript-sdk), [MCP tools](https://modelcontextprotocol.io/specification/2026-07-28/server/tools).
+The pinned SDK dependency is @modelcontextprotocol/client 2.2.0, isolated behind the adapter. Its wire behavior is verified against a real-process legacy fixture and the actual .NET ERS server. Reference: [official SDK](https://github.com/modelcontextprotocol/typescript-sdk), [MCP tools](https://modelcontextprotocol.io/specification/2026-07-28/server/tools).
 
 ## Command hooks
 
@@ -70,12 +78,10 @@ Canonical `.kova/hooks.json`:
 
 CommandHook runs through ProcessRunner outside run_command policy, as user-configured code. Use executable + argv, active-root cwd and shell disabled. Maximum 20 hooks/event, default timeout 5 seconds, maximum 30 seconds, bounded stdin/output. JSON stdin contains lifecycle, tool name/ID, normalized relative path labels, risk and bounded status metadata; omit full file contents, previews, environment secrets and unrestricted argument/output dumps. Tool arguments passed to hooks are observational sanitized data only, never accepted back as replacement input.
 
-Exit 0 observes. Before-hook exit 2 vetoes with bounded plain-text stdout reason. Other nonzero exit, timeout or malformed/unexpected output is a failed pre-hook and blocks the requested tool. After-hook exit 2/nonzero is reported as failure; no veto can change the already-completed execution. Stdout never expresses approval or new tool arguments. A hook can run arbitrary local code itself, an explicitly accepted trust risk; it is not executed through run_command or recursively through the tool loop.
+Exit 0 with JSON stdout `{ "decision": "continue" | "veto", "message"?: string }` reports observation or veto. Any nonzero exit, timeout, crash or invalid JSON/output fails a pre-hook closed. A post-hook failure or veto is shown and logged but never changes the execution result. Every configured hook requires a positive timeout (maximum 30 seconds). Stdout never expresses approval or new tool arguments. A hook can run arbitrary local code itself, an explicitly accepted trust risk; it is not executed through run_command or recursively through the tool loop.
 
 At each idle run start compare hashes of both config files, reload changed hooks and only changed MCP servers, and show configuration reloaded; approved agent edits to config do not silently start new processes during the editing run. No extra workspace trust prompt is added. UI shows executable/argv, bounded reason/status and duration for every hook run. Output logs executable/argv, hook ID, outcome and duration; it excludes hook reason text, raw stdin, process output and secret file contents.
 
 ## ERS teaching example
 
-After milestone 6, integrate the **actual** Equipment Reservation project: install the review skill, configure its stdio server, add an adapter to its guardrail implementation if its API supports this, then test review → diff → approved unit-test MCP invocation → findings. A destructive deletion request must produce ToolBlocked regardless of mode.
-
-The ERS project is not supplied in this workspace. Its exact tools, process setup, guardrail API and test outcomes remain a milestone-7 dependency. Example names above are proposed and must be matched to the real project; this repository does not claim a completed ERS integration.
+The actual ERS integration is documented in [the teaching walkthrough](../examples/ers/README.md). Its get_project_structure/get_git_diff tools are reviewed ReadOnly, run_unit_tests remains approval-gated, and ErsGuardrailAdapter calls the original .NET guardrail executable. Canonical configs and the review skill are installed in the supplied nested ERS example.

@@ -1,0 +1,21 @@
+{
+  "servers": {
+    "ers": {
+      "transport": "stdio",
+      "command": "dotnet",
+      "args": [
+        "run",
+        "--project",
+        "src/EquipmentReservation.Mcp",
+        "--configuration",
+        "Release",
+        "--no-build"
+      ],
+      "toolRisks": {
+        "get_project_structure": "ReadOnly",
+        "get_git_diff": "ReadOnly",
+        "run_unit_tests": "ProcessExecution"
+      }
+    }
+  }
+}

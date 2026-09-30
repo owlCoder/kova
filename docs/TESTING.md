@@ -1,14 +1,14 @@
 # Testing strategy
 
-## What this phase verifies
+## Automated checks
 
-`npm run check` runs strict project/Core-isolation typecheck, ESLint, Prettier and Vitest. Current tests verify workspace dependency direction, static/re-export/type/dynamic import boundaries, protocol data-only constraints, one public behavioral type per file, representative violating-source detection and compile-time protocol invariants.
+`npm run check` runs strict project/Core-isolation typecheck, ESLint, Prettier and Vitest. Tests verify runtime behavior alongside workspace dependency direction, static/re-export/type/dynamic import boundaries, protocol data-only constraints, one public behavioral type per file, representative violating-source detection and compile-time protocol invariants.
 
 Core compiles with `types: []` and `lib: ["ES2022"]`, so Node/DOM ambient APIs cannot become accidental ports. Runtime source AST scanning checks all package source files; Core also has an ESLint restricted-import rule. Package manifests are checked separately, including dev/peer/optional dependencies. Tests inspect authored source, not installed dependencies. Computed module loads are rejected because their graph cannot be proven statically.
 
-The initial suite does **not** execute a provider, agent, file tool, path guard, hook or MCP client. Contract shape and example JSON round-tripping are not runtime input validation. No functionality test is presented as passed before an implementation exists.
+The deterministic suite uses fake providers, temporary files, native-adapter doubles and real fixture processes. Native Ollama/VS Code/ERS checks are explicit smoke commands; they are kept outside deterministic CI. Current observed results are recorded in IMPLEMENTATION.md.
 
-## Unit acceptance matrix after approval
+## Behavior acceptance matrix
 
 | Component              | Required cases                                                                                                                                                                                |
 | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -38,7 +38,7 @@ The initial suite does **not** execute a provider, agent, file tool, path guard,
 2. Tool request → permission allow/approval → pre-hook veto → final guardrails → no executor invocation.
 3. Tool request → execution → post-hooks → paired result → model continuation/final answer.
 4. Protected write in Auto → calculated diff → RequireApproval → reject means no write; approve applies exactly previewed current-version text.
-5. File changes during approval → StalePreparation → new preview/new approval; old key cannot write.
+5. File changes during approval → StaleContent → new preview/new approval; old key cannot write.
 6. Malformed tool call → bounded repair diagnostic → valid continuation, or third error stops; repairs consume the shared limit.
 7. Consecutive identical calls → execute once → no repeated side effect → third request stops.
 8. Compound command in Auto → no allowlist match → approval required, unless destructive then Block.
@@ -47,7 +47,7 @@ The initial suite does **not** execute a provider, agent, file tool, path guard,
 11. Webview reload during approval → authoritative snapshot → same pending approval → invalid/stale/cross-run messages rejected.
 12. Large tool/schema set → context overflow or defined eviction → no silently truncated request; real UI total equals sent num_ctx.
 
-Fixtures use fake `LlmProvider`, in-memory workspace/approval ports, controlled clocks and a local stdio MCP server. No network/Ollama/model is required for deterministic CI. Never use live project processes or real destructive commands in tests. OS-sensitive path/process checks run on Linux, macOS and Windows once those implementations exist.
+Fixtures use fake `LlmProvider`, in-memory workspace/approval ports, controlled clocks and a local stdio MCP server. No network/Ollama/model is required for deterministic CI. Deterministic CI never runs live projects or destructive commands. The opt-in ERS smoke invokes only its fixed reviewed MCP tools, public dummy fixtures and blocked safety requests. OS-sensitive path/process checks run on Linux, macOS and Windows before claiming release support on each platform.
 
 ## Architectural tests throughout delivery
 

@@ -1,6 +1,6 @@
 # Tools, risk, permission and guardrails
 
-Status: **Proposed**. This is the exact behavior contract for the tools milestone onward.
+Status: **Implemented**. Deterministic runtime tests cover the permission, preparation, approval, hook and guardrail pipeline.
 
 ## Tool lifecycle and inputs
 

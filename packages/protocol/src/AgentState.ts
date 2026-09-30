@@ -1,0 +1,17 @@
+export type AgentState =
+  | 'Idle'
+  | 'BuildingContext'
+  | 'Streaming'
+  | 'ValidatingTool'
+  | 'PreparingTool'
+  | 'EvaluatingPolicy'
+  | 'RunningPreHooks'
+  | 'EvaluatingGuardrails'
+  | 'AwaitingApproval'
+  | 'ExecutingTool'
+  | 'RunningPostHooks'
+  | 'RecordingToolResult'
+  | 'Completed'
+  | 'Cancelled'
+  | 'Stopped'
+  | 'Failed';

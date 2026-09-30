@@ -1,9 +1,30 @@
-import type { AgentEvent } from '../../core/src/agents/AgentEvent.js';
+import type { ContextUsage } from './ContextUsage.js';
+import type { HookReport } from './HookReport.js';
+import type { PolicyDecision } from './PolicyDecision.js';
+import type { RiskLevel } from './RiskLevel.js';
 import type { ApprovalView } from './ApprovalView.js';
+import type { ToolResult } from './ToolResult.js';
+import type { AgentState } from './AgentState.js';
 
-/** Adapter projection avoids forwarding file-write payloads and full diff contents. */
+export type LoopStopReason = 'IterationLimit' | 'RepeatedToolCall' | 'MalformedToolCall';
+
+/** Events contain presentation-safe JSON data, never implementation objects. */
 export type PresentationEvent =
-  | Exclude<AgentEvent, { readonly type: 'ToolRequested' | 'ToolAwaitingApproval' }>
+  | {
+      readonly type: 'ConfigurationReloaded';
+      readonly changedServers: readonly string[];
+      readonly hooksChanged: boolean;
+    }
+  | { readonly type: 'StateChanged'; readonly state: AgentState }
+  | { readonly type: 'ResponseStarted'; readonly messageId: string }
+  | { readonly type: 'ResponseDelta'; readonly messageId: string; readonly text: string }
+  | { readonly type: 'ThinkingDelta'; readonly messageId: string; readonly text: string }
+  | {
+      readonly type: 'ResponseCompleted';
+      readonly messageId: string;
+      readonly finishReason: 'Complete' | 'ToolCalls' | 'Length';
+    }
+  | { readonly type: 'SkillLoaded'; readonly skillId: string; readonly name: string }
   | {
       readonly type: 'ToolRequested';
       readonly callId: string;
@@ -11,4 +32,49 @@ export type PresentationEvent =
       readonly sourceLabel: string;
       readonly argumentSummary: string;
     }
-  | { readonly type: 'ToolAwaitingApproval'; readonly request: ApprovalView };
+  | {
+      readonly type: 'ToolValidationFailed';
+      readonly callId: string;
+      readonly code: string;
+      readonly message: string;
+      readonly repairAttempt: number;
+    }
+  | {
+      readonly type: 'PolicyEvaluated';
+      readonly callId: string;
+      readonly risk: RiskLevel;
+      readonly decision: PolicyDecision;
+    }
+  | { readonly type: 'HookObserved'; readonly callId: string; readonly report: HookReport }
+  | {
+      readonly type: 'GuardrailEvaluated';
+      readonly callId: string;
+      readonly decision: PolicyDecision;
+    }
+  | { readonly type: 'ToolAwaitingApproval'; readonly request: ApprovalView }
+  | { readonly type: 'ToolStarted'; readonly callId: string }
+  | { readonly type: 'ToolCompleted'; readonly callId: string; readonly result: ToolResult }
+  | { readonly type: 'ToolBlocked'; readonly callId: string; readonly reasons: readonly string[] }
+  | { readonly type: 'ToolDenied'; readonly callId: string }
+  | {
+      readonly type: 'McpServerStarted';
+      readonly serverId: string;
+      readonly command: string;
+      readonly args: readonly string[];
+    }
+  | { readonly type: 'McpServerStopped'; readonly serverId: string; readonly reason: string }
+  | {
+      readonly type: 'McpToolCalled';
+      readonly serverId: string;
+      readonly callId: string;
+      readonly toolName: string;
+    }
+  | { readonly type: 'ContextUpdated'; readonly usage: ContextUsage }
+  | { readonly type: 'AgentLoopStopped'; readonly reason: LoopStopReason }
+  | { readonly type: 'GenerationCancelled' }
+  | {
+      readonly type: 'ErrorOccurred';
+      readonly code: string;
+      readonly message: string;
+      readonly recoverable: boolean;
+    };

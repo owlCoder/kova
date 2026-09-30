@@ -1,0 +1,18 @@
+{
+  "BeforeToolExecution": [
+    {
+      "id": "ers-audit-before",
+      "command": "node",
+      "args": ["scripts/kova-audit.mjs"],
+      "timeoutMs": 5000
+    }
+  ],
+  "AfterToolExecution": [
+    {
+      "id": "ers-audit-after",
+      "command": "node",
+      "args": ["scripts/kova-audit.mjs"],
+      "timeoutMs": 5000
+    }
+  ]
+}

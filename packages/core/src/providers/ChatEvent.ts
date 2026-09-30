@@ -16,5 +16,8 @@ export type ChatEvent =
       readonly toolName: string | null;
       readonly message: string;
     }
-  | { readonly type: 'Usage'; readonly usage: ProviderUsage }
-  | { readonly type: 'Finished'; readonly reason: 'Complete' | 'ToolCalls' | 'Length' };
+  | {
+      readonly type: 'Finished';
+      readonly reason: 'Complete' | 'ToolCalls' | 'Length';
+      readonly usage: ProviderUsage | null;
+    };

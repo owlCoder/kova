@@ -1,4 +1,4 @@
-# Architecture scaffold validation
+# Initial architecture validation
 
 Validated locally on **2026-09-30**, before the initial architecture commit.
 
@@ -15,4 +15,4 @@ Validated locally on **2026-09-30**, before the initial architecture commit.
 
 Environment: Node.js 24.19.0, npm 11.17.0, TypeScript 6.0.3, Vitest 5.0.2. Tool versions are pinned in the root manifest and lockfile. CI repeats the check suite on Node 24 with `npm ci`.
 
-These results validate the **architecture scaffold only**. No extension-host run, chat streaming, tool execution, guardrail enforcement, MCP/hook startup or ERS integration was implemented/tested in this phase. Runtime acceptance remains defined in [TESTING.md](TESTING.md) and [MILESTONES.md](MILESTONES.md).
+This table records the initial architecture phase before runtime implementation. Current runtime, native integration and package evidence are in [IMPLEMENTATION.md](IMPLEMENTATION.md).

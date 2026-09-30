@@ -8,5 +8,8 @@ export interface WorkspaceWriter {
     content: string,
     expectedVersion: string | null,
     cancellation: CancellationToken,
-  ): Promise<{ readonly version: string }>;
+  ): Promise<
+    | { readonly status: 'Applied'; readonly version: string }
+    | { readonly status: 'Error'; readonly code: 'StaleContent'; readonly message: string }
+  >;
 }

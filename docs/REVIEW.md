@@ -1,6 +1,6 @@
 # Architecture review
 
-Status: **Accepted with [amendments](REVIEW-CHANGES.md)**. This is a reviewable baseline fulfilling the original specification's architecture-only first step. Milestone 1 is authorized; later milestones require individual confirmation.
+Status: **Accepted with [amendments](REVIEW-CHANGES.md)**. This is a reviewable baseline fulfilling the original specification's architecture-only first step. The subsequent user instruction authorized all milestones without intermediate stops. See [implementation evidence](IMPLEMENTATION.md).
 
 ## Scope delivered
 
@@ -11,7 +11,7 @@ Status: **Accepted with [amendments](REVIEW-CHANGES.md)**. This is a reviewable 
 - Agent execution states, bounded repair/repeat/iteration behavior and cancellation races.
 - Context eviction, token reconciliation, history/UI limits and deterministic compaction design.
 - Required unit/integration/architectural acceptance matrices and milestones.
-- Automated scaffold checks and CI; no production app implementation.
+- Automated architecture checks and CI; runtime verification is recorded separately in IMPLEMENTATION.md.
 
 ## Decisions to confirm
 

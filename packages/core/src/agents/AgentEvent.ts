@@ -10,6 +10,11 @@ import type { LoopStopReason } from './RunOutcome.js';
 
 /** Events contain presentation-safe JSON data, never implementation objects. */
 export type AgentEvent =
+  | {
+      readonly type: 'ConfigurationReloaded';
+      readonly changedServers: readonly string[];
+      readonly hooksChanged: boolean;
+    }
   | { readonly type: 'StateChanged'; readonly state: AgentState }
   | { readonly type: 'ResponseStarted'; readonly messageId: string }
   | { readonly type: 'ResponseDelta'; readonly messageId: string; readonly text: string }

@@ -24,7 +24,7 @@ Status: **Accepted**. Milestone 1 implements chat streaming and model discovery;
 
 Risk/origin metadata is not sent as model tool schema. Provider assigns deterministic local call IDs when the wire format lacks them, retaining the same identity across complete fragments. Preserve valid assistant calls and matching tool-name results on continuation. Parse NDJSON across arbitrary byte boundaries, including split UTF-8, multiple lines/chunk and final no-newline records. Bound buffered records; transport/protocol errors are recoverable ErrorOccurred outcomes. Never execute a partially assembled call because generation was cancelled or length-limited.
 
-Default endpoint: `http://127.0.0.1:11434`. Proposed settings: `kova.provider` (only ollama in v1), `kova.ollama.baseUrl`, `.model` (`qwen3:4b`), `.think` (false), `.keepAlive` (`5m`), `kova.context.maxTokens` (8192), `.reservedOutputTokens` (1024), `.safetyMarginRatio` (0.10), `kova.commands.allow`. Endpoint changes are explicit user configuration; no source is sent to cloud services by default.
+Default endpoint: `http://127.0.0.1:11434`. Settings: `kova.provider` (only ollama in v1), `kova.ollama.baseUrl`, `.model` (`qwen3:4b`), `.think` (false), `.keepAliveSeconds` (`300`), `kova.context.maxTokens` (8192), `.reservedOutputTokens` (1024), `.safetyMarginRatio` (0.10), `kova.commands.allow`. Endpoint changes are explicit user configuration; no source is sent to cloud services by default.
 
 ## Discovery and failures
 

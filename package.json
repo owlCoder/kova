@@ -2,7 +2,7 @@
   "name": "kova",
   "version": "0.0.0",
   "private": true,
-  "description": "Architecture baseline for Kova, an offline-first local coding agent for VS Code",
+  "description": "Offline-first local AI coding agent for VS Code",
   "type": "module",
   "workspaces": [
     "packages/*",
@@ -19,14 +19,29 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:architecture": "vitest run tests/architecture",
-    "check": "npm run typecheck && npm run lint && npm run format:check && npm test"
+    "check": "npm run typecheck && npm run lint && npm run format:check && npm test",
+    "build": "node scripts/build.mjs",
+    "package": "npm run build && cd dist/extension && ../../node_modules/.bin/vsce package --no-dependencies --out ../kova-0.1.0.vsix",
+    "smoke:ollama": "node scripts/smoke-ollama.mjs",
+    "smoke:vscode": "node scripts/smoke-vscode.mjs",
+    "smoke:ers": "node scripts/smoke-ers.mjs",
+    "verify:package": "node scripts/verify-package.mjs",
+    "smoke:vsix": "node scripts/smoke-vscode.mjs --vsix"
   },
   "devDependencies": {
     "@types/node": "24.10.1",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@types/vscode": "1.138.0",
+    "@vscode/test-electron": "3.1.0",
+    "@vscode/vsce": "4.0.0",
+    "esbuild": "0.28.2",
     "eslint": "10.11.0",
     "prettier": "3.9.9",
     "typescript": "6.0.3",
     "typescript-eslint": "8.71.0",
+    "vite": "8.3.1",
     "vitest": "5.0.2"
-  }
+  },
+  "license": "MIT"
 }

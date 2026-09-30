@@ -1,6 +1,6 @@
 # Agent execution state machine
 
-Status: **Accepted**. `Agent` is a contract; `AgentLoop` is not implemented in this phase.
+Status: **Accepted**. `Agent` is the boundary contract; `ChatAgent` implements the complete serial loop.
 
 ## States
 
@@ -47,7 +47,7 @@ Every nonterminal state can transition to Cancelled on cancellation and Failed o
 7. `Tool.prepare` computes normalized targets, command assessment and preview without mutation. A failed edit match/read/schema/version precondition produces a structured tool result. Preparation must use WorkspacePathGuard before any read, including preview reads.
 8. Compute dynamic risk and baseline PermissionPolicy. Run all BeforeToolExecution hooks with immutable, bounded input. Merge veto/failure into Block. Run all guardrails after hooks, even if already blocked; combine only by strictness.
 9. Block returns a bounded blocked result, no tool execution. RequireApproval emits ToolAwaitingApproval and awaits ApprovalPort. Reject returns Denied. AllowOnce binds the exact preparation key. A stale ID/key is rejected without resuming the tool.
-10. After approval, re-resolve paths/revalidate editor versions and re-evaluate guardrails immediately before execution. Do not rerun pre-hooks solely because a dialog was open. If the preparation changed, discard approval, reprepare and run the complete safety pipeline again. A still-applicable RequireApproval is satisfied only by the same bound approval; Block always prevents execution.
+10. After approval, re-resolve paths/revalidate editor versions and re-evaluate guardrails immediately before execution. Do not rerun pre-hooks solely because a dialog was open. If file content changed, return StaleContent without writing; the model must request a new preparation and approval. A still-applicable RequireApproval is satisfied only by the same bound approval; Block always prevents execution.
 11. Execute once, emit ToolStarted/ToolCompleted, run AfterToolExecution hooks and report their observations/failures. Post-hooks run on actual execution outcomes, including a returned tool error. They do not run on denied/blocked/preparation failures. Cancellation may terminate post-hooks; it never resurrects an execution.
 12. Append bounded tool results paired with their assistant call. Continue through queued calls, then build the next request. Results of this current step retain their identities and receive a fair share of the remaining token budget. No result is silently removed.
 

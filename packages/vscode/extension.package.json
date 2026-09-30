@@ -1,0 +1,146 @@
+{
+  "name": "kova",
+  "displayName": "Kova \u2014 Local Coding Agent",
+  "description": "Local coding assistant for VS Code using Ollama",
+  "version": "0.1.0",
+  "publisher": "owlcoder",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.100.0"
+  },
+  "categories": ["Machine Learning", "Other"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/owlCoder/kova.git"
+  },
+  "main": "./extension.cjs",
+  "activationEvents": ["onView:kova.chat"],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": true
+    },
+    "virtualWorkspaces": {
+      "supported": false
+    }
+  },
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "kova",
+          "title": "Kova",
+          "icon": "media/logo_mono.png"
+        }
+      ]
+    },
+    "views": {
+      "kova": [
+        {
+          "type": "webview",
+          "id": "kova.chat",
+          "name": "Kova"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "kova.open",
+        "title": "Kova: Open Chat"
+      },
+      {
+        "command": "kova.newConversation",
+        "title": "Kova: New Conversation"
+      },
+      {
+        "command": "kova.settings",
+        "title": "Kova: Open Settings"
+      }
+    ],
+    "configuration": {
+      "title": "Kova",
+      "properties": {
+        "kova.provider": {
+          "type": "string",
+          "enum": ["ollama"],
+          "default": "ollama"
+        },
+        "kova.ollama.baseUrl": {
+          "type": "string",
+          "default": "http://127.0.0.1:11434",
+          "description": "Ollama endpoint. Defaults to the local runtime."
+        },
+        "kova.ollama.model": {
+          "type": "string",
+          "default": "qwen3:4b"
+        },
+        "kova.ollama.think": {
+          "type": "boolean",
+          "default": false,
+          "description": "Stream model thinking separately; it is never saved in conversation history."
+        },
+        "kova.ollama.keepAliveSeconds": {
+          "type": "integer",
+          "default": 300,
+          "minimum": 0,
+          "maximum": 3600
+        },
+        "kova.context.maxTokens": {
+          "type": "integer",
+          "default": 8192,
+          "minimum": 512,
+          "maximum": 131072
+        },
+        "kova.context.reservedOutputTokens": {
+          "type": "integer",
+          "default": 1024,
+          "minimum": 128,
+          "maximum": 8192
+        },
+        "kova.context.safetyMarginRatio": {
+          "type": "number",
+          "default": 0.1,
+          "minimum": 0,
+          "maximum": 0.5
+        },
+        "kova.commands.allow": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "git status",
+            "git diff",
+            "git log",
+            "dotnet build",
+            "dotnet test",
+            "npm test"
+          ],
+          "description": "Exact executable/argv commands eligible for Auto. Compound shell commands never match."
+        },
+        "kova.ers.guardrailsProject": {
+          "type": "string",
+          "default": "",
+          "description": "Optional workspace-relative ERS Guardrails csproj. Build it in Release first. Evaluated as a separate final guardrail, fail-closed."
+        }
+      }
+    }
+  },
+  "icon": "media/logo.png",
+  "keywords": ["ollama", "local ai", "coding assistant", "offline", "mcp"],
+  "galleryBanner": {
+    "color": "#17191d",
+    "theme": "dark"
+  },
+  "extensionKind": ["workspace"],
+  "files": [
+    "extension.cjs",
+    "extension.cjs.LEGAL.txt",
+    "media/**",
+    "webview/assets/**",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE",
+    "THIRD-PARTY-NOTICES.txt",
+    "SETUP.md"
+  ]
+}

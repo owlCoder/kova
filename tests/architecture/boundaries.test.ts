@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { dirname, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
@@ -14,7 +14,7 @@ const allowed: Record<Package, readonly Package[]> = {
   ollama: ['core'],
   mcp: ['core'],
   vscode: ['core', 'ollama', 'mcp', 'protocol'],
-  protocol: ['core'],
+  protocol: [],
   webview: ['protocol'],
 };
 
@@ -79,7 +79,18 @@ describe('runtime package boundaries', () => {
         for (const imported of result.imports) {
           const label = `${relative(root, path)} → ${imported.specifier}`;
           if (imported.specifier.startsWith('.')) {
-            const target = owner(resolve(dirname(path), imported.specifier));
+            const importedPath = resolve(dirname(path), imported.specifier);
+            const assetRelative = relative(resolve(root, 'assets'), importedPath);
+            if (
+              name === 'webview' &&
+              /\.png$/.test(importedPath) &&
+              !assetRelative.startsWith('..') &&
+              !assetRelative.startsWith(sep)
+            ) {
+              expect(existsSync(importedPath), label).toBe(true);
+              continue;
+            }
+            const target = owner(importedPath);
             expect(target, label).toBeDefined();
             if (target !== name) expect(allowed[name], label).toContain(target);
           } else if (imported.specifier.startsWith('@kova/')) {
