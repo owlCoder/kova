@@ -1,6 +1,6 @@
 # Release and Marketplace
 
-Extension: `owlcoder.kova-local`, version `0.3.1`, MIT. The package name remains `kova-local` because `kova` was already registered in the Marketplace. The displayed product name is **Kova — Local-first AI Coding Agent**.
+Extension: `owlcoder.kova-local`, version `0.3.2`, MIT. The package name remains `kova-local` because `kova` was already registered in the Marketplace. The displayed product name is **Kova — Local-first AI Coding Agent**.
 
 Kova is local-first rather than Ollama-only. Marketplace copy must make the provider boundary explicit:
 
@@ -16,7 +16,7 @@ The package icon uses the color logo. The Activity Bar uses the SVG luminance ma
 The canonical Marketplace manifest is `packages/vscode/extension.package.json`.
 
 - Identifier: `owlcoder.kova-local`
-- Version: `0.3.1`
+- Version: `0.3.2`
 - Display name: `Kova — Local-first AI Coding Agent`
 - Categories: Machine Learning, Other
 - Provider keywords: Ollama, Qwen/Qwen3, DeepSeek, OpenAI-compatible
@@ -34,7 +34,7 @@ npm run verify:package
 npm run smoke:vsix
 ```
 
-The package is written to `dist/kova-local-0.3.1.vsix`. Build, verification and smoke scripts derive the name/version from `packages/vscode/extension.package.json`. Packaging removes older archives with the same package name from `dist`, and the production extension directory is rebuilt from scratch.
+The package is written to `dist/kova-local-0.3.2.vsix`. Build, verification and smoke scripts derive the name/version from `packages/vscode/extension.package.json`. Packaging removes older archives with the same package name from `dist`, and the production extension directory is rebuilt from scratch.
 
 The verifier checks required package files, manifest identity, provider settings, API-key commands, the absence of plaintext API-key settings, bundled runtime, logo integrity, license notices and the absence of development/secret files.
 
@@ -48,7 +48,7 @@ Marketplace publication is intentionally manual. After the release checks are gr
 2. Run `npm run package` and `npm run verify:package` from a clean checkout.
 3. Optionally run `npm run smoke:vsix` on the release machine.
 4. Open the Visual Studio Marketplace publisher management portal and select publisher `owlcoder`.
-5. Upload `dist/kova-local-0.3.1.vsix`.
+5. Upload `dist/kova-local-0.3.2.vsix`.
 6. Confirm the Marketplace page shows the expected version, README, changelog, icon and provider metadata.
 
 No `VSCE_PAT`, repository secret or automatic publish workflow is required for this release process.

@@ -2,7 +2,7 @@
   "name": "kova-local",
   "displayName": "Kova — Local-first AI Coding Agent",
   "description": "Local-first AI coding agent for VS Code with Ollama, DeepSeek and OpenAI-compatible providers",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "publisher": "owlcoder",
   "license": "MIT",
   "engines": {

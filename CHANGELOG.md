@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.3.2
 
 - Load project rules from the workspace root `AGENTS.md` into every run, ahead of the selected skill, and show them in the activity list.
 

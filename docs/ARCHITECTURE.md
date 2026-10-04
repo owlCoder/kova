@@ -38,7 +38,7 @@ kova/
 │   │   ├── skills/          Skill, SkillRepository, SkillLoader
 │   │   ├── permissions/     policies, risks, approvals, guardrail ports
 │   │   ├── hooks/           Hook, HookPipeline, lifecycle/configuration DTOs
-│   │   ├── workspace/       reader, writer, search, path guard and Git ports
+│   │   ├── workspace/       reader, writer, search, path guard, Git and project-rules ports
 │   │   ├── processes/       ProcessRunner
 │   │   └── mcp/             McpClient, stdio configuration DTOs
 │   ├── ollama/src/          OllamaLlmProvider, OllamaModelCatalog
@@ -48,7 +48,7 @@ kova/
 │   │   ├── adapters/        VsCodeWorkspaceReader, VsCodeWorkspaceWriter,
 │   │   │                           NodeWorkspaceSearch, NodeWorkspacePathGuard,
 │   │   │                           NodeProcessRunner, WorkspaceConfigurationLoader,
-│   │   │                           CommandHook, WorkspaceRuntime
+│   │   │                           CommandHook, WorkspaceRuntime, WorkspaceProjectInstructions
 │   │   ├── tools/           ReadFileTool, ListDirectoryTool, SearchFilesTool,
 │   │   │                           GetGitDiffTool, WriteFileTool, EditFileTool, RunCommandTool
 │   │   ├── skills/          WorkspaceSkillRepository
@@ -93,6 +93,7 @@ Each public class/behavioral interface lives alone in its file. Cohesive DTOs/un
 | `WorkspaceReader` / `WorkspaceWriter` / `WorkspaceSearch` / `GitReader` | Explicit bounded workspace IO                                        | VS Code adapters                         |
 | `ProcessRunner`                                                         | Bounded, cancellable process execution after policy                  | VS Code/Node adapter                     |
 | `SkillRepository` / `SkillLoader`                                       | Discover metadata, load only selected procedural context             | Workspace adapter / Core loader          |
+| `ProjectInstructionsRepository`                                         | Read the bounded root `AGENTS.md` for every run                      | Workspace adapter                        |
 | `McpClient`                                                             | Start configured stdio servers and return normal tools               | MCP package                              |
 | `AgentEventSink`                                                        | Observability channel; no permission authority                       | Host projection + redacted Output logger |
 
@@ -110,7 +111,7 @@ Adapters translate cancellation to fetch abort, VS Code tokens, pending-approval
 
 ## Application flow and UI
 
-The host translates validated UI intent into `AgentRequest`, then calls `Agent.run`. The Agent retrieves conversation, loads selected skill, builds bounded context, streams the provider, resolves tool calls through the safety pipeline, records bounded results and continues. Tool execution is serial in v1. The host projects `AgentEvent` into safe protocol DTOs; React renders conversation, thinking, context cost, approvals and an activity list.
+The host translates validated UI intent into `AgentRequest`, then calls `Agent.run`. The Agent retrieves conversation, loads project rules and the selected skill, builds bounded context, streams the provider, resolves tool calls through the safety pipeline, records bounded results and continues. Tool execution is serial in v1. The host projects `AgentEvent` into safe protocol DTOs; React renders conversation, thinking, context cost, approvals and an activity list.
 
 Kova: Open Chat opens the sidebar. Kova: Open Chat in Editor creates or focuses one movable editor WebviewPanel. Both views share the same host-owned session through KovaWebviewHost. Closing the editor tab cancels an active run; hiding the sidebar does not. Reopening either view restores the session conversation. Selection/current-file attachments use the most recently active file editor while chat has focus. Both views contain prompt, send/stop, model selector, four-mode picker and context meter. Tool definition token cost is separate. Skills, tools, MCP, hooks, guardrails and errors are visible in expandable activity rows. There is no dashboard and no React-owned business state. Diff preview uses host-side virtual documents and VS Code's diff editor.
 

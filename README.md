@@ -88,11 +88,13 @@ Run **Kova: Open Settings** to change:
 
 Generic OpenAI-compatible thinking is disabled because reasoning wire formats are not standardized. Auto allowlisting matches the whole command; chaining, pipes, redirection, substitutions and backticks never match.
 
-## Skills, MCP and hooks
+## Project rules, skills, MCP and hooks
 
-Project rules in a root `AGENTS.md` are added to every run automatically. Select a skill from `.kova/skills/<id>/SKILL.md`; only its selected body enters context. Configure local stdio MCP servers in `.kova/mcp.json` and command hooks in `.kova/hooks.json`. MCP tools use the same permission and guardrail pipeline as built-in tools. Configuration changes take effect between runs.
+Put the rules every run should follow in `AGENTS.md` at the workspace root: architecture boundaries, naming, how to build and test. Kova adds that text to each run ahead of the selected skill and lists **Project rules · AGENTS.md** in the activity view. Nothing has to be configured, and edits apply from the next run. The file is limited to 16,000 bytes of plain text; project rules guide the model and cannot grant permissions or change modes, hooks or guardrails.
 
-See the [usage guide](https://github.com/owlCoder/kova/blob/main/docs/USAGE.md) for skill and MCP examples, thinking display and permission modes.
+Select a skill from `.kova/skills/<id>/SKILL.md`; only its selected body enters context. Configure local stdio MCP servers in `.kova/mcp.json` and command hooks in `.kova/hooks.json`. MCP tools use the same permission and guardrail pipeline as built-in tools. Configuration changes take effect between runs.
+
+See the [usage guide](https://github.com/owlCoder/kova/blob/main/docs/USAGE.md) for project rules, skill and MCP examples, thinking display and permission modes.
 
 Use trusted projects. Configured MCP servers, hooks and project scripts run with your user privileges. They are not sandboxed. Kova adds no separate workspace-trust prompt. Writes to `.kova/mcp.json`, `.kova/hooks.json`, `.git/**` and `.vscode/**` require approval.
 
@@ -118,7 +120,7 @@ npm run package
 npm run verify:package
 ```
 
-Press F5 in VS Code to launch the development extension. Packaging writes `dist/kova-local-<version>.vsix`, using the name and version in `packages/vscode/extension.package.json`. The Marketplace extension identifier is `owlcoder.kova-local`; the current extension release is `0.3.1`.
+Press F5 in VS Code to launch the development extension. Packaging writes `dist/kova-local-<version>.vsix`, using the name and version in `packages/vscode/extension.package.json`. The Marketplace extension identifier is `owlcoder.kova-local`; the current extension release is `0.3.2`.
 
 Local integration checks are `smoke:ollama`, `smoke:vscode`, `smoke:vsix` and `smoke:ers`.
 
@@ -133,7 +135,7 @@ npm run package
 npm run verify:package
 ```
 
-Then upload `dist/kova-local-0.3.1.vsix` through the Visual Studio Marketplace publisher management portal for publisher `owlcoder`. No Marketplace PAT, repository secret or automatic publish workflow is required.
+Then upload `dist/kova-local-0.3.2.vsix` through the Visual Studio Marketplace publisher management portal for publisher `owlcoder`. No Marketplace PAT, repository secret or automatic publish workflow is required.
 
 [Setup](https://github.com/owlCoder/kova/blob/main/docs/SETUP.md) · [Providers](https://github.com/owlCoder/kova/blob/main/docs/PROVIDERS.md) · [Architecture](https://github.com/owlCoder/kova/blob/main/docs/ARCHITECTURE.md) · [Marketplace release](https://github.com/owlCoder/kova/blob/main/docs/MARKETPLACE.md) · [Release checks](https://github.com/owlCoder/kova/blob/main/docs/TESTING.md)
 
