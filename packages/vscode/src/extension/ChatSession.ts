@@ -21,6 +21,7 @@ import { ErsGuardrailAdapter } from '../integrations/ErsGuardrailAdapter.js';
 import { ProviderApiKeyStore } from '../providers/ProviderApiKeyStore.js';
 import { ProviderManager } from '../providers/ProviderManager.js';
 import { WorkspaceSkillRepository } from '../skills/WorkspaceSkillRepository.js';
+import { WorkspaceProjectInstructions } from '../adapters/WorkspaceProjectInstructions.js';
 import { WebviewApprovalPort } from '../webview/WebviewApprovalPort.js';
 import { approvalView, projectEvent } from '../webview/projectEvent.js';
 import { ContextAttachmentManager } from './ContextAttachmentManager.js';
@@ -49,6 +50,7 @@ export class ChatSession {
   private initializationCancellation: CancellationSource | null = null;
   private runtime: WorkspaceRuntime | null = null;
   private skillsRepository: WorkspaceSkillRepository | null = null;
+  private projectInstructions: WorkspaceProjectInstructions | null = null;
   private models: readonly ModelInfo[] = [];
   private skills: readonly SkillMetadata[] = [];
   private skillId: string | null = null;
@@ -189,6 +191,14 @@ export class ChatSession {
       );
       this.skillsRepository = new WorkspaceSkillRepository(this.root, (message) =>
         this.emit({ type: 'ErrorOccurred', code: 'InvalidSkill', message, recoverable: true }),
+      );
+      this.projectInstructions = new WorkspaceProjectInstructions(this.root, (message) =>
+        this.emit({
+          type: 'ErrorOccurred',
+          code: 'ProjectRulesSkipped',
+          message,
+          recoverable: true,
+        }),
       );
     }
     await this.runtime?.initialize(source);
@@ -417,6 +427,7 @@ export class ChatSession {
         counter,
         this.runtime,
         this.skillsRepository ? new SkillLoader(this.skillsRepository) : null,
+        this.projectInstructions,
       );
       this.state = 'BuildingContext';
       this.activeRun = {

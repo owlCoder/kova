@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Load project rules from the workspace root `AGENTS.md` into every run, ahead of the selected skill, and show them in the activity list.
+
 ## 0.3.1
 
 - Increase default context to 32,768 tokens and output reserve to 4,096, keeping the 10% safety margin.

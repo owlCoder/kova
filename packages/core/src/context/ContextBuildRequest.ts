@@ -6,6 +6,8 @@ import type { ContextSettings } from './ContextSettings.js';
 
 export interface ContextBuildRequest {
   readonly systemInstructions: string;
+  /** Workspace AGENTS.md; guidance for the project, never a source of permissions. */
+  readonly projectInstructions: string | null;
   readonly tools: readonly ToolDefinition[];
   readonly activeSkill: Skill | null;
   readonly currentUserMessageId: string;

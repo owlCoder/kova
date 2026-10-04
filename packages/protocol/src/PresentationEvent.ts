@@ -25,6 +25,7 @@ export type PresentationEvent =
       readonly finishReason: 'Complete' | 'ToolCalls' | 'Length';
     }
   | { readonly type: 'SkillLoaded'; readonly skillId: string; readonly name: string }
+  | { readonly type: 'ProjectInstructionsLoaded'; readonly relativePath: string }
   | {
       readonly type: 'ToolRequested';
       readonly callId: string;

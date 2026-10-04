@@ -91,6 +91,64 @@ describe('explicit safe skills', () => {
     expect(captured[0]?.messages[0]?.content).toContain('SELECTED PROCEDURE');
     expect(JSON.stringify(captured[1])).not.toContain('SELECTED PROCEDURE');
   });
+  it('adds workspace project rules to every run, ahead of the selected skill', async () => {
+    const captured: ChatRequest[] = [];
+    const observed: string[] = [];
+    let rules: string | null = 'PROJECT RULES';
+    const agent = new ChatAgent(
+      {
+        async *streamChat(request) {
+          captured.push(request);
+          yield { type: 'TextDelta', text: 'answer' };
+          yield { type: 'Finished', reason: 'Complete', usage: null };
+        },
+      },
+      new InMemoryConversationRepository(),
+      new TokenCounter(),
+      null,
+      loader,
+      {
+        async read() {
+          return rules;
+        },
+      },
+    );
+    const request = {
+      runId: 'a',
+      conversationId: 'c',
+      workspaceId: 'root',
+      prompt: 'review',
+      modelId: 'local',
+      mode: 'Plan' as const,
+      activeSkillId: 'review',
+      context: {
+        maxTokens: 8192,
+        reservedOutputTokens: 1024,
+        safetyMarginRatio: 0.1,
+        maxToolOutputCharacters: 8000,
+      },
+      attachments: [],
+      thinkingEnabled: false,
+      keepAliveSeconds: 300,
+      maxToolIterations: 10,
+      commandAllowlist: [],
+      toolsEnabled: false,
+    };
+    const events = { emit: (event: { type: string }) => observed.push(event.type) };
+    await agent.run(request, new CancellationSource(), events);
+    rules = null;
+    await agent.run(
+      { ...request, runId: 'b', activeSkillId: null },
+      new CancellationSource(),
+      events,
+    );
+    const system = captured[0]?.messages[0]?.content ?? '';
+    expect(captured[0]?.messages[0]?.role).toBe('system');
+    expect(system.indexOf('PROJECT RULES')).toBeGreaterThan(0);
+    expect(system.indexOf('PROJECT RULES')).toBeLessThan(system.indexOf('SELECTED PROCEDURE'));
+    expect(JSON.stringify(captured[1])).not.toContain('PROJECT RULES');
+    expect(observed.filter((type) => type === 'ProjectInstructionsLoaded')).toHaveLength(1);
+  });
 });
 const entry = (
   id: string,
@@ -100,6 +158,7 @@ const entry = (
 ): ConversationEntry => ({ id, turnId, stepId, message, omitted: false, toolResultOrigin: null });
 const baseline: ContextBuildRequest = {
   systemInstructions: 'SYSTEM',
+  projectInstructions: null,
   tools: [],
   activeSkill: null,
   currentUserMessageId: 'current',

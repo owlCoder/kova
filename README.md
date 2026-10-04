@@ -90,7 +90,7 @@ Generic OpenAI-compatible thinking is disabled because reasoning wire formats ar
 
 ## Skills, MCP and hooks
 
-Select a skill from `.kova/skills/<id>/SKILL.md`; only its selected body enters context. Configure local stdio MCP servers in `.kova/mcp.json` and command hooks in `.kova/hooks.json`. MCP tools use the same permission and guardrail pipeline as built-in tools. Configuration changes take effect between runs.
+Project rules in a root `AGENTS.md` are added to every run automatically. Select a skill from `.kova/skills/<id>/SKILL.md`; only its selected body enters context. Configure local stdio MCP servers in `.kova/mcp.json` and command hooks in `.kova/hooks.json`. MCP tools use the same permission and guardrail pipeline as built-in tools. Configuration changes take effect between runs.
 
 See the [usage guide](https://github.com/owlCoder/kova/blob/main/docs/USAGE.md) for skill and MCP examples, thinking display and permission modes.
 

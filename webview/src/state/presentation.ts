@@ -50,6 +50,8 @@ export function activityText(event: PresentationEvent): string | null {
       return `Configuration reloaded · ${event.changedServers.length} MCP server changes${event.hooksChanged ? ' · hooks updated' : ''}`;
     case 'SkillLoaded':
       return `Skill · ${event.name}`;
+    case 'ProjectInstructionsLoaded':
+      return `Project rules · ${event.relativePath}`;
     case 'ToolRequested':
       return `${event.toolName} · ${event.sourceLabel}\n${event.argumentSummary}`;
     case 'PolicyEvaluated':

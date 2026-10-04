@@ -147,6 +147,7 @@ describe('context and token accounting', () => {
     const counter = new TokenCounter();
     const result = new ContextBuilder(counter).build({
       systemInstructions: 'Kova',
+      projectInstructions: null,
       tools: [
         {
           name: 'read_file',

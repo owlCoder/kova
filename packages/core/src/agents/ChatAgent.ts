@@ -10,6 +10,7 @@ import type { ToolResult } from '../tools/ToolResult.js';
 import { ToolInputValidator } from '../tools/ToolInputValidator.js';
 import type { ToolRuntime } from '../tools/ToolRuntime.js';
 import { SkillLoader } from '../skills/SkillLoader.js';
+import type { ProjectInstructionsRepository } from '../workspace/ProjectInstructionsRepository.js';
 import type { Agent } from './Agent.js';
 import type { AgentEventSink } from './AgentEventSink.js';
 import type { AgentRequest } from './AgentRequest.js';
@@ -26,6 +27,7 @@ export class ChatAgent implements Agent {
     private readonly counter: TokenCounter,
     private readonly runtime: ToolRuntime | null = null,
     private readonly skillLoader: SkillLoader | null = null,
+    private readonly projectInstructions: ProjectInstructionsRepository | null = null,
   ) {
     this.context = new ContextBuilder(counter);
   }
@@ -68,6 +70,10 @@ export class ChatAgent implements Agent {
       return { status: 'Stopped', runId: request.runId, reason };
     };
     try {
+      const projectInstructions =
+        (await this.projectInstructions?.read(request.workspaceId, cancellation)) ?? null;
+      if (projectInstructions)
+        events.emit({ type: 'ProjectInstructionsLoaded', relativePath: 'AGENTS.md' });
       const skill =
         request.activeSkillId && this.skillLoader
           ? await this.skillLoader.load(request.workspaceId, request.activeSkillId, cancellation)
@@ -80,6 +86,7 @@ export class ChatAgent implements Agent {
         events.emit({ type: 'StateChanged', state: 'BuildingContext' });
         const built = this.context.build({
           systemInstructions: instructions,
+          projectInstructions,
           tools,
           activeSkill: skill,
           currentUserMessageId: userId,

@@ -21,6 +21,12 @@ On the supplied Qwen3 installation, disabling thinking previously produced reaso
 
 Thinking is transient and excluded from stored conversation history. The output limit also needs room for reasoning on models that count reasoning toward generated output. Larger local contexts use more memory; the selected model must support the configured maximum.
 
+## Project rules
+
+When the workspace root contains `AGENTS.md`, Kova adds its text to the system instructions of every run, before the selected skill. No setting or reference from a skill is needed, and the activity list shows **Project rules · AGENTS.md** for each run that used it. Edits apply to the next run without reloading the window.
+
+The file must be plain text of at most 16,000 bytes and must resolve inside the workspace; otherwise it is skipped and Kova reports the reason. Project rules guide the model only. They cannot grant permissions or change the selected mode, hooks or guardrails.
+
 ## Skills
 
 A skill adds instructions to the selected run. Create `.kova/skills/code-review/SKILL.md` inside the project:
