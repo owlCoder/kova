@@ -1,3 +1,3 @@
 # @kova/vscode
 
-Extension composition, default chat sidebar and optional movable editor tab sharing one session, workspace/process/config adapters, seven built-in tools, approval/diff presentation, selected skills and ERS guardrail integration. Build/packaging emits the distributable manifest and bundled runtime.
+VS Code composition, guided provider setup, SecretStorage, default sidebar and movable editor tab sharing one session. Editor-aware context and writer ports preserve unsaved content and Undo; shared tools, providers, hooks and project configuration come from `@kova/runtime`. Build/packaging emits the distributable manifest and bundled runtime.

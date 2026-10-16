@@ -5,6 +5,7 @@ import { randomUUID } from 'node:crypto';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DesktopStore } from '../../packages/desktop/src/state/DesktopStore.js';
 import { DesktopSession } from '../../packages/desktop/src/main/DesktopSession.js';
+import { DesktopProviderManager } from '../../packages/desktop/src/main/DesktopProviderManager.js';
 import type { DesktopKeyStore } from '../../packages/desktop/src/state/DesktopKeyStore.js';
 import { validateDesktopMessage } from '../../packages/desktop/src/main/validateDesktopMessage.js';
 import { NodeWorkspacePathGuard } from '../../packages/runtime/src/adapters/NodeWorkspacePathGuard.js';
@@ -176,6 +177,21 @@ describe('native desktop file writer', () => {
 });
 
 describe('desktop agent integration', () => {
+  it('bounds inactive provider sessions while retaining recently used conversation state', async () => {
+    const store = new DesktopStore(directory);
+    await store.load();
+    const keys = { get: async () => undefined } as unknown as DesktopKeyStore;
+    const providers = new DesktopProviderManager(store, keys);
+    const first = await providers.forConversation('first');
+    const second = await providers.forConversation('second');
+    for (let i = 0; i < 6; i++) await providers.forConversation(`other-${i}`);
+    expect(await providers.forConversation('first')).toBe(first);
+    await providers.forConversation('ninth');
+    expect(await providers.forConversation('first')).toBe(first);
+    expect(await providers.forConversation('second')).not.toBe(second);
+    providers.clear();
+    expect(await providers.forConversation('first')).not.toBe(first);
+  });
   it('opens setup with actionable guidance when the default local server is unavailable', async () => {
     const store = new DesktopStore(directory);
     await store.load();

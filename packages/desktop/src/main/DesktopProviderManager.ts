@@ -30,9 +30,15 @@ export class DesktopProviderManager {
     const key = await this.keys.get(config);
     const fingerprint = JSON.stringify([config, key]);
     const cached = this.providers.get(id);
-    if (cached?.fingerprint === fingerprint) return cached.provider;
+    if (cached?.fingerprint === fingerprint) {
+      this.providers.delete(id);
+      this.providers.set(id, cached);
+      return cached.provider;
+    }
     const provider = createLlmProvider(config, key);
+    this.providers.delete(id);
     this.providers.set(id, { fingerprint, provider });
+    while (this.providers.size > 8) this.providers.delete(this.providers.keys().next().value!);
     return provider;
   }
   clear(): void {
