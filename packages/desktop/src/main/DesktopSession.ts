@@ -128,12 +128,13 @@ export class DesktopSession {
       if (source.isCancellationRequested) return;
       this.models = [];
       this.providerStatus = 'Unavailable';
+      const detail = error instanceof Error ? error.message : '';
       this.send({
         type: 'Notice',
         message:
-          error instanceof Error
-            ? error.message
-            : 'Provider unavailable. Open provider settings to connect.',
+          /fetch failed|network|abort|timed out/i.test(detail) || !detail
+            ? `${this.store.preferences.provider.label} could not be reached. Check that the server is running, then check the endpoint in provider settings.`
+            : detail,
       });
     }
   }

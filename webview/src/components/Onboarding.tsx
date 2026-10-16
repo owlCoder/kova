@@ -52,7 +52,9 @@ export function Onboarding({
               onClick={() => send({ type: 'OpenProviderSetup' })}
             >
               {snapshot.configuringProvider
-                ? 'Setup open in VS Code…'
+                ? snapshot.desktop
+                  ? 'Saving connection…'
+                  : 'Setup open in VS Code…'
                 : ready
                   ? 'Change provider'
                   : 'Configure provider'}
@@ -69,8 +71,9 @@ export function Onboarding({
           <div>
             <h2>Choose a model</h2>
             <p>
-              The setup wizard checks the model list and helps you pick a chat model. You can also
-              enter its ID manually.
+              {snapshot.desktop
+                ? 'Load models in provider settings and choose a chat model, or enter its ID manually.'
+                : 'The setup wizard checks the model list and helps you pick a chat model. You can also enter its ID manually.'}
             </p>
             <div className="setup-status" role="status">
               <span className={`status-dot ${ready ? 'online' : ''}`} />
@@ -112,8 +115,10 @@ export function Onboarding({
               </select>
             </label>
             <p>
-              Use Add context to attach a file or selection. You can change the provider, model and
-              mode at any time.
+              {snapshot.desktop
+                ? 'Use Add context to attach project files or the current preview.'
+                : 'Use Add context to attach a file or selection.'}{' '}
+              You can change the provider, model and mode at any time.
             </p>
           </div>
         </li>

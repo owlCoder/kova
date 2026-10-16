@@ -69,7 +69,10 @@ else {
       );
       electronSession.defaultSession.setPermissionCheckHandler(() => false);
       currentWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
-      currentWindow.webContents.on('will-navigate', (event) => event.preventDefault());
+      currentWindow.webContents.on('will-navigate', (event, destination) => {
+        if (!devUrl || new URL(destination).origin !== new URL(devUrl).origin)
+          event.preventDefault();
+      });
       ipcMain.on('kova:send', (event, message: unknown) => {
         const allowed = devUrl ? new URL(devUrl).origin : rendererUrl;
         const sender = event.senderFrame;

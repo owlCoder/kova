@@ -176,6 +176,32 @@ describe('native desktop file writer', () => {
 });
 
 describe('desktop agent integration', () => {
+  it('opens setup with actionable guidance when the default local server is unavailable', async () => {
+    const store = new DesktopStore(directory);
+    await store.load();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        throw new TypeError('fetch failed');
+      }),
+    );
+    const messages: HostMessage[] = [];
+    const keys = { get: async () => undefined } as unknown as DesktopKeyStore;
+    const session = new DesktopSession(store, keys, (message) => messages.push(message));
+    await session.initialize();
+    expect(
+      messages.some(
+        (message) =>
+          message.type === 'Notice' && message.message.includes('Check that the server is running'),
+      ),
+    ).toBe(true);
+    const final = messages.filter((message) => message.type === 'Snapshot').at(-1);
+    expect(final?.type === 'Snapshot' && final.snapshot).toMatchObject({
+      providerStatus: 'Unavailable',
+      setupCompleted: false,
+    });
+    await session.dispose();
+  });
   it('persists an interrupted streamed response and its partial status across restart', async () => {
     const store = new DesktopStore(directory);
     await store.load();
