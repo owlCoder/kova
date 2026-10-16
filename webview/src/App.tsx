@@ -1,366 +1,322 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import logo from '../../assets/logo.png';
-import type { AgentMode } from '../../packages/protocol/src/AgentMode.js';
-import type { HostMessage } from '../../packages/protocol/src/HostMessage.js';
-import type { SessionSnapshot } from '../../packages/protocol/src/SessionSnapshot.js';
 import { ChatFooter } from './components/ChatFooter.js';
 import { Icon } from './components/Icon.js';
-import { MessageContent } from './components/MessageContent.js';
-import { send } from './messaging/bridge.js';
-import { activityText, applyEvent } from './state/presentation.js';
+import { Onboarding } from './components/Onboarding.js';
+import { Welcome } from './components/Welcome.js';
+import { Conversation } from './components/Conversation.js';
+import { CommandPalette } from './components/CommandPalette.js';
+import { Sidebar } from './desktop/Sidebar.js';
+import { Inspector } from './desktop/Inspector.js';
+import { ProviderPreferences } from './desktop/ProviderPreferences.js';
+import { isDesktop, send } from './messaging/bridge.js';
+import { useChat } from './state/useChat.js';
+import { useHostResources } from './state/useHostResources.js';
 
 export function App() {
-  const [snapshot, setSnapshot] = useState<SessionSnapshot | null>(null);
-  const [prompt, setPrompt] = useState('');
-  const [model, setModel] = useState('qwen3:4b');
-  const [mode, setMode] = useState<AgentMode>('Manual');
-  const [activities, setActivities] = useState<{ id: number; text: string; error: boolean }[]>([]);
-  const [thinking, setThinking] = useState<Record<string, string>>({});
-  const [error, setError] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const serial = useRef({ session: '', sequence: 0 });
-  const hostSelection = useRef<{ modelId: string; mode: AgentMode } | null>(null);
-  const active = useRef<string | null>(null);
-  const retired = useRef(new Set<string>());
+  const chat = useChat();
+  const { snapshot, busy } = chat;
+  const resources = useHostResources(snapshot);
+  const [setupOpen, setSetupOpen] = useState(false);
+  const [setupDismissed, setSetupDismissed] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const scroller = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLTextAreaElement>(null);
   const nearBottom = useRef(true);
-
+  const showSetup = Boolean(
+    snapshot &&
+    !snapshot.activeRunId &&
+    (setupOpen || (!snapshot.setupCompleted && !setupDismissed)),
+  );
+  const title =
+    snapshot?.desktop?.sessions.find((session) => session.id === snapshot.conversationId)?.title ??
+    'New session';
+  const preferences = useCallback(() => {
+    if (isDesktop) resources.setPreferences(true);
+    else send({ type: 'OpenSettings' });
+  }, [resources.setPreferences]);
+  const openPalette = useCallback(() => setPaletteOpen(true), []);
+  const closeInspector = useCallback(
+    () => resources.setInspectorOpen(false),
+    [resources.setInspectorOpen],
+  );
+  const closePreview = useCallback(() => resources.setPreview(null), [resources.setPreview]);
   useEffect(() => {
-    const listener = (message: MessageEvent<HostMessage>) => {
-      const data = message.data;
-      if (!data || data.protocolVersion !== 1 || typeof data.hostSessionId !== 'string') return;
-      if (serial.current.session !== data.hostSessionId) {
-        serial.current = { session: data.hostSessionId, sequence: 0 };
-        active.current = null;
-        hostSelection.current = null;
-        retired.current.clear();
-        setThinking({});
+    if (!showSetup && nearBottom.current && scroller.current) {
+      const frame = requestAnimationFrame(() => {
+        if (scroller.current) scroller.current.scrollTop = scroller.current.scrollHeight;
+      });
+      return () => cancelAnimationFrame(frame);
+    }
+  }, [snapshot?.messages, chat.activities, showSetup]);
+  useEffect(() => {
+    if (!showSetup) input.current?.focus();
+  }, [showSetup]);
+  useEffect(() => {
+    if (!isDesktop) return;
+    const theme = snapshot?.desktop?.theme ?? 'dark';
+    const media = window.matchMedia('(prefers-color-scheme: dark)');
+    const apply = () => {
+      document.documentElement.dataset.theme =
+        theme === 'system' ? (media.matches ? 'dark' : 'light') : theme;
+    };
+    apply();
+    media.addEventListener('change', apply);
+    return () => media.removeEventListener('change', apply);
+  }, [snapshot?.desktop?.theme]);
+  useEffect(() => {
+    const keyboard = (event: KeyboardEvent) => {
+      if (!(event.metaKey || event.ctrlKey)) return;
+      if (event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        setPaletteOpen((open) => !open);
       }
-      if (data.sequence <= serial.current.sequence) return;
-      if (
-        serial.current.sequence &&
-        data.sequence !== serial.current.sequence + 1 &&
-        data.type !== 'Snapshot'
-      ) {
-        send({ type: 'Ready' });
-        return;
+      if (event.key === ',') {
+        event.preventDefault();
+        preferences();
       }
-      serial.current.sequence = data.sequence;
-      if (data.type === 'Snapshot') {
-        if (active.current && active.current !== data.snapshot.activeRunId)
-          retired.current.add(active.current);
-        if (retired.current.size > 200)
-          retired.current.delete(retired.current.values().next().value!);
-        active.current = data.snapshot.activeRunId;
-        setSnapshot((previous) => {
-          if (previous?.conversationId !== data.snapshot.conversationId) {
-            setActivities([]);
-            setThinking({});
-          }
-          return data.snapshot;
-        });
-        if (
-          !hostSelection.current ||
-          data.snapshot.activeRunId ||
-          hostSelection.current.modelId !== data.snapshot.selectedModelId
-        )
-          setModel(data.snapshot.selectedModelId);
-        if (
-          !hostSelection.current ||
-          data.snapshot.activeRunId ||
-          hostSelection.current.mode !== data.snapshot.mode
-        )
-          setMode(data.snapshot.mode);
-        hostSelection.current = {
-          modelId: data.snapshot.selectedModelId,
-          mode: data.snapshot.mode,
-        };
-        setSubmitting(false);
-      } else if (data.type === 'Rejected') {
-        setError(data.message);
-        setSubmitting(false);
-      } else if (data.type === 'Accepted') {
-        setSubmitting(false);
-        if (data.runId && !retired.current.has(data.runId)) {
-          active.current = data.runId;
-          setSnapshot((previous) =>
-            previous ? { ...previous, activeRunId: data.runId } : previous,
-          );
-        }
-      } else if (data.type === 'Event') {
-        if (
-          data.runId &&
-          (retired.current.has(data.runId) || (active.current && active.current !== data.runId))
-        )
-          return;
-        if (data.runId) active.current = data.runId;
-        setSnapshot((previous) => {
-          if (
-            !previous ||
-            (previous.activeRunId && data.runId && previous.activeRunId !== data.runId)
-          )
-            return previous;
-          return applyEvent(previous, data.event, data.runId);
-        });
-        if (data.event.type === 'ThinkingDelta') {
-          const event = data.event;
-          setThinking((previous) => ({
-            ...previous,
-            [event.messageId]: ((previous[event.messageId] ?? '') + event.text).slice(-16_000),
-          }));
-        }
-        const text = activityText(data.event);
-        if (text)
-          setActivities((previous) => {
-            const next = [
-              ...previous,
-              {
-                id: data.sequence,
-                text: text.slice(0, 30_000),
-                error: ['ErrorOccurred', 'ToolBlocked', 'AgentLoopStopped'].includes(
-                  data.event.type,
-                ),
-              },
-            ].slice(-200);
-            let total = next.reduce((sum, item) => sum + item.text.length, 0);
-            while (total > 256_000 && next.length > 1) {
-              total -= next.shift()!.text.length;
-            }
-            return next;
-          });
-        if (data.event.type === 'ErrorOccurred') setError(data.event.message);
+      if (isDesktop && event.key.toLowerCase() === 'b') {
+        event.preventDefault();
+        setSidebarOpen((open) => !open);
+      }
+      if (isDesktop && event.key.toLowerCase() === 'p') {
+        event.preventDefault();
+        resources.setInspectorOpen(true);
+        resources.setInspectorTab('files');
+        requestAnimationFrame(() =>
+          document.querySelector<HTMLInputElement>('[aria-label="Search project files"]')?.focus(),
+        );
+      }
+      if (isDesktop && event.key.toLowerCase() === 'j') {
+        event.preventDefault();
+        resources.setInspectorOpen((open) => !open);
       }
     };
-    window.addEventListener('message', listener);
-    send({ type: 'Ready' });
-    return () => window.removeEventListener('message', listener);
-  }, []);
-
-  useEffect(() => {
-    if (nearBottom.current && scroller.current)
-      scroller.current.scrollTop = scroller.current.scrollHeight;
-  }, [snapshot?.messages, activities]);
-
-  const busy = submitting || Boolean(snapshot?.activeRunId);
-  const submit = () => {
-    if (!prompt.trim() || busy || !snapshot) return;
-    setError('');
-    setThinking({});
-    setSubmitting(true);
-    setSnapshot({
-      ...snapshot,
-      messages: [
-        ...snapshot.messages,
-        { id: crypto.randomUUID(), role: 'user', content: prompt, partial: false },
-      ],
-    });
-    send({
-      type: 'SubmitPrompt',
-      prompt,
-      modelId: model,
-      mode,
-      skillId: snapshot.activeSkillId,
-      attachmentIds: snapshot.contextAttachments.map((item) => item.id),
-    });
-    setPrompt('');
+    window.addEventListener('keydown', keyboard);
+    return () => window.removeEventListener('keydown', keyboard);
+  }, [preferences, resources.setInspectorOpen, resources.setInspectorTab]);
+  const closeSetup = () => {
+    setSetupOpen(false);
+    setSetupDismissed(true);
   };
-  const approval = snapshot?.pendingApproval;
-  const choosePrompt = (value: string) => {
-    setPrompt(value);
-    input.current?.focus();
-  };
-
   return (
-    <main className="app">
-      <header>
-        <div className="brand">
-          <img className="brand-logo" src={logo} alt="" />
-          <div>
-            <strong>Kova</strong>
-            <span>Coding assistant</span>
-          </div>
+    <div className={isDesktop ? 'desktop-frame' : 'extension-frame'}>
+      {isDesktop && (
+        <div className="native-titlebar">
+          <span>KOVA</span>
+          <span className="native-titlebar-caption">A workspace for what’s next</span>
         </div>
-        <div className="header-actions">
-          <button
-            title="New conversation"
-            aria-label="New conversation"
-            onClick={() => {
-              send({ type: 'NewConversation' });
-              setError('');
-            }}
-          >
-            <Icon name="plus" />
-          </button>
-          <button
-            title="Settings"
-            aria-label="Settings"
-            onClick={() => send({ type: 'OpenSettings' })}
-          >
-            <Icon name="settings" />
-          </button>
-        </div>
-      </header>
-      <div
-        className="conversation"
-        ref={scroller}
-        onScroll={() => {
-          const view = scroller.current;
-          if (view)
-            nearBottom.current = view.scrollHeight - view.scrollTop - view.clientHeight < 100;
-        }}
+      )}
+      <main
+        className={`workspace ${isDesktop ? 'desktop-workspace' : 'extension-workspace'}`}
+        inert={resources.preferences || paletteOpen ? true : undefined}
       >
-        {!snapshot?.messages.length && (
-          <section className="welcome">
-            <h1>Ask about your code</h1>
-            <p>Attach a file or selection, then tell Kova what you need.</p>
-            <div className="suggestions">
-              <button
-                onClick={() => choosePrompt('Explain the code I attach and suggest improvements.')}
-              >
-                <Icon name="code" />
-                <span>
-                  <strong>Explain code</strong>
-                  <small>Understand a file or selection</small>
-                </span>
-                <Icon name="arrow" />
-              </button>
-              <button
-                onClick={() =>
-                  choosePrompt('Review my current changes for bugs and architecture issues.')
-                }
-              >
-                <Icon name="review" />
-                <span>
-                  <strong>Review changes</strong>
-                  <small>Check the current Git diff</small>
-                </span>
-                <Icon name="arrow" />
-              </button>
-              <button
-                onClick={() =>
-                  choosePrompt(
-                    'Help me plan this change. Inspect relevant code before suggesting an implementation.',
-                  )
-                }
-              >
-                <Icon name="plan" />
-                <span>
-                  <strong>Plan a change</strong>
-                  <small>Work out the next steps</small>
-                </span>
-                <Icon name="arrow" />
-              </button>
-            </div>
-          </section>
+        {isDesktop && sidebarOpen && (
+          <Sidebar
+            desktop={snapshot?.desktop}
+            conversationId={snapshot?.conversationId}
+            busy={busy}
+            onSearch={openPalette}
+            onPreferences={preferences}
+          />
         )}
-        {snapshot?.messages.map((message) => (
-          <article className={`message ${message.role}`} key={message.id}>
-            <div className="message-label">
-              {message.role === 'user' ? 'You' : 'Kova'}
-              {message.partial && (
-                <span className="muted"> {busy ? '· generating' : '· partial'}</span>
+        <div className="workspace-main">
+          <header className="workspace-header">
+            <div className="workspace-breadcrumb">
+              {isDesktop ? (
+                <>
+                  <button
+                    className="icon-button"
+                    aria-label="Toggle sidebar"
+                    title="Toggle sidebar"
+                    onClick={() => setSidebarOpen((open) => !open)}
+                  >
+                    <Icon name="panelLeft" size={16} />
+                  </button>
+                  <Icon name="folder" size={14} />
+                  <span
+                    className="breadcrumb-project"
+                    title={snapshot?.desktop?.workspacePath ?? undefined}
+                  >
+                    {snapshot?.desktop?.workspaceName ?? 'Kova'}
+                  </span>
+                  <span className="breadcrumb-divider">/</span>
+                  <span className="breadcrumb-session" title={title}>
+                    {title}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <img className="brand-logo" src={logo} alt="" />
+                  <strong>Kova</strong>
+                  <span className="extension-caption">Coding workspace</span>
+                </>
               )}
             </div>
-            {thinking[message.id] && (
-              <details className="thinking">
-                <summary>Thinking</summary>
-                <pre>{thinking[message.id]}</pre>
-              </details>
-            )}
-            <MessageContent text={message.content} />
-            {message.partial && busy && !message.content && !thinking[message.id] && (
-              <div className="generating">
-                <span />
-                <span />
-                <span />
-                <span>Generating</span>
-              </div>
-            )}
-          </article>
-        ))}
-        {!!activities.length && (
-          <details className="activity" open={Boolean(approval) || busy}>
-            <summary>
-              <Icon name="chevron" /> Activity <span>{activities.length}</span>
-            </summary>
-            {activities.map((item) => (
-              <details key={item.id} className={`activity-row ${item.error ? 'error' : ''}`}>
-                <summary>
-                  <span className="activity-dot" />
-                  {item.text.split('\n')[0]}
-                </summary>
-                {item.text.includes('\n') && (
-                  <pre>{item.text.slice(item.text.indexOf('\n') + 1)}</pre>
-                )}
-              </details>
-            ))}
-          </details>
-        )}
-        {approval && (
-          <section className="approval">
-            <div className="eyebrow">
-              <Icon name="warning" /> Approval required
-            </div>
-            <strong>{approval.toolName}</strong>
-            <p>{approval.reasons.join(' · ')}</p>
-            {approval.preview?.kind === 'FileChanges' && (
-              <>
-                <p>{approval.preview.relativePaths.join(', ')}</p>
+            <div className="header-actions">
+              <button
+                className="setup-toggle"
+                disabled={busy}
+                onClick={() => {
+                  setSetupOpen((open) => !open);
+                  if (scroller.current) scroller.current.scrollTop = 0;
+                }}
+              >
+                Setup
+              </button>
+              {!isDesktop && (
                 <button
-                  onClick={() => send({ type: 'OpenDiffPreview', approvalId: approval.approvalId })}
+                  className="icon-button"
+                  title="New conversation"
+                  aria-label="New conversation"
+                  disabled={busy}
+                  onClick={() => send({ type: 'NewConversation' })}
                 >
-                  Inspect diff <Icon name="arrow" />
+                  <Icon name="plus" />
                 </button>
-              </>
-            )}
-            {approval.preview?.kind === 'Command' && <pre>{approval.preview.command}</pre>}
-            <div className="approval-buttons">
+              )}
               <button
-                onClick={() =>
-                  send({
-                    type: 'ResolveApproval',
-                    runId: approval.runId,
-                    approvalId: approval.approvalId,
-                    preparationKey: approval.preparationKey,
-                    decision: 'Reject',
-                  })
-                }
+                className="icon-button"
+                title="Commands and sessions"
+                aria-label="Commands and sessions"
+                onClick={() => setPaletteOpen(true)}
               >
-                Reject
+                <Icon name="command" size={16} />
               </button>
-              <button
-                className="primary"
-                onClick={() =>
-                  send({
-                    type: 'ResolveApproval',
-                    runId: approval.runId,
-                    approvalId: approval.approvalId,
-                    preparationKey: approval.preparationKey,
-                    decision: 'AllowOnce',
-                  })
-                }
-              >
-                Allow once
-              </button>
+              {isDesktop ? (
+                <button
+                  className={`icon-button ${resources.inspectorOpen ? 'active' : ''}`}
+                  title="Toggle project panel"
+                  aria-label="Toggle project panel"
+                  onClick={() => resources.setInspectorOpen((open) => !open)}
+                >
+                  <Icon name="panelRight" size={16} />
+                </button>
+              ) : (
+                <button
+                  className="icon-button"
+                  title="Settings"
+                  aria-label="Settings"
+                  onClick={preferences}
+                >
+                  <Icon name="settings" size={16} />
+                </button>
+              )}
             </div>
-          </section>
+          </header>
+          <div
+            className="conversation"
+            ref={scroller}
+            onScroll={() => {
+              const view = scroller.current;
+              if (view)
+                nearBottom.current = view.scrollHeight - view.scrollTop - view.clientHeight < 120;
+            }}
+          >
+            {showSetup && snapshot ? (
+              <Onboarding
+                snapshot={snapshot}
+                mode={chat.mode}
+                onModeChange={chat.setMode}
+                onClose={closeSetup}
+              />
+            ) : !snapshot?.messages.length ? (
+              <Welcome
+                snapshot={snapshot}
+                onChoose={(prompt) => {
+                  chat.setPrompt(prompt);
+                  input.current?.focus();
+                }}
+              />
+            ) : null}
+            {!showSetup && snapshot && (
+              <Conversation
+                snapshot={snapshot}
+                thinking={chat.thinking}
+                activities={chat.activities}
+                busy={busy}
+              />
+            )}
+          </div>
+          {!showSetup && (
+            <ChatFooter
+              snapshot={snapshot}
+              busy={busy}
+              error={chat.error}
+              prompt={chat.prompt}
+              model={chat.model}
+              mode={chat.mode}
+              inputRef={input}
+              onDismissError={chat.dismissError}
+              onPromptChange={chat.setPrompt}
+              onSubmit={chat.submit}
+              onModelChange={chat.setModel}
+              onModeChange={chat.setMode}
+            />
+          )}
+          {isDesktop && (
+            <div className="workspace-status">
+              <span>
+                <Icon name="shield" size={12} />
+                {snapshot?.desktop?.workspacePath
+                  ? 'Project boundaries enforced'
+                  : 'Open a project to enable tools'}
+              </span>
+              <span>
+                <span
+                  className={`status-dot ${snapshot?.providerStatus === 'Available' ? 'online' : ''}`}
+                />
+                {busy
+                  ? 'Working'
+                  : snapshot?.providerStatus === 'Available'
+                    ? 'Ready'
+                    : 'Not connected'}
+              </span>
+            </div>
+          )}
+        </div>
+        {isDesktop && resources.inspectorOpen && (
+          <Inspector
+            key={snapshot?.desktop?.workspacePath ?? 'empty'}
+            files={resources.files}
+            search={resources.search}
+            busy={busy}
+            preview={resources.preview}
+            activities={chat.activities}
+            tab={resources.inspectorTab}
+            onTab={resources.setInspectorTab}
+            onClose={closeInspector}
+            onClosePreview={closePreview}
+            hasWorkspace={Boolean(snapshot?.desktop?.workspacePath)}
+          />
         )}
-      </div>
-      <ChatFooter
-        snapshot={snapshot}
-        busy={busy}
-        error={error}
-        prompt={prompt}
-        model={model}
-        mode={mode}
-        inputRef={input}
-        onDismissError={() => setError('')}
-        onPromptChange={setPrompt}
-        onSubmit={submit}
-        onModelChange={setModel}
-        onModeChange={setMode}
-      />
-    </main>
+      </main>
+      {resources.preferences && snapshot?.desktop && (
+        <ProviderPreferences
+          desktop={snapshot.desktop}
+          busy={busy}
+          onClose={() => resources.setPreferences(false)}
+        />
+      )}
+      {paletteOpen && (
+        <CommandPalette
+          snapshot={snapshot}
+          busy={busy}
+          onClose={() => setPaletteOpen(false)}
+          onPreferences={preferences}
+          onTogglePanel={() => resources.setInspectorOpen((open) => !open)}
+        />
+      )}
+      {resources.notice && (
+        <div className="toast" role="status">
+          <Icon name="help" size={16} />
+          <span>{resources.notice}</span>
+          <button aria-label="Dismiss notification" onClick={() => resources.setNotice('')}>
+            <Icon name="close" size={14} />
+          </button>
+        </div>
+      )}
+    </div>
   );
 }

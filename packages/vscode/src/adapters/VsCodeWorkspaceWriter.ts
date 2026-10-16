@@ -3,8 +3,8 @@ import * as vscode from 'vscode';
 import type { CancellationToken } from '../../../core/src/common/CancellationToken.js';
 import type { WorkspacePath } from '../../../core/src/workspace/WorkspacePath.js';
 import type { WorkspaceWriter } from '../../../core/src/workspace/WorkspaceWriter.js';
-import { BoundedTextFile } from './BoundedTextFile.js';
-import { NodeWorkspacePathGuard } from './NodeWorkspacePathGuard.js';
+import { BoundedTextFile } from '../../../runtime/src/adapters/BoundedTextFile.js';
+import { NodeWorkspacePathGuard } from '../../../runtime/src/adapters/NodeWorkspacePathGuard.js';
 
 export class VsCodeWorkspaceWriter implements WorkspaceWriter {
   constructor(private readonly guard: NodeWorkspacePathGuard) {}

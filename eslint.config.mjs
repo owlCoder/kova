@@ -1,7 +1,7 @@
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['node_modules/**', '**/dist/**', 'coverage/**'] },
+  { ignores: ['node_modules/**', '**/dist/**', 'coverage/**', '.tmp/**', 'output/**'] },
   ...tseslint.configs.recommended,
   {
     files: ['packages/core/src/**/*.ts'],
@@ -19,6 +19,8 @@ export default tseslint.config(
                 '@modelcontextprotocol/*',
                 '@kova/ollama*',
                 '@kova/mcp*',
+                '@kova/runtime*',
+                '@kova/desktop*',
                 '@kova/vscode*',
                 '@kova/protocol*',
                 '@kova/webview*',

@@ -14,17 +14,23 @@ export class OllamaModelCatalog implements ModelCatalog {
     const raw = await this.connection.json('/api/tags', null, cancellation);
     if (!raw || typeof raw !== 'object' || !('models' in raw) || !Array.isArray(raw.models))
       throw new Error('Invalid Ollama model list.');
-    const models: ModelInfo[] = [];
-    for (const item of raw.models.slice(0, 100)) {
+    const items = raw.models.slice(0, 100);
+    const models: (ModelInfo | null)[] = new Array(items.length).fill(null);
+    let cursor = 0;
+    const inspect = async (item: unknown): Promise<ModelInfo | null> => {
+      cancellation.throwIfCancellationRequested();
       if (
         !item ||
         typeof item !== 'object' ||
+        !('name' in item) ||
         typeof item.name !== 'string' ||
+        !('size' in item) ||
         typeof item.size !== 'number'
       )
-        continue;
-      let details: Record<string, unknown> = item;
-      if (!Array.isArray(item.capabilities)) {
+        return null;
+      const record = item as Record<string, unknown>;
+      let details: Record<string, unknown> = record;
+      if (!Array.isArray(record.capabilities)) {
         try {
           const shown = await this.connection.json('/api/show', { model: item.name }, cancellation);
           if (shown && typeof shown === 'object') details = shown as Record<string, unknown>;
@@ -46,10 +52,10 @@ export class OllamaModelCatalog implements ModelCatalog {
         .filter(([key, value]) => key.endsWith('.context_length') && typeof value === 'number')
         .map(([, value]) => value as number);
       const itemDetails =
-        item.details && typeof item.details === 'object'
-          ? (item.details as Record<string, unknown>)
+        record.details && typeof record.details === 'object'
+          ? (record.details as Record<string, unknown>)
           : {};
-      models.push({
+      return {
         id: item.name,
         displayName: item.name,
         sizeBytes: item.size,
@@ -58,8 +64,18 @@ export class OllamaModelCatalog implements ModelCatalog {
         maxContextTokens:
           lengths[0] ??
           (typeof itemDetails.context_length === 'number' ? itemDetails.context_length : null),
-      });
-    }
-    return models;
+      };
+    };
+    // Bound metadata requests so large libraries do not serialize dozens of network round trips.
+    await Promise.all(
+      Array.from({ length: Math.min(4, items.length) }, async () => {
+        while (cursor < items.length) {
+          const index = cursor++;
+          models[index] = await inspect(items[index]);
+        }
+      }),
+    );
+    cancellation.throwIfCancellationRequested();
+    return models.filter((model): model is ModelInfo => model !== null);
   }
 }

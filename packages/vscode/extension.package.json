@@ -1,8 +1,8 @@
 {
   "name": "kova-local",
-  "displayName": "Kova — Local-first AI Coding Agent",
-  "description": "Local-first AI coding agent for VS Code with Ollama, DeepSeek and OpenAI-compatible providers",
-  "version": "0.3.2",
+  "displayName": "Kova \u2014 AI Coding Workspace",
+  "description": "Modern local-first coding workspace with guided setup, Ollama, DeepSeek and configurable AI providers",
+  "version": "0.4.0",
   "publisher": "owlcoder",
   "license": "MIT",
   "engines": {
@@ -25,7 +25,8 @@
     "onCommand:kova.settings",
     "onCommand:kova.setProviderApiKey",
     "onCommand:kova.clearProviderApiKey",
-    "onView:kova.chat"
+    "onView:kova.chat",
+    "onCommand:kova.setup"
   ],
   "capabilities": {
     "untrustedWorkspaces": {
@@ -78,6 +79,10 @@
       {
         "command": "kova.clearProviderApiKey",
         "title": "Kova: Clear Provider API Key"
+      },
+      {
+        "command": "kova.setup",
+        "title": "Kova: Set Up AI Provider"
       }
     ],
     "configuration": {
@@ -176,6 +181,17 @@
           "type": "string",
           "default": "",
           "description": "Optional workspace-relative ERS Guardrails csproj. Build it in Release first. Evaluated as a separate final guardrail, fail-closed."
+        },
+        "kova.openaiCompatible.name": {
+          "type": "string",
+          "default": "OpenAI-compatible provider",
+          "maxLength": 100,
+          "description": "Display name for the custom AI provider. Configure it with Kova: Set Up AI Provider."
+        },
+        "kova.openaiCompatible.discoverModels": {
+          "type": "boolean",
+          "default": true,
+          "description": "Fetch /models. Disable to use the configured model ID with endpoints that do not expose a model list. Manual mode checks the connection on the first prompt."
         }
       }
     }

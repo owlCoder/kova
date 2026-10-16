@@ -1,0 +1,40 @@
+appId: dev.kova.desktop
+productName: Kova
+copyright: Copyright © 2026 Kova contributors
+directories:
+  app: dist/desktop
+  output: dist/installers
+files:
+  - main/**
+  - preload.cjs
+  - renderer/**
+  - package.json
+  - icon.png
+  - LICENSE
+  - THIRD-PARTY-NOTICES.txt
+asar: true
+npmRebuild: false
+artifactName: Kova-${version}-${os}-${arch}.${ext}
+mac:
+  category: public.app-category.developer-tools
+  icon: assets/logo.png
+  identity: null
+  target:
+    - target: dmg
+    - target: zip
+win:
+  icon: assets/logo.png
+  target:
+    - target: nsis
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+linux:
+  maintainer: owlCoder <owlcoder@users.noreply.github.com>
+  category: Development
+  icon: assets/logo.png
+  target:
+    - target: AppImage
+    - target: deb

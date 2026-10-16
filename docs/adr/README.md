@@ -13,3 +13,5 @@ All decisions are **Accepted with the amendments in [REVIEW-CHANGES.md](../REVIE
 | [007](007-event-driven-webview.md)          | Host-owned state and versioned JSON message protocol             |
 | [008](008-accepted-risks.md)                | No workspace-trust prompt and explicit accepted risks            |
 | [009](009-testing-and-delivery.md)          | Architectural fitness tests and incremental acceptance gates     |
+
+- [010: Shared runtime and Electron desktop host](010-desktop-runtime.md)

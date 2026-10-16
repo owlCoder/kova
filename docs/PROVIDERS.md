@@ -12,7 +12,7 @@ Kova supports three provider modes:
 
 - **Ollama** is the default, discovers models through `/api/tags` and `/api/show`, and streams Ollama `/api/chat` NDJSON without credentials.
 - **DeepSeek** discovers models through the OpenAI-compatible `/models` endpoint and streams `/chat/completions` SSE with DeepSeek's thinking extension. Credentials live in VS Code `SecretStorage`.
-- **OpenAI-compatible** uses `/models` plus `/chat/completions` SSE and accepts an optional bearer token from `SecretStorage`.
+- **OpenAI-compatible** uses `/chat/completions` SSE and optional `/models` discovery, and accepts an optional bearer token from `SecretStorage`.
 
 Ollama remains the local-first default (`qwen3:4b`). Selecting an API provider is explicit; Kova never silently sends workspace context to a cloud endpoint.
 
@@ -42,9 +42,17 @@ Generic endpoints use standard Chat Completions streaming and `/models`. Because
 
 The API key is optional so local compatible servers can run without credentials.
 
+**Kova: Set Up AI Provider** supplies endpoint presets for OpenAI, OpenRouter, Groq, Gemini and LM Studio, plus a custom URL. These all use the compatible adapter; they are not separate native API implementations. OpenAI's endpoint uses `max_completion_tokens`; other compatible endpoints retain `max_tokens`. A custom server must support the adapter's Chat Completions streaming fields and optional function calling. Native Anthropic Messages and Azure-specific authentication require a compatible gateway.
+
+Set `kova.openaiCompatible.discoverModels` to `false` and provide a nonempty model ID to work without a model-list endpoint. Manual configuration creates a model entry using the configured tool support; it does not claim a verified network connection or infer context limits. Invalid credentials surface on the first request.
+
+Preset references: [OpenAI Chat Completions](https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create), [OpenRouter](https://openrouter.ai/docs/quickstart), [Groq](https://console.groq.com/docs/overview), [Gemini compatibility](https://ai.google.dev/gemini-api/docs/openai), [LM Studio compatibility](https://lmstudio.ai/docs/developer/openai-compat).
+
 ## Credentials
 
 API keys are stored only through VS Code `SecretStorage`.
+
+Keys are scoped by provider kind and a hash of the endpoint. Legacy provider keys migrate to the current endpoint on first use. A setup draft never includes a saved key in Webview messages or snapshots; native password inputs keep that value inside the extension host.
 
 Commands:
 
@@ -58,6 +66,8 @@ There is intentionally no `kova.*.apiKey` setting, preventing accidental source-
 All adapters honor the shared cancellation token and abort in-flight HTTP. Provider/model failures are recoverable and surface through the existing session error path. Secrets are never included in diagnostic messages.
 
 Model discovery is bounded. Remote model size is represented as unknown (`null`) rather than fabricated.
+
+Successful metadata is cached for 60 seconds using a configuration and credential fingerprint. Retry bypasses the cache; settings changes and credential commands refresh it between runs. Ollama `/api/show` requests use a four-worker pool and preserve `/api/tags` ordering. Failed or cancelled discovery is not cached. Webview delta delivery is batched over 32 ms and also flushed when pending text reaches 4,096 characters, before lifecycle events, and before snapshots.
 
 ## Maintainability rules
 

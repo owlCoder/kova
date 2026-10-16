@@ -3,9 +3,9 @@ import * as vscode from 'vscode';
 import type { CancellationToken } from '../../../core/src/common/CancellationToken.js';
 import type { WorkspacePath } from '../../../core/src/workspace/WorkspacePath.js';
 import type { WorkspaceReader } from '../../../core/src/workspace/WorkspaceReader.js';
-import { BoundedTextFile } from './BoundedTextFile.js';
-import { NodeWorkspacePathGuard } from './NodeWorkspacePathGuard.js';
-import { NodeWorkspaceReader } from './NodeWorkspaceReader.js';
+import { BoundedTextFile } from '../../../runtime/src/adapters/BoundedTextFile.js';
+import { NodeWorkspacePathGuard } from '../../../runtime/src/adapters/NodeWorkspacePathGuard.js';
+import { NodeWorkspaceReader } from '../../../runtime/src/adapters/NodeWorkspaceReader.js';
 
 export class VsCodeWorkspaceReader implements WorkspaceReader {
   constructor(private readonly guard: NodeWorkspacePathGuard) {}

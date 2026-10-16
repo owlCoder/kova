@@ -1,0 +1,45 @@
+name: Desktop builds
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/**'
+      - 'webview/**'
+      - 'scripts/desktop/**'
+      - 'scripts/dependency-notices.mjs'
+      - 'electron-builder.yml'
+      - 'package*.json'
+      - '.github/workflows/desktop.yml'
+permissions:
+  contents: read
+jobs:
+  desktop:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: npm run desktop:build
+      - run: npm run desktop:verify
+      - run: npx electron-builder --config electron-builder.yml --publish never
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kova-desktop-${{ runner.os }}
+          path: |
+            dist/installers/*.dmg
+            dist/installers/*.zip
+            dist/installers/*.exe
+            dist/installers/*.AppImage
+            dist/installers/*.deb
+          if-no-files-found: error

@@ -37,7 +37,8 @@ assert.equal(manifest.publisher, 'owlcoder');
 assert.equal(manifest.version, extensionManifest.version);
 assert.equal(manifest.license, 'MIT');
 assert.equal(manifest.icon, 'media/logo.png');
-assert.match(manifest.displayName, /Local-first/);
+assert.equal(manifest.displayName, extensionManifest.displayName);
+assert.match(manifest.description, /local-first/i);
 assert.match(manifest.description, /Ollama/);
 assert.match(manifest.description, /DeepSeek/);
 assert.deepEqual(manifest.contributes.configuration.properties['kova.provider'].enum, [
@@ -66,6 +67,7 @@ for (const command of [
   'kova.openInEditor',
   'kova.setProviderApiKey',
   'kova.clearProviderApiKey',
+  'kova.setup',
 ])
   assert(
     manifest.contributes.commands.some((item) => item.command === command),
@@ -73,6 +75,9 @@ for (const command of [
   );
 assert(manifest.activationEvents.includes('onCommand:kova.open'));
 const readme = contents('readme.md').toString('utf8');
+const notices = contents('THIRD-PARTY-NOTICES.txt').toString('utf8');
+for (const dependency of ['react-markdown', 'remark-gfm', 'lucide-react'])
+  assert(notices.includes(`${dependency}@`), `Missing bundled UI license: ${dependency}`);
 assert.match(readme, /Ollama/);
 assert.match(readme, /DeepSeek/);
 assert.match(readme, /OpenAI-compatible/);

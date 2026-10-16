@@ -11,6 +11,7 @@ const fixture = vi.hoisted(() => ({
   controllers: [] as ReadableStreamDefaultController<Uint8Array>[],
   chatBodies: [] as Record<string, unknown>[],
   logs: [] as string[],
+  onboarding: new Map<string, boolean>(),
 }));
 
 vi.mock('vscode', () => ({
@@ -56,28 +57,43 @@ beforeEach(() => {
   fixture.controllers = [];
   fixture.chatBodies = [];
   fixture.logs = [];
-  vi.stubGlobal('fetch', async (input: string | URL | Request, init?: RequestInit) => {
-    if (String(input).endsWith('/api/tags'))
-      return Response.json({
-        models: [{ name: 'qwen3:4b', size: 100, capabilities: ['tools', 'thinking'] }],
+  fixture.onboarding.clear();
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      if (String(input).endsWith('/api/tags'))
+        return Response.json({
+          models: [{ name: 'qwen3:4b', size: 100, capabilities: ['tools', 'thinking'] }],
+        });
+      expect(String(input)).toMatch(/\/api\/chat$/);
+      fixture.chatBodies.push(JSON.parse(String(init?.body)) as Record<string, unknown>);
+      const stream = new ReadableStream<Uint8Array>({
+        start(controller) {
+          fixture.controllers.push(controller);
+          init?.signal?.addEventListener('abort', () =>
+            controller.error(new DOMException('Stopped', 'AbortError')),
+          );
+        },
       });
-    expect(String(input)).toMatch(/\/api\/chat$/);
-    fixture.chatBodies.push(JSON.parse(String(init?.body)) as Record<string, unknown>);
-    const stream = new ReadableStream<Uint8Array>({
-      start(controller) {
-        fixture.controllers.push(controller);
-        init?.signal?.addEventListener('abort', () =>
-          controller.error(new DOMException('Stopped', 'AbortError')),
-        );
+      return new Response(stream);
+    }),
+  );
+  session = new ChatSession(
+    {
+      globalState: {
+        get: (key: string, fallback: boolean) => fixture.onboarding.get(key) ?? fallback,
+        update: async (key: string, value: boolean) => {
+          fixture.onboarding.set(key, value);
+        },
       },
-    });
-    return new Response(stream);
-  });
-  session = new ChatSession({} as vscode.ExtensionContext, '/fixture-workspace', {
-    appendLine: (line: string) => {
-      fixture.logs.push(line);
-    },
-  } as unknown as vscode.OutputChannel);
+    } as unknown as vscode.ExtensionContext,
+    '/fixture-workspace',
+    {
+      appendLine: (line: string) => {
+        fixture.logs.push(line);
+      },
+    } as unknown as vscode.OutputChannel,
+  );
   messages = [];
   session.connect((message) => messages.push(message));
 });
@@ -118,6 +134,41 @@ const beginStream = async () => {
 };
 
 describe('shared chat session synchronization', () => {
+  it('persists onboarding dismissal and serializes configuration against submission', async () => {
+    await session.initialize();
+    await session.handle({ protocolVersion: 1, requestId: 'setup-state', type: 'Ready' });
+    expect(latestSnapshot().setupCompleted).toBe(false);
+    await session.handle({ protocolVersion: 1, requestId: 'finish-setup', type: 'CompleteSetup' });
+    expect(latestSnapshot().setupCompleted).toBe(true);
+    let finishSetup!: () => void;
+    const configuring = session.configureProvider(async () => {
+      await new Promise<void>((resolve) => {
+        finishSetup = resolve;
+      });
+      return false;
+    });
+    await vi.waitFor(() => expect(finishSetup).toBeTypeOf('function'));
+    expect(latestSnapshot().configuringProvider).toBe(true);
+    await expect(submit()).rejects.toThrow('already generating');
+    await expect(session.configureProvider(async () => true)).rejects.toThrow('current setup');
+    finishSetup();
+    await configuring;
+    expect(latestSnapshot().configuringProvider).toBe(false);
+    expect(fixture.chatBodies).toHaveLength(0);
+  });
+
+  it('defers provider refresh until generation stops and rejects setup during a run', async () => {
+    await session.initialize();
+    await beginStream();
+    await expect(session.configureProvider(async () => true)).rejects.toThrow('Stop generation');
+    fixture.settings['ollama.baseUrl'] = 'http://localhost:11435';
+    await session.configurationChanged();
+    expect(fetch).not.toHaveBeenCalledWith('http://localhost:11435/api/tags', expect.anything());
+    await finish();
+    expect(fetch).toHaveBeenCalledWith('http://localhost:11435/api/tags', expect.anything());
+    expect(latestSnapshot().providerStatus).toBe('Available');
+  });
+
   it('resynchronizes both views with the current prompt and streamed text, preserving captured settings', async () => {
     await session.initialize();
     const secondView: HostMessage[] = [];

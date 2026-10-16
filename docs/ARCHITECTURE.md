@@ -8,16 +8,22 @@ Status: **Accepted with [review amendments](REVIEW-CHANGES.md), 2026-09-30.** Th
 flowchart BT
   O["@kova/ollama · HTTP adapter"] --> C["@kova/core · domain / application"]
   M["@kova/mcp · stdio adapter"] --> C
-  V["@kova/vscode · composition / workspace adapters"] --> C
-  V --> O
-  V --> M
-  V --> P["@kova/protocol · JSON DTOs"]
+  R["@kova/runtime · shared Node adapters / tools / providers"] --> C
+  R --> O
+  R --> M
+  R --> P["@kova/protocol · JSON DTOs"]
+  V["@kova/vscode · editor composition"] --> R
+  V --> C
+  V --> P
+  D["@kova/desktop · Electron composition"] --> R
+  D --> C
+  D --> P
   W["@kova/webview · React presentation"] --> P
 ```
 
-Arrows denote imports/dependencies. Core imports only Core. Protocol owns self-contained DTOs, imports nothing from Core, and contains no classes, functions or behavioral interfaces. Host maps between the two. Webview imports only Protocol, its UI libraries and shared PNG branding assets. Ollama and MCP cannot import one another or VS Code. VS Code is the only composition root. Root tooling is not part of the runtime graph.
+Arrows denote imports/dependencies. Core imports only Core. Protocol owns self-contained DTOs, imports nothing from Core, and contains no classes, functions or behavioral interfaces. Host maps between the two. Webview imports only Protocol, its UI libraries and shared PNG branding assets. Ollama and MCP cannot import one another or VS Code. VS Code and Electron are separate composition roots. Root tooling is not part of the runtime graph.
 
-The one addition to the suggested repository is `packages/protocol`, justified by the host/UI boundary. Filesystem, process and VS Code tool adapters stay in `packages/vscode`; a separate generic infrastructure package is unnecessary at this size. Runtime dependencies belong to the adapter or UI package that uses them.
+The desktop addition extracts pure Node filesystem/process adapters, provider transport, tools, skills, hooks and projection into `packages/runtime`. The extension injects VS Code-aware reader/writer ports to preserve unsaved editor content and undo. Desktop injects atomic Node writes. Core stays host-independent, and both hosts use the same permission, stale-preview and guardrail pipeline. See [ADR 010](adr/010-desktop-runtime.md). Runtime dependencies belong to the adapter or UI package that uses them.
 
 ## Repository map
 
@@ -43,18 +49,13 @@ kova/
 │   │   └── mcp/             McpClient, stdio configuration DTOs
 │   ├── ollama/src/          OllamaLlmProvider, OllamaModelCatalog
 │   ├── mcp/src/             StdioMcpClient, McpTool
+│   ├── runtime/src/         adapters/, tools/, providers/, skills/, integrations/, presentation/
+│   ├── desktop/src/         main/ (Electron session/controller), state/ (history/settings/keys), preload.ts
 │   ├── vscode/src/
-│   │   ├── extension/       extension activation, ChatSession
-│   │   ├── adapters/        VsCodeWorkspaceReader, VsCodeWorkspaceWriter,
-│   │   │                           NodeWorkspaceSearch, NodeWorkspacePathGuard,
-│   │   │                           NodeProcessRunner, WorkspaceConfigurationLoader,
-│   │   │                           CommandHook, WorkspaceRuntime, WorkspaceProjectInstructions
-│   │   ├── tools/           ReadFileTool, ListDirectoryTool, SearchFilesTool,
-│   │   │                           GetGitDiffTool, WriteFileTool, EditFileTool, RunCommandTool
-│   │   ├── skills/          WorkspaceSkillRepository
-│   │   ├── integrations/    ErsGuardrailAdapter
-│   │   └── webview/         KovaViewProvider, KovaPanelController, KovaWebviewHost,
-│   │                               validated message router, event projection
+│   │   ├── extension/       activation, ChatSession, context attachments
+│   │   ├── adapters/        VS Code reader/writer and runtime wrapper
+│   │   ├── providers/       VS Code settings, SecretStorage, setup wizard
+│   │   └── webview/         KovaViewProvider, KovaPanelController, KovaWebviewHost
 │   └── protocol/src/        WebviewMessage, HostMessage, SessionSnapshot,
 │                           PresentationEvent, ApprovalView
 ├── webview/src/             components/, state/, messaging/
@@ -116,3 +117,9 @@ The host translates validated UI intent into `AgentRequest`, then calls `Agent.r
 Kova: Open Chat opens the sidebar. Kova: Open Chat in Editor creates or focuses one movable editor WebviewPanel. Both views share the same host-owned session through KovaWebviewHost. Closing the editor tab cancels an active run; hiding the sidebar does not. Reopening either view restores the session conversation. Selection/current-file attachments use the most recently active file editor while chat has focus. Both views contain prompt, send/stop, model selector, four-mode picker and context meter. Tool definition token cost is separate. Skills, tools, MCP, hooks, guardrails and errors are visible in expandable activity rows. There is no dashboard and no React-owned business state. Diff preview uses host-side virtual documents and VS Code's diff editor.
 
 Details: [state machine](AGENT-LOOP.md), [protocol](PROTOCOL.md), [context](CONTEXT.md), [policy](TOOLS-AND-POLICY.md), [providers](PROVIDERS.md), [integrations](INTEGRATIONS.md), [testing](TESTING.md).
+
+## Desktop process boundary
+
+Electron main owns provider HTTP, workspace access, commands, MCP, approvals and local persistence. The sandboxed, context-isolated renderer receives JSON DTOs through a frozen preload bridge with only send/subscribe. IPC accepts only the trusted main frame and validates every message; the renderer has no Node integration. Production CSP prevents renderer network connections, new windows/navigation are denied, and external links are restricted to validated HTTP(S) intents.
+
+Desktop stores a small session metadata index at startup and loads bodies on demand into an eight-session LRU. JSON writes are atomic and serialized; archived bodies remain recoverable. Provider keys are hashed by endpoint, encrypted using the OS-backed Electron safeStorage API and persisted separately. Linux basic_text fallback and unavailable secure stores are treated as memory-only. File navigation and filename search enforce the project path guard and skip symlinks/dependency trees; filename search is user-triggered and bounded to 5,000 entries, 100 matches or 1.5 seconds.

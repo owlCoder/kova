@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import { CancellationSource } from '../../packages/core/src/common/CancellationSource.js';
 import type { ChatRequest } from '../../packages/core/src/providers/ChatRequest.js';
-import { OpenAiCompatibleConnection } from '../../packages/vscode/src/providers/OpenAiCompatibleConnection.js';
-import { OpenAiCompatibleLlmProvider } from '../../packages/vscode/src/providers/OpenAiCompatibleLlmProvider.js';
-import { OpenAiCompatibleModelCatalog } from '../../packages/vscode/src/providers/OpenAiCompatibleModelCatalog.js';
+import { OpenAiCompatibleConnection } from '../../packages/runtime/src/providers/OpenAiCompatibleConnection.js';
+import { OpenAiCompatibleLlmProvider } from '../../packages/runtime/src/providers/OpenAiCompatibleLlmProvider.js';
+import { OpenAiCompatibleModelCatalog } from '../../packages/runtime/src/providers/OpenAiCompatibleModelCatalog.js';
 
 const tool = {
   name: 'demo',
@@ -41,6 +41,24 @@ async function collect(provider: OpenAiCompatibleLlmProvider, input: ChatRequest
 }
 
 describe('OpenAI-compatible provider', () => {
+  it('uses the OpenAI output limit field while retaining compatible endpoints max_tokens', async () => {
+    for (const dialect of ['openai', 'standard'] as const) {
+      const fetcher = vi.fn<typeof fetch>(async () =>
+        stream([{ choices: [{ delta: { content: 'OK' }, finish_reason: 'stop' }] }]),
+      );
+      const provider = new OpenAiCompatibleLlmProvider(
+        new OpenAiCompatibleConnection('https://api.example/v1', 'secret', fetcher),
+        dialect,
+      );
+      await collect(provider, { ...request, thinkingEnabled: false });
+      const body = JSON.parse(fetcher.mock.calls[0]![1]!.body as string);
+      expect(body[dialect === 'openai' ? 'max_completion_tokens' : 'max_tokens']).toBe(1024);
+      expect(body).not.toHaveProperty(
+        dialect === 'openai' ? 'max_tokens' : 'max_completion_tokens',
+      );
+    }
+  });
+
   it('streams DeepSeek reasoning, text, tool calls and usage', async () => {
     const fetcher = vi.fn<typeof fetch>(async () =>
       stream([

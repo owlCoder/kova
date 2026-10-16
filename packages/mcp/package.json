@@ -6,6 +6,6 @@
   "description": "Stdio MCP client and tool adapter",
   "dependencies": {
     "@kova/core": "0.0.0",
-    "@modelcontextprotocol/client": "2.2.0"
+    "@modelcontextprotocol/client": "2.3.1"
   }
 }

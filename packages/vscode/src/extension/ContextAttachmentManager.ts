@@ -3,7 +3,7 @@ import { readFile, stat } from 'node:fs/promises';
 import * as vscode from 'vscode';
 import { CancellationSource } from '../../../core/src/common/CancellationSource.js';
 import type { ContextAttachment } from '../../../core/src/context/ContextAttachment.js';
-import { NodeWorkspacePathGuard } from '../adapters/NodeWorkspacePathGuard.js';
+import { NodeWorkspacePathGuard } from '../../../runtime/src/adapters/NodeWorkspacePathGuard.js';
 
 export class ContextAttachmentManager {
   private attachments: ContextAttachment[] = [];

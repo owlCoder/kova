@@ -4,8 +4,8 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { StdioMcpClient } from '../../packages/mcp/src/StdioMcpClient.js';
-import { WorkspaceConfigurationLoader } from '../../packages/vscode/src/adapters/WorkspaceConfigurationLoader.js';
-import { NodeWorkspacePathGuard } from '../../packages/vscode/src/adapters/NodeWorkspacePathGuard.js';
+import { WorkspaceConfigurationLoader } from '../../packages/runtime/src/adapters/WorkspaceConfigurationLoader.js';
+import { NodeWorkspacePathGuard } from '../../packages/runtime/src/adapters/NodeWorkspacePathGuard.js';
 import { CancellationSource, EventLog } from './helpers.js';
 const fixture = fileURLToPath(new URL('./fixtures/mcp-server.mjs', import.meta.url));
 const config = (args: readonly string[] = [fixture]) => ({

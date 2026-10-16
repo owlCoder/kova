@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { validateMessage } from '../../packages/vscode/src/webview/validateMessage.js';
-import { projectEvent } from '../../packages/vscode/src/webview/projectEvent.js';
+import { validateMessage } from '../../packages/runtime/src/presentation/validateMessage.js';
+import { projectEvent } from '../../packages/runtime/src/presentation/projectEvent.js';
 
 describe('host message validation and projection', () => {
   it('rejects malformed, oversized, forged tool and unknown-field messages', () => {

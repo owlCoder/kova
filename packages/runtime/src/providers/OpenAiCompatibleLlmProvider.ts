@@ -25,7 +25,7 @@ export class OpenAiCompatibleLlmProvider implements LlmProvider {
 
   constructor(
     private readonly connection: OpenAiCompatibleConnection,
-    private readonly dialect: 'standard' | 'deepseek' = 'standard',
+    private readonly dialect: 'standard' | 'deepseek' | 'openai' = 'standard',
   ) {}
 
   async *streamChat(
@@ -39,7 +39,9 @@ export class OpenAiCompatibleLlmProvider implements LlmProvider {
       model: request.modelId,
       stream: true,
       stream_options: { include_usage: true },
-      max_tokens: request.maxOutputTokens,
+      ...(this.dialect === 'openai'
+        ? { max_completion_tokens: request.maxOutputTokens }
+        : { max_tokens: request.maxOutputTokens }),
       messages: this.serializeMessages(request.messages, request.tools.length > 0),
       ...(request.tools.length
         ? {

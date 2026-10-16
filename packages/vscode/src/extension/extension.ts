@@ -1,6 +1,8 @@
 import * as vscode from 'vscode';
 import { ProviderApiKeyStore } from '../providers/ProviderApiKeyStore.js';
 import { ProviderManager } from '../providers/ProviderManager.js';
+import { ProviderSetupWizard } from '../providers/ProviderSetupWizard.js';
+import { editProviderCredential } from '../providers/editProviderCredential.js';
 import { KovaPanelController } from '../webview/KovaPanelController.js';
 import { KovaViewProvider } from '../webview/KovaViewProvider.js';
 import { ChatSession } from './ChatSession.js';
@@ -23,10 +25,14 @@ export function activate(context: vscode.ExtensionContext) {
   const sidebar = new KovaViewProvider(context, session);
   session.captureEditor(vscode.window.activeTextEditor);
 
-  const refreshCredentials = async () => {
-    providers.clear();
-    await session?.refreshModels();
-    await session?.snapshot('provider-credentials');
+  const configure = async (action: () => Promise<boolean>) => {
+    try {
+      await session?.configureProvider(action);
+    } catch (error) {
+      await vscode.window.showErrorMessage(
+        error instanceof Error ? error.message : 'Provider setup failed.',
+      );
+    }
   };
 
   context.subscriptions.push(
@@ -34,6 +40,12 @@ export function activate(context: vscode.ExtensionContext) {
     panels,
     sidebar,
     vscode.window.onDidChangeActiveTextEditor((editor) => session?.captureEditor(editor)),
+    vscode.workspace.onDidChangeConfiguration((event) => {
+      if (event.affectsConfiguration('kova'))
+        void session
+          ?.configurationChanged()
+          .catch(() => output.appendLine('[ProviderRefreshFailed]'));
+    }),
     vscode.workspace.registerTextDocumentContentProvider('kova-diff', session.approval),
     vscode.window.registerWebviewViewProvider('kova.chat', sidebar, {
       webviewOptions: { retainContextWhenHidden: true },
@@ -44,6 +56,9 @@ export function activate(context: vscode.ExtensionContext) {
       sidebar.show();
     }),
     vscode.commands.registerCommand('kova.openInEditor', () => panels.show()),
+    vscode.commands.registerCommand('kova.setup', () =>
+      configure(() => new ProviderSetupWizard(providers, apiKeys).run()),
+    ),
     vscode.commands.registerCommand('kova.newConversation', async () => {
       await session?.newConversation();
       await session?.snapshot('new-chat');
@@ -55,37 +70,12 @@ export function activate(context: vscode.ExtensionContext) {
         `@ext:${context.extension.id}`,
       ),
     ),
-    vscode.commands.registerCommand('kova.setProviderApiKey', async () => {
-      const provider = providers.kind();
-      if (provider === 'ollama') {
-        await vscode.window.showInformationMessage('Ollama does not require an API key.');
-        return;
-      }
-      const value = await vscode.window.showInputBox({
-        password: true,
-        ignoreFocusOut: true,
-        title: `Kova: Set ${providers.label()} API Key`,
-        prompt: 'Stored in VS Code SecretStorage, not settings.json.',
-      });
-      if (value === undefined) return;
-      if (!value.trim()) {
-        await vscode.window.showWarningMessage('API key cannot be empty.');
-        return;
-      }
-      await apiKeys.set(provider, value.trim());
-      await refreshCredentials();
-      await vscode.window.showInformationMessage(`${providers.label()} API key saved securely.`);
-    }),
-    vscode.commands.registerCommand('kova.clearProviderApiKey', async () => {
-      const provider = providers.kind();
-      if (provider === 'ollama') {
-        await vscode.window.showInformationMessage('Ollama does not use an API key.');
-        return;
-      }
-      await apiKeys.delete(provider);
-      await refreshCredentials();
-      await vscode.window.showInformationMessage(`${providers.label()} API key removed.`);
-    }),
+    vscode.commands.registerCommand('kova.setProviderApiKey', () =>
+      configure(() => editProviderCredential(providers, apiKeys, false)),
+    ),
+    vscode.commands.registerCommand('kova.clearProviderApiKey', () =>
+      configure(() => editProviderCredential(providers, apiKeys, true)),
+    ),
   );
   return { session, sidebar };
 }

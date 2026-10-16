@@ -14,22 +14,33 @@ import { SkillLoader } from '../../../core/src/skills/SkillLoader.js';
 import type { HostMessage } from '../../../protocol/src/HostMessage.js';
 import type { SessionSnapshot } from '../../../protocol/src/SessionSnapshot.js';
 import type { WebviewMessage } from '../../../protocol/src/WebviewMessage.js';
-import { NodeProcessRunner } from '../adapters/NodeProcessRunner.js';
-import { NodeWorkspacePathGuard } from '../adapters/NodeWorkspacePathGuard.js';
-import { WorkspaceRuntime } from '../adapters/WorkspaceRuntime.js';
-import { ErsGuardrailAdapter } from '../integrations/ErsGuardrailAdapter.js';
+import type { WorkspaceRuntime } from '../adapters/WorkspaceRuntime.js';
 import { ProviderApiKeyStore } from '../providers/ProviderApiKeyStore.js';
 import { ProviderManager } from '../providers/ProviderManager.js';
-import { WorkspaceSkillRepository } from '../skills/WorkspaceSkillRepository.js';
-import { WorkspaceProjectInstructions } from '../adapters/WorkspaceProjectInstructions.js';
+import type { WorkspaceSkillRepository } from '../../../runtime/src/skills/WorkspaceSkillRepository.js';
+import type { WorkspaceProjectInstructions } from '../../../runtime/src/adapters/WorkspaceProjectInstructions.js';
 import { WebviewApprovalPort } from '../webview/WebviewApprovalPort.js';
-import { approvalView, projectEvent } from '../webview/projectEvent.js';
+import { approvalView, projectEvent } from '../../../runtime/src/presentation/projectEvent.js';
 import { ContextAttachmentManager } from './ContextAttachmentManager.js';
-import { projectConversationMessages } from './projectConversationMessages.js';
+import { projectConversationMessages } from '../../../runtime/src/presentation/projectConversationMessages.js';
+import { StreamEventBuffer } from '../../../runtime/src/presentation/StreamEventBuffer.js';
+import { logAgentEvent } from './logAgentEvent.js';
+import { readRunSettings } from './readRunSettings.js';
+import { createWorkspaceServices } from './createWorkspaceServices.js';
 export class ChatSession {
   readonly hostSessionId = randomUUID();
   readonly approval = new WebviewApprovalPort();
   private sequence = 0;
+  private configuring = false;
+  private providerRefreshPending = false;
+  private readonly events = new StreamEventBuffer((event) =>
+    this.deliver({
+      ...this.envelope(),
+      type: 'Event',
+      runId: this.activeRun?.id ?? null,
+      event: projectEvent(event),
+    }),
+  );
   private readonly repository = new InMemoryConversationRepository();
   private readonly counters = new Map<string, TokenCounter>();
   private readonly providers: ProviderManager;
@@ -124,26 +135,32 @@ export class ChatSession {
       };
     if (event.type === 'ResponseCompleted' && this.streamingResponse?.id === event.messageId)
       this.streamingResponse = { ...this.streamingResponse, partial: false };
-    if (!['ResponseDelta', 'ThinkingDelta'].includes(event.type))
-      this.output.appendLine(
-        `[${event.type}]${
-          event.type === 'McpServerStarted'
-            ? ` ${event.command} ${event.args.map((arg) => JSON.stringify(arg)).join(' ')}`
-            : event.type === 'HookObserved'
-              ? ` ${event.report.command} ${event.report.args
-                  .map((arg) => JSON.stringify(arg))
-                  .join(' ')} ${event.report.outcome} ${event.report.durationMs}ms`
-              : event.type === 'ErrorOccurred'
-                ? ` ${event.code}`
-                : ''
-        }`,
-      );
-    this.deliver({
-      ...this.envelope(),
-      type: 'Event',
-      runId: this.activeRun?.id ?? null,
-      event: projectEvent(event),
-    });
+    logAgentEvent(this.output, event);
+    this.events.push(event);
+  }
+  async configureProvider(setup: () => Promise<boolean>): Promise<void> {
+    if (this.activeRun || this.preparingRun || this.configuring || this.disposed)
+      throw new Error('Stop generation or finish the current setup before changing providers.');
+    this.configuring = true;
+    await this.snapshot('setup-started');
+    try {
+      await this.initialization;
+      if (await setup()) {
+        this.selectedModel = '';
+        this.providerRefreshPending = true;
+      }
+    } finally {
+      this.configuring = false;
+      if (this.providerRefreshPending) await this.configurationChanged();
+      else await this.snapshot('setup-closed');
+    }
+  }
+  async configurationChanged(): Promise<void> {
+    this.providerRefreshPending = true;
+    if (this.activeRun || this.preparingRun || this.configuring || this.disposed) return;
+    this.providerRefreshPending = false;
+    await this.refreshModels(true);
+    await this.snapshot('provider-configuration');
   }
   initialize(): Promise<void> {
     if (this.activeRun) return Promise.resolve();
@@ -165,53 +182,27 @@ export class ChatSession {
   }
   private async initializeSession(source: CancellationSource): Promise<void> {
     if (this.root && !this.runtime) {
-      const config = vscode.workspace.getConfiguration('kova');
-      const project = config.get<string>('ers.guardrailsProject', '');
-      const guards = project
-        ? [
-            new ErsGuardrailAdapter(
-              this.root,
-              (
-                await new NodeWorkspacePathGuard(this.root).resolve(
-                  this.root,
-                  project,
-                  'Read',
-                  source,
-                )
-              ).canonicalPath,
-              new NodeProcessRunner(this.root),
-            ),
-          ]
-        : [];
-      this.runtime = new WorkspaceRuntime(
+      const services = await createWorkspaceServices(
         this.root,
         this.approval,
         { emit: (event) => this.emit(event) },
-        guards,
+        source,
       );
-      this.skillsRepository = new WorkspaceSkillRepository(this.root, (message) =>
-        this.emit({ type: 'ErrorOccurred', code: 'InvalidSkill', message, recoverable: true }),
-      );
-      this.projectInstructions = new WorkspaceProjectInstructions(this.root, (message) =>
-        this.emit({
-          type: 'ErrorOccurred',
-          code: 'ProjectRulesSkipped',
-          message,
-          recoverable: true,
-        }),
-      );
+      this.runtime = services.runtime;
+      this.skillsRepository = services.skills;
+      this.projectInstructions = services.instructions;
     }
     await this.runtime?.initialize(source);
     this.skills = (await this.skillsRepository?.discover(this.root ?? '', source)) ?? [];
     await this.refreshModels();
   }
-  async refreshModels(): Promise<void> {
+  async refreshModels(force = false): Promise<void> {
     if (this.disposed) return;
     this.modelDiscovery?.cancel();
     const source = new CancellationSource();
     this.modelDiscovery = source;
     try {
-      const discovered = await this.providers.discover(source);
+      const discovered = await this.providers.discover(source, force);
       if (this.disposed || this.modelDiscovery !== source || source.isCancellationRequested) return;
       const changedProvider = this.providerFingerprint !== discovered.fingerprint;
       this.providerFingerprint = discovered.fingerprint;
@@ -257,6 +248,9 @@ export class ChatSession {
       selectedModelId: this.selectedModel || this.providers.defaultModelId(),
       models: this.models.map((model) => ({ ...model })),
       providerStatus: this.providerStatus,
+      providerLabel: this.providers.label(),
+      setupCompleted: this.context.globalState?.get<boolean>('kova.setupCompleted', false) ?? false,
+      configuringProvider: this.configuring,
       toolsEnabled: Boolean(this.root && selected?.tools === 'Supported'),
       skills: this.skills.map((skill) => ({ ...skill })),
       activeSkillId: this.skillId,
@@ -271,6 +265,7 @@ export class ChatSession {
       thinkingEnabled: activeRun?.thinkingEnabled ?? this.providers.thinkingEnabled(),
       contextMaxTokens: activeRun?.contextMaxTokens ?? settings.get('context.maxTokens', 32768),
     };
+    this.events.flush();
     this.deliver({ ...this.envelope(), type: 'Snapshot', requestId, snapshot });
   }
   async handle(message: WebviewMessage): Promise<void> {
@@ -282,8 +277,9 @@ export class ChatSession {
         await this.snapshot(message.requestId);
         return;
       case 'RetryProvider':
-        if (this.activeRun || this.preparingRun) throw new Error('Wait until generation stops.');
-        await this.refreshModels();
+        if (this.activeRun || this.preparingRun || this.configuring)
+          throw new Error('Wait until generation stops.');
+        await this.refreshModels(true);
         await this.snapshot(message.requestId);
         return;
       case 'SubmitPrompt': {
@@ -335,6 +331,19 @@ export class ChatSession {
       case 'OpenDiffPreview':
         await this.approval.openDiff(message.approvalId);
         break;
+      case 'OpenProviderSetup':
+        await vscode.commands.executeCommand('kova.setup');
+        return;
+      case 'CompleteSetup':
+        await this.context.globalState?.update('kova.setupCompleted', true);
+        await this.snapshot(message.requestId);
+        return;
+      case 'OpenExternal':
+        await vscode.env.openExternal(vscode.Uri.parse(message.url));
+        break;
+      case 'CopyText':
+        await vscode.env.clipboard.writeText(message.text);
+        return;
       case 'OpenSettings':
         await vscode.commands.executeCommand(
           'workbench.action.openSettings',
@@ -367,7 +376,7 @@ export class ChatSession {
   private async submit(
     message: Extract<WebviewMessage, { type: 'SubmitPrompt' }>,
   ): Promise<string> {
-    if (this.activeRun || this.preparingRun)
+    if (this.activeRun || this.preparingRun || this.configuring)
       throw new Error('Kova is already generating. Stop before submitting another prompt.');
     const cancellation = new CancellationSource();
     this.preparingRun = cancellation;
@@ -381,15 +390,7 @@ export class ChatSession {
         throw new Error('Unknown selected skill.');
       const model = this.models.find((item) => item.id === message.modelId);
       if (!model) throw new Error('Selected model is unavailable. Retry model discovery.');
-      const settings = vscode.workspace.getConfiguration('kova');
-      const maxTokens = settings.get('context.maxTokens', 32768);
-      if (model.maxContextTokens && maxTokens > model.maxContextTokens)
-        throw new Error('Configured context exceeds the model context limit.');
-      const thinking = this.providers.thinkingEnabled();
-      if (thinking && model.thinking !== 'Supported')
-        throw new Error(
-          'This model does not report thinking support. Disable thinking in Kova settings.',
-        );
+      const runSettings = readRunSettings(this.providers, model);
       const runId = randomUUID();
       this.selectedModel = model.id;
       this.providerStatus = 'Available';
@@ -407,22 +408,16 @@ export class ChatSession {
         modelId: model.id,
         mode: message.mode,
         activeSkillId: message.skillId,
-        context: {
-          maxTokens,
-          reservedOutputTokens: settings.get('context.reservedOutputTokens', 4096),
-          safetyMarginRatio: settings.get('context.safetyMarginRatio', 0.1),
-          maxToolOutputCharacters: 8000,
-        },
+        ...runSettings,
         attachments: this.contextAttachments.selected(message.attachmentIds),
-        thinkingEnabled: thinking,
-        keepAliveSeconds:
-          this.providers.kind() === 'ollama' ? settings.get('ollama.keepAliveSeconds', 300) : 0,
         maxToolIterations: 10,
-        commandAllowlist: settings.get<readonly string[]>('commands.allow', []),
         toolsEnabled: Boolean(this.root && model.tools === 'Supported'),
       };
+      const provider = await this.providers.forConversation(this.conversationId);
+      if (this.providerRefreshPending)
+        throw new Error('Provider configuration changed. Retry after model discovery.');
       const agent = new ChatAgent(
-        await this.providers.forConversation(this.conversationId),
+        provider,
         this.repository,
         counter,
         this.runtime,
@@ -435,8 +430,8 @@ export class ChatSession {
         cancellation,
         task: Promise.resolve(),
         prompt: message.prompt,
-        thinkingEnabled: thinking,
-        contextMaxTokens: maxTokens,
+        thinkingEnabled: request.thinkingEnabled,
+        contextMaxTokens: request.context.maxTokens,
       };
       this.activeRun.task = (async () => {
         try {
@@ -458,6 +453,7 @@ export class ChatSession {
           }
         } finally {
           if (this.activeRun?.id === runId) this.activeRun = null;
+          if (this.providerRefreshPending) await this.configurationChanged();
           await this.snapshot(`completed-${runId}`);
           if (!this.activeRun) this.streamingResponse = null;
         }
@@ -465,6 +461,7 @@ export class ChatSession {
       return runId;
     } finally {
       if (this.preparingRun === cancellation) this.preparingRun = null;
+      if (this.providerRefreshPending && !this.activeRun) await this.configurationChanged();
     }
   }
   async newConversation(): Promise<void> {
@@ -483,6 +480,7 @@ export class ChatSession {
   }
   async dispose(): Promise<void> {
     this.disposed = true;
+    this.events.dispose();
     this.modelDiscovery?.cancel();
     this.initializationCancellation?.cancel();
     this.preparingRun?.cancel();

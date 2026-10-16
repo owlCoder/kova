@@ -4,9 +4,11 @@ import type { ContextUsage } from './ContextUsage.js';
 import type { ModelInfo } from './ModelInfo.js';
 import type { SkillMetadata } from './SkillMetadata.js';
 import type { ApprovalView } from './ApprovalView.js';
+import type { DesktopState } from './DesktopState.js';
 
 /** Presentation history is bounded and excludes model thinking. */
 export interface SessionSnapshot {
+  readonly desktop?: DesktopState;
   readonly conversationId: string;
   readonly activeRunId: string | null;
   readonly state: AgentState;
@@ -14,6 +16,9 @@ export interface SessionSnapshot {
   readonly selectedModelId: string;
   readonly models: readonly ModelInfo[];
   readonly providerStatus: 'Available' | 'Unavailable' | 'ModelMissing';
+  readonly providerLabel: string;
+  readonly setupCompleted: boolean;
+  readonly configuringProvider: boolean;
   readonly toolsEnabled: boolean;
   readonly skills: readonly SkillMetadata[];
   readonly activeSkillId: string | null;

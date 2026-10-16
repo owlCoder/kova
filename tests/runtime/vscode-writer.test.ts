@@ -70,7 +70,7 @@ vi.mock('vscode', () => {
     },
   };
 });
-import { NodeWorkspacePathGuard } from '../../packages/vscode/src/adapters/NodeWorkspacePathGuard.js';
+import { NodeWorkspacePathGuard } from '../../packages/runtime/src/adapters/NodeWorkspacePathGuard.js';
 import { VsCodeWorkspaceReader } from '../../packages/vscode/src/adapters/VsCodeWorkspaceReader.js';
 import { VsCodeWorkspaceWriter } from '../../packages/vscode/src/adapters/VsCodeWorkspaceWriter.js';
 import { CancellationSource } from './helpers.js';

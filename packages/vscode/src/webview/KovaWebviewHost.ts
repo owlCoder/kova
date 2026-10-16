@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { randomBytes } from 'node:crypto';
 import { ChatSession } from '../extension/ChatSession.js';
-import { validateMessage } from './validateMessage.js';
+import { validateMessage } from '../../../runtime/src/presentation/validateMessage.js';
 
 export class KovaWebviewHost implements vscode.Disposable {
   private readonly disconnect: () => void;

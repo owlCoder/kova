@@ -1,0 +1,12 @@
+{
+  "name": "@kova/desktop",
+  "version": "0.4.0",
+  "private": true,
+  "type": "module",
+  "description": "Kova desktop workspace for macOS, Windows and Linux",
+  "dependencies": {
+    "@kova/core": "0.0.0",
+    "@kova/runtime": "0.0.0",
+    "@kova/protocol": "0.0.0"
+  }
+}

@@ -1,10 +1,12 @@
 import type { AgentMode } from './AgentMode.js';
+import type { DesktopMessage } from './DesktopMessage.js';
 
 /** Untrusted UI intents; host validates shape, limits, IDs and current workspace/run. */
 export type WebviewMessage = {
   readonly protocolVersion: 1;
   readonly requestId: string;
 } & (
+  | DesktopMessage
   | { readonly type: 'Ready' }
   | {
       readonly type: 'SubmitPrompt';
@@ -29,5 +31,9 @@ export type WebviewMessage = {
   | { readonly type: 'OpenDiffPreview'; readonly approvalId: string }
   | { readonly type: 'RetryProvider' }
   | { readonly type: 'OpenSettings' }
+  | { readonly type: 'OpenProviderSetup' }
+  | { readonly type: 'CompleteSetup' }
+  | { readonly type: 'OpenExternal'; readonly url: string }
+  | { readonly type: 'CopyText'; readonly text: string }
   | { readonly type: 'OpenSetupInstructions' }
 );

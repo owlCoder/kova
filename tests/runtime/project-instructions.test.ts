@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { CancellationSource } from '../../packages/core/src/common/CancellationSource.js';
-import { WorkspaceProjectInstructions } from '../../packages/vscode/src/adapters/WorkspaceProjectInstructions.js';
+import { WorkspaceProjectInstructions } from '../../packages/runtime/src/adapters/WorkspaceProjectInstructions.js';
 
 let root = '';
 let outside = '';

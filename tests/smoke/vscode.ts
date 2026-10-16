@@ -3,10 +3,10 @@ import assert from 'node:assert/strict';
 import { writeFile, mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { CancellationSource } from '../../packages/core/src/common/CancellationSource.js';
-import { NodeWorkspacePathGuard } from '../../packages/vscode/src/adapters/NodeWorkspacePathGuard.js';
+import { NodeWorkspacePathGuard } from '../../packages/runtime/src/adapters/NodeWorkspacePathGuard.js';
 import { VsCodeWorkspaceReader } from '../../packages/vscode/src/adapters/VsCodeWorkspaceReader.js';
 import { VsCodeWorkspaceWriter } from '../../packages/vscode/src/adapters/VsCodeWorkspaceWriter.js';
-import { WriteFileTool } from '../../packages/vscode/src/tools/WriteFileTool.js';
+import { WriteFileTool } from '../../packages/runtime/src/tools/WriteFileTool.js';
 import { ToolRegistry } from '../../packages/core/src/tools/ToolRegistry.js';
 import { DefaultToolRuntime } from '../../packages/core/src/tools/DefaultToolRuntime.js';
 import { HookPipeline } from '../../packages/core/src/hooks/HookPipeline.js';
@@ -32,6 +32,7 @@ export async function run() {
   assert(extension, 'Extension installed in development host');
   const api = await extension.activate();
   assert((await vscode.commands.getCommands(true)).includes('kova.open'));
+  assert((await vscode.commands.getCommands(true)).includes('kova.setup'));
   const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
   assert(workspaceRoot);
   await writeFile(resolve(workspaceRoot, 'attached.txt'), 'attached selection\n');
@@ -74,6 +75,18 @@ export async function run() {
   await api.session.initialize();
   const disconnect = api.session.connect((message) => messages.push(message));
   await api.session.handle({ protocolVersion: 1, requestId: 'smoke-ready', type: 'Ready' });
+  const firstSetup = messages.filter((message) => message.type === 'Snapshot').at(-1);
+  assert.equal(firstSetup?.snapshot.providerLabel, 'Ollama');
+  assert.equal(firstSetup?.snapshot.setupCompleted, false);
+  await api.session.handle({
+    protocolVersion: 1,
+    requestId: 'smoke-setup-done',
+    type: 'CompleteSetup',
+  });
+  assert.equal(
+    messages.filter((message) => message.type === 'Snapshot').at(-1)?.snapshot.setupCompleted,
+    true,
+  );
   assert(
     messages.some(
       (message) =>
@@ -192,7 +205,10 @@ export async function run() {
     'Applied',
   );
   assert.equal(document.getText(), 'changed\n');
+  await vscode.window.showTextDocument(document, { preserveFocus: false });
+  await vscode.commands.executeCommand('workbench.action.focusActiveEditorGroup');
   await vscode.commands.executeCommand('undo');
+  await waitFor(() => document.getText() === 'original\n', 'Native editor undo restores Kova edit');
   assert.equal(document.getText(), 'original\n', 'Native editor undo restores Kova edit');
   assert.deepEqual(
     (await writer.replace(path, 'stale overwrite', before.version, cancellation)).status,

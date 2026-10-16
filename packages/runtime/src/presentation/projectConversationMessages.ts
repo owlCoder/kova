@@ -18,7 +18,7 @@ export function projectConversationMessages(
       id: entry.id,
       role: entry.message.role as 'user' | 'assistant',
       content: entry.message.content,
-      partial: partial && index === all.length - 1,
+      partial: partial && index === all.length - 1 && entry.message.role === 'assistant',
     }));
   if (activeRun && !messages.some((message) => message.id === `${activeRun.id}-user`))
     messages.push({

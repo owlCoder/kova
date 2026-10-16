@@ -11,3 +11,4 @@ temp/
 .env
 .env.*
 !.env.example
+output/

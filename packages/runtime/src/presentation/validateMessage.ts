@@ -23,6 +23,10 @@ export function validateMessage(raw: unknown): WebviewMessage {
     OpenDiffPreview: ['approvalId'],
     RetryProvider: [],
     OpenSettings: [],
+    OpenProviderSetup: [],
+    CompleteSetup: [],
+    OpenExternal: ['url'],
+    CopyText: ['text'],
     OpenSetupInstructions: [],
   };
   const allowed = fields[value.type];
@@ -64,5 +68,12 @@ export function validateMessage(raw: unknown): WebviewMessage {
     !['AllowOnce', 'Reject'].includes(value.decision as string)
   )
     throw new Error('Invalid approval decision.');
+  if (
+    value.type === 'OpenExternal' &&
+    (typeof value.url !== 'string' || value.url.length > 2048 || !/^https?:\/\//i.test(value.url))
+  )
+    throw new Error('Only HTTP(S) links can be opened.');
+  if (value.type === 'CopyText' && (typeof value.text !== 'string' || value.text.length > 60_000))
+    throw new Error('Text exceeds the clipboard limit. Select and copy a smaller section.');
   return value as WebviewMessage;
 }

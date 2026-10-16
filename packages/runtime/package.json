@@ -1,0 +1,13 @@
+{
+  "name": "@kova/runtime",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Shared Node runtime, workspace tools, provider adapters and presentation mapping",
+  "dependencies": {
+    "@kova/core": "0.0.0",
+    "@kova/ollama": "0.0.0",
+    "@kova/mcp": "0.0.0",
+    "@kova/protocol": "0.0.0"
+  }
+}

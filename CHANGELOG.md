@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.4.0
+
+- Add a cross-platform Electron desktop app with project switching, persistent sessions, session rename/archive and automatic history restoration.
+- Modernize the shared desktop/VS Code interface with streaming Markdown, tables and copyable code blocks, command palette, searchable model selection and clearer permission/context controls.
+- Add a project file browser, bounded filename search, file previews, context attachments, activity inspection and proposed/working-tree diff review in desktop.
+- Add native provider preferences with cloud/local presets, secure OS key encryption and memory-only fallback, plus dark/light/system appearance.
+- Extract shared Node tools, providers and workspace runtime into `@kova/runtime`; keep VS Code editor adapters and Electron composition independent.
+- Load desktop history lazily with an eight-session cache, persist interrupted response status, and bound file lookup without background indexing.
+- Add native packaging for macOS, Windows and Linux, a build matrix, isolated desktop smoke tooling and tests for storage, cancellation, key handling, approvals and file safety.
+- Update runtime/UI/tooling dependencies and remove all reported npm audit vulnerabilities.
+
+- Add a first-run setup guide with provider configuration, model selection and permission-mode help, available again from the chat header.
+- Add **Kova: Set Up AI Provider** with local/cloud presets, custom compatible endpoints, secure key input, connection checks and a final configuration review.
+- Support manual model IDs for compatible APIs without `/models`, plus configurable provider display names and tool support.
+- Scope credentials to each endpoint and migrate older stored keys on first use.
+- Cache successful model metadata for 60 seconds, load Ollama metadata with four workers, and batch Webview stream updates over 32 ms.
+- Refresh provider settings between runs and avoid reparsing unchanged message content.
+
 ## 0.3.2
 
 - Load project rules from the workspace root `AGENTS.md` into every run, ahead of the selected skill, and show them in the activity list.

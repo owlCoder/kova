@@ -8,9 +8,17 @@ ollama pull qwen3:4b
 
 Install Kova from its VSIX with **Extensions: Install from VSIX**. Run **Kova: Open Chat** or select Kova in the Activity Bar to open the sidebar. Use **Kova: Open Chat in Editor** for a movable editor tab. Both views share the session conversation. **Stop** cancels the active run and **New conversation** clears the current chat.
 
+## Desktop app
+
+For the standalone Electron app, follow [DESKTOP.md](DESKTOP.md). It shares the agent, tools, provider presets and chat UI with the extension. Desktop **Settings → Provider** replaces VS Code configuration commands. Choose a project, save a connection, and select a permission mode in Setup. Desktop history is persistent; extension history remains scoped to the extension session.
+
 ## Providers
 
-Open **Kova: Open Settings** and choose `kova.provider`.
+The first-run guide appears in the chat. Select **Configure provider**, or run **Kova: Set Up AI Provider** at any time. Choose a preset, confirm its endpoint, enter the API key in the native password field, and choose a model. The wizard only saves after the final review. It updates user settings unless existing workspace overrides require workspace settings. API keys are stored separately for each provider endpoint.
+
+Presets include Ollama, DeepSeek, OpenAI, OpenRouter, Groq, Gemini (through its OpenAI-compatible API), LM Studio and a custom compatible endpoint. Connection checking requests the model list; it sends no workspace content and does not generate a paid chat response. It checks model availability, not the model's chat or tool capabilities. Select a chat-capable model and enable tools only if that model supports function calling.
+
+Choose a permission mode in the guide, then **Start chatting**. **Set up later** dismisses the guide. Use **Setup** in the header to reopen it. **Kova: Open Settings** remains available for advanced configuration.
 
 ### Ollama
 
@@ -26,15 +34,19 @@ When DeepSeek thinking and tools are both enabled, Kova keeps provider-required 
 
 ### OpenAI-compatible endpoints
 
-Choose `openaiCompatible` for an endpoint that implements OpenAI Chat Completions plus `/models`. Configure:
+Choose `openaiCompatible` for an endpoint that implements streaming OpenAI Chat Completions. Configure:
 
 - `kova.openaiCompatible.baseUrl`
 - `kova.openaiCompatible.model` (optional; the first discovered model is used when empty)
 - `kova.openaiCompatible.supportsTools`
+- `kova.openaiCompatible.name` (display name)
+- `kova.openaiCompatible.discoverModels` (disable for servers without `/models`; a model ID is then required)
+
+The wizard's **Enter model ID manually** path skips model discovery. The connection is checked when you send your first prompt. The model picker can still use the configured model when the server has no model-list endpoint. Native Anthropic Messages, Azure-specific authentication and non-Chat-Completions APIs require a compatible gateway.
 
 Run **Kova: Set Provider API Key** if the endpoint requires bearer authentication. Leaving the key unset supports local compatible deployments. Generic OpenAI-compatible thinking is disabled because reasoning wire formats are provider-specific.
 
-Use **Kova: Clear Provider API Key** to remove the stored key for the selected API provider.
+Use **Kova: Clear Provider API Key** to remove the stored key for the selected API endpoint. Switching endpoints does not reuse another endpoint's key. Keys from older installations migrate to the current endpoint on first use.
 
 Selecting DeepSeek or an OpenAI-compatible endpoint sends the prompt and context needed for the active request to that configured endpoint. Kova never silently switches away from the selected provider.
 
@@ -48,6 +60,6 @@ Context defaults to 32,768 tokens with 4,096 reserved for output and a 10% safet
 
 Use trusted projects. `.kova/mcp.json` can start local servers and `.kova/hooks.json` can execute local hooks without an additional Kova trust prompt. These processes use your user privileges. Protected configuration writes always require approval.
 
-For source development, run `npm ci`, `npm run check` and `npm run build`, then press F5 in VS Code. `npm run package` creates `dist/kova-local-0.3.2.vsix`; the filename follows the extension manifest name and version. Run `npm run verify:package` to inspect the archive and `npm run smoke:vsix` to test an isolated installation.
+For source development, run `npm ci`, `npm run check` and `npm run build`, then press F5 in VS Code. `npm run package` creates `dist/kova-local-0.4.0.vsix`; the filename follows the extension manifest name and version. Run `npm run verify:package` to inspect the archive and `npm run smoke:vsix` to test an isolated installation.
 
 For tool use with the supplied Qwen3 installation, enable Thinking. The local Ollama 0.35.0/Qwen3 combination previously produced reasoning as ordinary text and reached its output limit with `think: false`; `think: true` returned native tool calls. Kova preserves the requested setting and does not execute tool-like text.

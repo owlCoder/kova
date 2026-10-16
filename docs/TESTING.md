@@ -62,3 +62,11 @@ Foundation: launch the VS Code extension development host, run Kova: Open Chat t
 Editing: approve/reject a computed diff, observe editor undo and Git, verify stale document handling. Hooks/MCP: visible exact commands, lifecycle events and clean disposal. Auto: destructive guardrail demonstration and exact allowlisted command behavior. Measure bounded memory using long fixture conversations/output instead of claiming it from class names.
 
 ERS: requires the real example project and its MCP/guardrail API. Record exact commands/model, observed tool names, review output and blocked destructive request. Reverify name availability/trademark before public Marketplace publishing; no publishing is part of these checks.
+
+## Desktop checks
+
+`tests/runtime/desktop.test.ts` covers atomic/stale file writes, symlink containment, bounded filename search, cancellation, lazy indexed history, settings validation, renaming/archiving, interrupted response restoration, strict IPC validation and an actual shared-agent approval/edit/continuation loop. `desktop-keys.test.ts` verifies encrypted endpoint-scoped storage, deletion and memory-only fallback with a mocked OS encryption service.
+
+Run `npm run desktop:build` and `npm run desktop:verify` to check packaged CSP, preload/main isolation, assets and dependency notices. Run `npm run desktop:smoke` for an isolated native UI fixture using a synthetic local Ollama server. Send a prompt; test Markdown/code copy, provider discovery/save, file search/preview/context, proposed diff and Allow once, Stop, session switching and appearance. Quit to verify the actual file and persisted session. No external AI service is required.
+
+The Desktop builds workflow runs checks and creates installers on macOS, Windows and Linux. A successful installer build is not evidence of native UI behavior; each OS still needs the manual workflow before claiming native interaction verification. Cloud-provider tests use fixture responses; live cloud credentials are not available in deterministic CI. Unsigned artifacts are for development/review until release signing is configured.

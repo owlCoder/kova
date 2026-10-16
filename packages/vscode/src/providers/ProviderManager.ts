@@ -1,20 +1,45 @@
+import { createLlmProvider } from '../../../runtime/src/providers/createLlmProvider.js';
 import { createHash } from 'node:crypto';
 import * as vscode from 'vscode';
 import type { CancellationToken } from '../../../core/src/common/CancellationToken.js';
 import type { LlmProvider } from '../../../core/src/providers/LlmProvider.js';
-import { OllamaConnection } from '../../../ollama/src/OllamaConnection.js';
-import { OllamaLlmProvider } from '../../../ollama/src/OllamaLlmProvider.js';
-import { OllamaModelCatalog } from '../../../ollama/src/OllamaModelCatalog.js';
-import { OpenAiCompatibleConnection } from './OpenAiCompatibleConnection.js';
-import { OpenAiCompatibleLlmProvider } from './OpenAiCompatibleLlmProvider.js';
-import { OpenAiCompatibleModelCatalog } from './OpenAiCompatibleModelCatalog.js';
 import { ProviderApiKeyStore } from './ProviderApiKeyStore.js';
-import type { ProviderKind } from './ProviderKind.js';
+import type { ProviderKind } from '../../../runtime/src/providers/ProviderKind.js';
+import type { ProviderConfiguration } from '../../../runtime/src/providers/ProviderConfiguration.js';
+import { discoverProviderModels } from '../../../runtime/src/providers/discoverProviderModels.js';
 
 export class ProviderManager {
   private readonly cache = new Map<string, { fingerprint: string; provider: LlmProvider }>();
 
+  private discoveryCache: {
+    key: string;
+    expires: number;
+    models: Awaited<ReturnType<typeof discoverProviderModels>>;
+    defaultModelId: string;
+    fingerprint: string;
+  } | null = null;
+
   constructor(private readonly apiKeys: ProviderApiKeyStore) {}
+
+  configuration(): ProviderConfiguration {
+    const config = vscode.workspace.getConfiguration('kova');
+    const kind = this.kind();
+    const defaults = {
+      ollama: 'http://127.0.0.1:11434',
+      deepseek: 'https://api.deepseek.com',
+      openaiCompatible: 'http://127.0.0.1:8000/v1',
+    };
+    return {
+      kind,
+      label: this.label(),
+      baseUrl: config.get(`${kind}.baseUrl`, defaults[kind]),
+      model: this.defaultModelId(),
+      supportsTools:
+        kind !== 'openaiCompatible' || config.get('openaiCompatible.supportsTools', true),
+      discoverModels:
+        kind !== 'openaiCompatible' || config.get('openaiCompatible.discoverModels', true),
+    };
+  }
 
   kind(): ProviderKind {
     const value = vscode.workspace.getConfiguration('kova').get<string>('provider', 'ollama');
@@ -25,7 +50,9 @@ export class ProviderManager {
     return {
       ollama: 'Ollama',
       deepseek: 'DeepSeek',
-      openaiCompatible: 'OpenAI-compatible provider',
+      openaiCompatible: vscode.workspace
+        .getConfiguration('kova')
+        .get('openaiCompatible.name', 'OpenAI-compatible provider'),
     }[this.kind()];
   }
 
@@ -53,75 +80,32 @@ export class ProviderManager {
     }
   }
 
-  async discover(cancellation: CancellationToken) {
-    const config = vscode.workspace.getConfiguration('kova');
-    const kind = this.kind();
-    if (kind === 'ollama') {
-      const catalog = new OllamaModelCatalog(
-        new OllamaConnection(config.get('ollama.baseUrl', 'http://127.0.0.1:11434'), fetch, 15_000),
-      );
-      const models = await catalog.listAvailable(cancellation);
-      return {
-        models,
-        defaultModelId: config.get('ollama.model', 'qwen3:4b'),
-        fingerprint: await this.fingerprint(),
-      };
-    }
-
-    const apiKey = await this.apiKeys.get(kind);
-    if (kind === 'deepseek' && !apiKey)
-      throw new Error('API key is not configured. Run “Kova: Set Provider API Key”.');
-    const baseUrl =
-      kind === 'deepseek'
-        ? config.get('deepseek.baseUrl', 'https://api.deepseek.com')
-        : config.get('openaiCompatible.baseUrl', 'http://127.0.0.1:8000/v1');
-    const tools =
-      kind === 'deepseek' || config.get('openaiCompatible.supportsTools', true)
-        ? 'Supported'
-        : 'Unsupported';
-    const thinking = kind === 'deepseek' ? 'Supported' : 'Unsupported';
-    const catalog = new OpenAiCompatibleModelCatalog(
-      new OpenAiCompatibleConnection(baseUrl, apiKey, fetch, 15_000),
-      tools,
-      thinking,
-    );
-    const models = await catalog.listAvailable(cancellation);
-    const configured =
-      kind === 'deepseek'
-        ? config.get('deepseek.model', 'deepseek-flash')
-        : config.get('openaiCompatible.model', '');
-    return {
-      models,
-      defaultModelId: configured || models[0]?.id || '',
-      fingerprint: await this.fingerprint(),
-    };
+  async discover(cancellation: CancellationToken, force = false) {
+    cancellation.throwIfCancellationRequested();
+    const config = this.configuration();
+    const apiKey = await this.apiKeys.get(config.kind, config.baseUrl);
+    cancellation.throwIfCancellationRequested();
+    const fingerprint = this.fingerprint(apiKey, config);
+    const key = JSON.stringify([config, fingerprint]);
+    if (!force && this.discoveryCache?.key === key && this.discoveryCache.expires > Date.now())
+      return this.discoveryCache;
+    const models = await discoverProviderModels(config, apiKey, cancellation);
+    cancellation.throwIfCancellationRequested();
+    const result = { models, defaultModelId: config.model || models[0]?.id || '', fingerprint };
+    // A configuration change during discovery must never populate the new configuration's cache.
+    if (JSON.stringify(this.configuration()) === JSON.stringify(config))
+      this.discoveryCache = { ...result, key, expires: Date.now() + 60_000 };
+    return result;
   }
 
   async forConversation(conversationId: string): Promise<LlmProvider> {
-    const fingerprint = await this.fingerprint();
+    const configuration = this.configuration();
+    const apiKey = await this.apiKeys.get(configuration.kind, configuration.baseUrl);
+    const fingerprint = this.fingerprint(apiKey, configuration);
     const cached = this.cache.get(conversationId);
     if (cached?.fingerprint === fingerprint) return cached.provider;
 
-    const config = vscode.workspace.getConfiguration('kova');
-    const kind = this.kind();
-    let provider: LlmProvider;
-    if (kind === 'ollama') {
-      provider = new OllamaLlmProvider(
-        new OllamaConnection(config.get('ollama.baseUrl', 'http://127.0.0.1:11434')),
-      );
-    } else {
-      const apiKey = await this.apiKeys.get(kind);
-      if (kind === 'deepseek' && !apiKey)
-        throw new Error('API key is not configured. Run “Kova: Set Provider API Key”.');
-      const baseUrl =
-        kind === 'deepseek'
-          ? config.get('deepseek.baseUrl', 'https://api.deepseek.com')
-          : config.get('openaiCompatible.baseUrl', 'http://127.0.0.1:8000/v1');
-      provider = new OpenAiCompatibleLlmProvider(
-        new OpenAiCompatibleConnection(baseUrl, apiKey),
-        kind === 'deepseek' ? 'deepseek' : 'standard',
-      );
-    }
+    const provider = createLlmProvider(configuration, apiKey);
     this.cache.set(conversationId, { fingerprint, provider });
     return provider;
   }
@@ -132,36 +116,19 @@ export class ProviderManager {
 
   clear(): void {
     this.cache.clear();
+    this.discoveryCache = null;
   }
 
-  private async fingerprint(): Promise<string> {
+  private fingerprint(apiKey: string | undefined, configuration: ProviderConfiguration): string {
     const config = vscode.workspace.getConfiguration('kova');
-    const kind = this.kind();
-    const apiKey = await this.apiKeys.get(kind);
     const secretHash = apiKey
       ? createHash('sha256').update(apiKey).digest('hex').slice(0, 16)
       : 'none';
-    switch (kind) {
-      case 'deepseek':
-        return [
-          kind,
-          config.get('deepseek.baseUrl', 'https://api.deepseek.com'),
-          config.get('deepseek.think', false),
-          secretHash,
-        ].join('|');
-      case 'openaiCompatible':
-        return [
-          kind,
-          config.get('openaiCompatible.baseUrl', 'http://127.0.0.1:8000/v1'),
-          config.get('openaiCompatible.supportsTools', true),
-          secretHash,
-        ].join('|');
-      default:
-        return [
-          kind,
-          config.get('ollama.baseUrl', 'http://127.0.0.1:11434'),
-          config.get('ollama.keepAliveSeconds', 300),
-        ].join('|');
-    }
+    return JSON.stringify([
+      configuration,
+      this.thinkingEnabled(),
+      config.get('ollama.keepAliveSeconds', 300),
+      secretHash,
+    ]);
   }
 }
