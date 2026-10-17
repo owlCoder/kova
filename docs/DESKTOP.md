@@ -78,6 +78,8 @@ npm run desktop:package
 
 Installers appear in `dist/installers`: DMG/ZIP on macOS, NSIS EXE on Windows, AppImage/DEB on Linux. The **Desktop builds** GitHub workflow builds and uploads all three platforms using native runners. Builds are unsigned until signing/notarization credentials are configured. Installers are not automatically published to a release or app store.
 
+The terminal uses node-pty's N-API runtime: published binaries on macOS/Windows and the local `npm ci` native build on Linux. Packaging stages the host's binary outside ASAR. `desktop:verify` starts a shell through the staged module and checks its output before an installer is produced.
+
 ## Native smoke check
 
 After `desktop:build`, run `npm run desktop:smoke`. It starts a disposable project, isolated profile and local synthetic Ollama server. Send a prompt, ask **Update note.txt**, inspect and approve the diff, test a long answer with Stop, test settings and appearance, then quit. `node scripts/desktop/smoke.mjs --interface-only` instead verifies that a UI-run terminal command writes `terminal-smoke.txt` containing `KOVA_TERMINAL_OK` and that Serbian/large text preferences persist. The fixture can target a packaged app with `--app=/absolute/path/to/executable`. The script verifies the approved edit and saved history and removes temporary data. It does not contact an external AI service.
