@@ -42,6 +42,13 @@ await new Promise((resolve, reject) => {
   }, 10000);
   terminal.onExit(({ exitCode }) => {
     clearTimeout(timeout);
+    if (process.platform === 'win32') {
+      try {
+        terminal.kill();
+      } catch {
+        /* Native handles may already have been released. */
+      }
+    }
     if (exitCode === 0 && output.includes('KOVA_PACKAGED_PTY_OK')) resolve();
     else reject(new Error(`Packaged terminal failed (${exitCode}): ${output}`));
   });

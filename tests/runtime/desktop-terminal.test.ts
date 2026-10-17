@@ -40,6 +40,26 @@ const output = () =>
   ).replaceAll('\r', '');
 
 describe('user-operated desktop PTY', () => {
+  it('reports a natural shell exit and can open a fresh terminal afterward', async () => {
+    terminal.open(root, 80, 24);
+    const opened = messages.find((message) => message.type === 'TerminalOpened')!;
+    if (opened.type !== 'TerminalOpened') throw new Error('No terminal');
+    terminal.input(opened.terminalId, 'exit\r');
+    await vi.waitFor(
+      () =>
+        expect(messages).toContainEqual({
+          type: 'TerminalClosed',
+          terminalId: opened.terminalId,
+          exitCode: 0,
+        }),
+      { timeout: 7000 },
+    );
+    expect(() => terminal.input(opened.terminalId, 'echo stale\r')).toThrow('no longer active');
+    terminal.open(root, 80, 24);
+    const next = messages.filter((message) => message.type === 'TerminalOpened').at(-1)!;
+    expect(next.terminalId).not.toBe(opened.terminalId);
+  });
+
   it('runs a real interactive shell in the project, supports resize and reattaches without a new process', async () => {
     terminal.open(root, 80, 24);
     const opened = messages.find((message) => message.type === 'TerminalOpened');

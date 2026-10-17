@@ -73,6 +73,14 @@ export class DesktopTerminal {
         if (this.current !== current) return;
         this.flush();
         this.current = null;
+        // ConPTY's output worker remains referenced after a natural shell exit until disposed.
+        if (process.platform === 'win32') {
+          try {
+            terminal.kill();
+          } catch {
+            /* Native handles may already have been released. */
+          }
+        }
         this.send({ type: 'TerminalClosed', terminalId: current.id, exitCode });
       });
     }
