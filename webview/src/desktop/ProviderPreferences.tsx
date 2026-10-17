@@ -8,6 +8,7 @@ import { AboutKova } from './AboutKova.js';
 import { AppearanceSettings } from './AppearanceSettings.js';
 import { Icon } from '../components/Icon.js';
 import { useDialogFocus } from '../components/useDialogFocus.js';
+import { ModelPicker } from '../components/ModelPicker.js';
 
 export function ProviderPreferences({
   desktop,
@@ -276,18 +277,17 @@ export function ProviderPreferences({
                     </span>
                   </div>
                 )}
-                <label>
-                  {t('Model')}
+                <div className="provider-model-field">
+                  <label htmlFor="provider-model-id">{t('Model')}</label>
                   <div className="model-input-row">
-                    <input
-                      aria-label={t('Provider model ID')}
-                      list="provider-models"
-                      value={draft.model}
-                      spellCheck={false}
-                      onChange={(event) => update({ model: event.target.value })}
-                      placeholder={t('Choose or enter a chat model ID')}
-                      maxLength={256}
-                      required
+                    <ModelPicker
+                      id="provider-model-id"
+                      label={t('Provider model ID')}
+                      models={models}
+                      model={draft.model}
+                      busy={saving}
+                      allowCustom
+                      onChange={(model) => update({ model })}
                     />
                     <button
                       type="button"
@@ -305,17 +305,10 @@ export function ProviderPreferences({
                       {checking ? t('Checking…') : t('Load models')}
                     </button>
                   </div>
-                  <datalist id="provider-models">
-                    {models.map((model) => (
-                      <option value={model.id} key={model.id}>
-                        {model.displayName}
-                      </option>
-                    ))}
-                  </datalist>
                   <small>
                     {t('Choose a chat-capable model. Loading models sends no project content.')}
                   </small>
-                </label>
+                </div>
                 {draft.kind === 'openaiCompatible' && (
                   <>
                     <label className="checkbox-field">
@@ -325,7 +318,10 @@ export function ProviderPreferences({
                         onChange={(event) => update({ discoverModels: event.target.checked })}
                       />
                       <span>
-                        {t('Discover available models')}
+                        <strong className="checkbox-title">
+                          <Icon name="search" size={15} />
+                          {t('Discover available models')}
+                        </strong>
                         <small>{t('Turn off for APIs that only accept a manual model ID.')}</small>
                       </span>
                     </label>
@@ -336,7 +332,10 @@ export function ProviderPreferences({
                         onChange={(event) => update({ supportsTools: event.target.checked })}
                       />
                       <span>
-                        {t('Enable workspace tools')}
+                        <strong className="checkbox-title">
+                          <Icon name="code" size={15} />
+                          {t('Enable workspace tools')}
+                        </strong>
                         <small>{t('The model must support function calling.')}</small>
                       </span>
                     </label>
@@ -350,7 +349,10 @@ export function ProviderPreferences({
                       onChange={(event) => update({ thinking: event.target.checked })}
                     />
                     <span>
-                      {t('Enable model thinking')}
+                      <strong className="checkbox-title">
+                        <Icon name="brain" size={15} />
+                        {t('Enable model thinking')}
+                      </strong>
                       <small>{t('Show transient reasoning when the model supports it.')}</small>
                     </span>
                   </label>

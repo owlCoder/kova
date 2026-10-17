@@ -33,6 +33,18 @@ const server = createServer(async (request, response) => {
             capabilities: ['tools', 'thinking'],
             details: { context_length: 32768 },
           },
+          {
+            name: 'qwen3-coder:7b',
+            size: 4_000_000_000,
+            capabilities: ['tools'],
+            details: { context_length: 65536 },
+          },
+          {
+            name: 'llama3:8b',
+            size: 5_000_000_000,
+            capabilities: [],
+            details: { context_length: 32768 },
+          },
         ],
       }),
     );

@@ -1,4 +1,14 @@
 export const sr: Readonly<Record<string, string>> = {
+  'Search models': 'Pretraži modele',
+  'Search models…': 'Pretraži modele…',
+  'Workspace tools': 'Alati projekta',
+  'Capabilities unknown': 'Mogućnosti nisu poznate',
+  '{count} context': 'Kontekst: {count}',
+  'No matching models.': 'Nema odgovarajućih modela.',
+  'Your typed model ID will be used.': 'Koristiće se uneti ID modela.',
+  'Refine your search to see more models.': 'Precizirajte pretragu za više modela.',
+  'You can also enter a model ID manually.': 'ID modela možete uneti i ručno.',
+
   'Search…': 'Pretraži…',
   'Latest messages': 'Najnovije poruke',
   'YOUR WORKSPACE': 'VAŠ RADNI PROSTOR',

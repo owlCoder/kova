@@ -56,6 +56,8 @@ Markdown supports lists, tables and fenced code. Code blocks and messages have c
 
 The graphite/copper dark palette is shared by the interface, terminal and native window controls. Theme tiles preview the actual layout. Dialogs return keyboard focus to their opener; the command palette wraps through available actions and keeps the active result visible. The composer grows with your draft. Reading older messages pauses automatic following; **Latest messages** returns to the end. Motion respects the operating system's reduced-motion preference.
 
+The model chooser searches IDs and display names and shows discovered tool/context support. Use Up/Down and Enter to choose, or Escape to close. The provider model field also accepts a manual ID directly. Large catalogs show at most 80 matches; refine the query to find other models. Model choice controls do not request a model or send project content.
+
 ## Interactive terminal
 
 Use **Cmd/Ctrl+Shift+T**, **Ctrl+`**, the command palette or the title-bar terminal button. The panel starts your login shell on macOS/Linux and PowerShell on Windows in the current project. It supports interactive CLI applications, ANSI colors, Ctrl+C, clear, restart and drag/keyboard resizing. Hide preserves the process; Close terminates it. Changing projects or quitting closes the current shell.

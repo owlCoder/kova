@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.2
+
+- Fix mixed light/dark desktop surfaces by scoping VS Code fallback colors exclusively to the extension host; add a regression check for that boundary.
+- Reduce control, tab and panel radii; add typography icons and selected-state checks to text-size choices.
+- Replace browser checkbox styling with accessible, theme-aware checkmarks and clearer settings rows.
+- Add a searchable model chooser with keyboard navigation, capability/context details, bounded results and native light-dismiss behavior. Provider settings retain direct manual model-ID entry.
+
 ## 0.5.1
 
 - Refine the workspace with a graphite/copper dark palette, clearer surface layers, readable secondary text and shared terminal/native chrome colors.

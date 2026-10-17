@@ -1,4 +1,14 @@
 export const de: Readonly<Record<string, string>> = {
+  'Search models': 'Modelle durchsuchen',
+  'Search models…': 'Modelle durchsuchen…',
+  'Workspace tools': 'Projektwerkzeuge',
+  'Capabilities unknown': 'Fähigkeiten unbekannt',
+  '{count} context': 'Kontext: {count}',
+  'No matching models.': 'Keine passenden Modelle.',
+  'Your typed model ID will be used.': 'Die eingegebene Modell-ID wird verwendet.',
+  'Refine your search to see more models.': 'Verfeinere die Suche für weitere Modelle.',
+  'You can also enter a model ID manually.': 'Du kannst auch eine Modell-ID manuell eingeben.',
+
   'Search…': 'Suchen…',
   'Latest messages': 'Neueste Nachrichten',
   'YOUR WORKSPACE': 'DEIN ARBEITSRAUM',

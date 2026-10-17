@@ -23,9 +23,9 @@
   --shadow-dialog: 0 24px 80px #0006, 0 0 0 1px #ffffff04;
   --shadow-float: 0 12px 36px #0005, 0 2px 8px #0003;
   --backdrop: #070b0e99;
-  --radius-control: 8px;
-  --radius-panel: 12px;
-  --radius-dialog: 16px;
+  --radius-control: 5px;
+  --radius-panel: 8px;
+  --radius-dialog: 10px;
   --motion-fast: 120ms;
   --motion-normal: 180ms;
   --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);

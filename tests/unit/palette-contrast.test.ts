@@ -25,6 +25,19 @@ function contrast(a: string, b: string): number {
   return (values[0]! + 0.05) / (values[1]! + 0.05);
 }
 describe('readable workspace palettes', () => {
+  it('keeps VS Code palette overrides scoped to the extension host', () => {
+    const css = readFileSync(new URL('../../webview/src/index.css', import.meta.url), 'utf8');
+    for (const rule of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+      if (!rule[2]!.includes('var(--vscode-')) continue;
+      for (const selector of rule[1]!.trim().split(',')) {
+        expect(
+          selector.trim(),
+          'Host colors must not override desktop theme inheritance',
+        ).toContain('.extension-frame');
+        expect(selector).not.toContain('.desktop-frame');
+      }
+    }
+  });
   for (const [index, theme] of ['dark', 'light'].entries()) {
     it(`${theme} keeps secondary text readable and primary controls distinct`, () => {
       const palette = palettes[index]!;

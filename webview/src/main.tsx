@@ -3,6 +3,7 @@ import { App } from './App.js';
 import { WorkspaceErrorBoundary } from './components/WorkspaceErrorBoundary.js';
 import './index.css';
 import './styles/workbench.css';
+import './styles/controls.css';
 
 const root = document.getElementById('root');
 if (root)

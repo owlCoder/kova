@@ -48,7 +48,13 @@ export function AppearanceSettings({ desktop }: { desktop: DesktopState }) {
               className={desktop.textSize === size ? 'selected' : ''}
               onClick={() => send({ type: 'SetTextSize', textSize: size })}
             >
-              {t({ standard: 'Comfortable', large: 'Large', larger: 'Extra large' }[size])}
+              <Icon name="type" size={{ standard: 16, large: 19, larger: 22 }[size]} />
+              <span>
+                {t({ standard: 'Comfortable', large: 'Large', larger: 'Extra large' }[size])}
+              </span>
+              <span className="choice-mark" aria-hidden="true">
+                {desktop.textSize === size && <Icon name="check" size={14} />}
+              </span>
             </button>
           ))}
         </div>

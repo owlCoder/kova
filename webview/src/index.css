@@ -156,11 +156,6 @@ kbd {
 }
 .desktop-frame,
 .extension-frame {
-  --sidebar: var(--vscode-sideBar-background, #101416);
-  --faint: var(--vscode-descriptionForeground, #89979d);
-  --hover: var(--vscode-list-hoverBackground, #293237);
-  --elevated: var(--vscode-editorWidget-background, #242c31);
-  --selection: var(--vscode-editor-selectionBackground, #e3b48c32);
   height: 100vh;
   width: 100%;
   overflow: hidden;
@@ -2003,6 +1998,11 @@ kbd {
   color: var(--faint);
 }
 .extension-frame {
+  --sidebar: var(--vscode-sideBar-background, #101416);
+  --faint: var(--vscode-descriptionForeground, #89979d);
+  --hover: var(--vscode-list-hoverBackground, #293237);
+  --elevated: var(--vscode-editorWidget-background, #242c31);
+  --selection: var(--vscode-editor-selectionBackground, #e3b48c32);
   --bg: var(--vscode-sideBar-background, #111315);
   --panel: var(--vscode-editor-background, #151719);
   --surface: var(--vscode-input-background, #1c1e21);

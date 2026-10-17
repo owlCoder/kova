@@ -37,6 +37,9 @@ import {
   Pencil,
   Clock3,
   GitBranch,
+  Type,
+  Cpu,
+  Brain,
 } from 'lucide-react';
 
 const icons = {
@@ -78,6 +81,9 @@ const icons = {
   pencil: Pencil,
   clock: Clock3,
   branch: GitBranch,
+  type: Type,
+  cpu: Cpu,
+  brain: Brain,
 };
 export function Icon({
   name,
