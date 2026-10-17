@@ -14,8 +14,10 @@ import { DesktopKeyStore } from '../state/DesktopKeyStore.js';
 import { DesktopSession } from './DesktopSession.js';
 import { DesktopController } from './DesktopController.js';
 
+// Keep the established profile location when changing the visible application name.
+const existingDataDirectory = app.getPath('userData');
 app.setName('Kova');
-if (process.env.KOVA_DESKTOP_DATA) app.setPath('userData', process.env.KOVA_DESKTOP_DATA);
+app.setPath('userData', process.env.KOVA_DESKTOP_DATA ?? existingDataDirectory);
 const single = app.requestSingleInstanceLock();
 if (!single) app.quit();
 else {

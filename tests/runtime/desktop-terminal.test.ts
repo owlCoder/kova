@@ -1,4 +1,4 @@
-import { chmod, mkdtemp, realpath, rm } from 'node:fs/promises';
+import { chmod, mkdtemp, realpath, readFile, rm } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -37,7 +37,7 @@ const output = () =>
       .filter((message) => message.type === 'TerminalData')
       .map((message) => message.data)
       .join(''),
-  );
+  ).replaceAll('\r', '');
 
 describe('user-operated desktop PTY', () => {
   it('runs a real interactive shell in the project, supports resize and reattaches without a new process', async () => {
@@ -69,8 +69,14 @@ describe('user-operated desktop PTY', () => {
     terminal.open(root, 100, 30);
     const opened = messages.find((message) => message.type === 'TerminalOpened')!;
     if (opened.type !== 'TerminalOpened') throw new Error('No terminal');
-    terminal.input(opened.terminalId, 'node -e "setInterval(()=>console.log(\'PTY_TICK\'),100)"\r');
-    await vi.waitFor(() => expect(output()).toMatch(/\r?\nPTY_TICK\r?\n/), { timeout: 7000 });
+    terminal.input(
+      opened.terminalId,
+      "node -e \"setInterval(()=>require('fs').writeFileSync('pty-running','ready'),100)\"\r",
+    );
+    await vi.waitFor(
+      async () => expect(await readFile(join(root, 'pty-running'), 'utf8')).toBe('ready'),
+      { timeout: 7000 },
+    );
     const beforeInterrupt = output().length;
     terminal.input(opened.terminalId, '\u0003');
     // PowerShell clears queued input while handling Ctrl+C; wait for its new prompt.
@@ -78,8 +84,14 @@ describe('user-operated desktop PTY', () => {
       await vi.waitFor(() => expect(output().slice(beforeInterrupt)).toMatch(/PS [^\r\n]+>/), {
         timeout: 7000,
       });
-    terminal.input(opened.terminalId, 'node -e "console.log(\'PTY_ALIVE\')"\r');
-    await vi.waitFor(() => expect(output()).toMatch(/\r?\nPTY_ALIVE\r?\n/), { timeout: 7000 });
+    terminal.input(
+      opened.terminalId,
+      "node -e \"require('fs').writeFileSync('pty-alive','after-interrupt')\"\r",
+    );
+    await vi.waitFor(
+      async () => expect(await readFile(join(root, 'pty-alive'), 'utf8')).toBe('after-interrupt'),
+      { timeout: 7000 },
+    );
     terminal.syncWorkspace(root + '-different');
     expect(
       messages.some(

@@ -64,7 +64,7 @@ Project `AGENTS.md`, `.kova/skills`, `.kova/mcp.json` and `.kova/hooks.json` wor
 
 ## Local data and keys
 
-Data lives in the platform's Electron user-data directory for Kova (typically `~/Library/Application Support/Kova` on macOS, `%APPDATA%/Kova` on Windows and `~/.config/Kova` on Linux). `settings.json` contains preferences, `session-index.json` contains metadata, and `sessions/<uuid>.json` contains history. Sessions load lazily; archiving hides a row and keeps its file. Back up this directory to retain history.
+Data lives in the platform's Electron user-data directory for `kova-desktop` (typically `~/Library/Application Support/kova-desktop` on macOS, `%APPDATA%/kova-desktop` on Windows and `~/.config/kova-desktop` on Linux). `settings.json` contains preferences, `session-index.json` contains metadata, and `sessions/<uuid>.json` contains history. Sessions load lazily; archiving hides a row and keeps its file. Back up this directory to retain history.
 
 `credentials.json` contains encrypted API keys scoped to provider type and endpoint. Electron safeStorage uses the OS credential system. If encryption is unavailable, including Linux `basic_text`, Kova keeps the key only in memory and displays a notice. No plaintext key is saved in ordinary settings or sent to the renderer. Removing a key removes it for that endpoint.
 
