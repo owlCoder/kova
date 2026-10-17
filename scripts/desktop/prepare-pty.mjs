@@ -8,7 +8,7 @@ const platform = `${process.platform}-${process.arch}`;
 
 export async function preparePty(output) {
   // The published spawn-helper lacks its executable bit on some npm installations.
-  if (process.platform !== 'win32')
+  if (process.platform === 'darwin')
     await chmod(resolve(source, 'prebuilds', platform, 'spawn-helper'), 0o755);
   if (!output) return;
   const destination = resolve(output, 'node_modules/node-pty');

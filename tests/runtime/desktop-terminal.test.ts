@@ -2,6 +2,7 @@ import { chmod, mkdtemp, realpath, rm } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { stripVTControlCharacters } from 'node:util';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DesktopTerminal } from '../../packages/desktop/src/main/DesktopTerminal.js';
 
@@ -9,7 +10,7 @@ let root: string;
 let terminal: DesktopTerminal;
 let messages: Parameters<ConstructorParameters<typeof DesktopTerminal>[0]>[0][];
 beforeAll(async () => {
-  if (process.platform !== 'win32') {
+  if (process.platform === 'darwin') {
     const folder = dirname(createRequire(import.meta.url).resolve('node-pty/package.json'));
     await chmod(
       join(folder, 'prebuilds', `${process.platform}-${process.arch}`, 'spawn-helper'),
@@ -31,10 +32,12 @@ afterEach(async () => {
   await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 });
 });
 const output = () =>
-  messages
-    .filter((message) => message.type === 'TerminalData')
-    .map((message) => message.data)
-    .join('');
+  stripVTControlCharacters(
+    messages
+      .filter((message) => message.type === 'TerminalData')
+      .map((message) => message.data)
+      .join(''),
+  );
 
 describe('user-operated desktop PTY', () => {
   it('runs a real interactive shell in the project, supports resize and reattaches without a new process', async () => {
@@ -68,7 +71,13 @@ describe('user-operated desktop PTY', () => {
     if (opened.type !== 'TerminalOpened') throw new Error('No terminal');
     terminal.input(opened.terminalId, 'node -e "setInterval(()=>console.log(\'PTY_TICK\'),100)"\r');
     await vi.waitFor(() => expect(output()).toMatch(/\r?\nPTY_TICK\r?\n/), { timeout: 7000 });
+    const beforeInterrupt = output().length;
     terminal.input(opened.terminalId, '\u0003');
+    // PowerShell clears queued input while handling Ctrl+C; wait for its new prompt.
+    if (process.platform === 'win32')
+      await vi.waitFor(() => expect(output().slice(beforeInterrupt)).toMatch(/PS [^\r\n]+>/), {
+        timeout: 7000,
+      });
     terminal.input(opened.terminalId, 'node -e "console.log(\'PTY_ALIVE\')"\r');
     await vi.waitFor(() => expect(output()).toMatch(/\r?\nPTY_ALIVE\r?\n/), { timeout: 7000 });
     terminal.syncWorkspace(root + '-different');

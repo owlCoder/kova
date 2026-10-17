@@ -264,6 +264,17 @@ export async function run() {
   console.log(
     'PASS native WorkspaceEdit create/replace, editor Undo, stale preview refusal and approval rejection without write.',
   );
+  await vscode.workspace
+    .getConfiguration('kova')
+    .update('ui.language', 'sr', vscode.ConfigurationTarget.Global);
+  await vscode.workspace
+    .getConfiguration('kova')
+    .update('ui.textSize', 'large', vscode.ConfigurationTarget.Global);
+  await api.session.snapshot('smoke-ui-preferences');
+  const localized = messages.filter((message) => message.type === 'Snapshot').at(-1);
+  assert.equal(localized?.snapshot.language, 'sr');
+  assert.equal(localized?.snapshot.textSize, 'large');
+  console.log('PASS Serbian interface language and larger text settings reach the shared UI.');
   await vscode.commands.executeCommand('kova.openInEditor');
   const closeOffset = messages.length;
   await api.session.handle({

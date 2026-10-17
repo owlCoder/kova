@@ -22,7 +22,7 @@ assert(!html.includes("script-src 'self' 'unsafe-inline'"));
 assert.equal(manifest.dependencies['node-pty'], '1.1.0');
 const native = `${root}/node_modules/node-pty/prebuilds/${process.platform}-${process.arch}`;
 assert((await stat(`${native}/${process.platform === 'win32' ? 'conpty' : 'pty'}.node`)).size > 0);
-if (process.platform !== 'win32') assert((await stat(`${native}/spawn-helper`)).mode & 0o111);
+if (process.platform === 'darwin') assert((await stat(`${native}/spawn-helper`)).mode & 0o111);
 assert((await readFile(root + '/THIRD-PARTY-NOTICES.txt', 'utf8')).includes('node-pty@1.1.0'));
 assert((await readdir(root + '/renderer/assets')).some((name) => name.endsWith('.js')));
 assert((await readFile(root + '/THIRD-PARTY-NOTICES.txt', 'utf8')).includes('react@'));
