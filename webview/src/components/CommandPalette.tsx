@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { SessionSnapshot } from '../../../packages/protocol/src/SessionSnapshot.js';
 import { isDesktop, send } from '../messaging/bridge.js';
 import { Icon } from './Icon.js';
+import { useDialogFocus } from './useDialogFocus.js';
 
 export function CommandPalette({
   snapshot,
@@ -23,6 +24,8 @@ export function CommandPalette({
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState(0);
   const input = useRef<HTMLInputElement>(null);
+  const dialog = useRef<HTMLElement>(null);
+  useDialogFocus(dialog);
   const mod =
     snapshot?.desktop?.platform === 'win32' || snapshot?.desktop?.platform === 'linux'
       ? 'Ctrl'
@@ -96,14 +99,19 @@ export function CommandPalette({
       id: session.id,
       label: session.title,
       icon: 'chat' as const,
-      shortcut: 'Session',
+      shortcut: t('Session'),
       disabled: busy,
       run: () => send({ type: 'SelectConversation', conversationId: session.id }),
     })),
   ].filter((command) => command.label.toLowerCase().includes(query.toLowerCase()));
+  const active = commands[selected]?.disabled
+    ? commands.findIndex((command) => !command.disabled)
+    : Math.min(selected, commands.length - 1);
   useEffect(() => {
-    input.current?.focus();
-  }, []);
+    dialog.current
+      ?.querySelector(`[data-command-index="${active}"]`)
+      ?.scrollIntoView({ block: 'nearest' });
+  }, [active]);
   const choose = (index: number) => {
     const command = commands[index];
     if (command && !command.disabled) {
@@ -120,22 +128,27 @@ export function CommandPalette({
     >
       <section
         className="command-palette"
+        ref={dialog}
         role="dialog"
         aria-modal="true"
         aria-label={t('Command palette')}
         onKeyDown={(event) => {
+          if (event.nativeEvent.isComposing) return;
           if (event.key === 'Escape') onClose();
-          if (event.key === 'ArrowDown') {
+          if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
             event.preventDefault();
-            setSelected((index) => Math.min(commands.length - 1, index + 1));
-          }
-          if (event.key === 'ArrowUp') {
-            event.preventDefault();
-            setSelected((index) => Math.max(0, index - 1));
+            const direction = event.key === 'ArrowDown' ? 1 : -1;
+            for (let step = 1; step <= commands.length; step++) {
+              const index = (active + direction * step + commands.length) % commands.length;
+              if (!commands[index]?.disabled) {
+                setSelected(index);
+                break;
+              }
+            }
           }
           if (event.key === 'Enter') {
             event.preventDefault();
-            choose(selected);
+            choose(active);
           }
         }}
       >
@@ -143,6 +156,12 @@ export function CommandPalette({
           <Icon name="search" size={19} />
           <input
             ref={input}
+            role="combobox"
+            aria-expanded="true"
+            aria-controls="command-results"
+            aria-activedescendant={active >= 0 ? `command-${commands[active]!.id}` : undefined}
+            autoComplete="off"
+            spellCheck={false}
             aria-label={t('Search commands and sessions')}
             placeholder={t('Search commands or sessions…')}
             value={query}
@@ -155,10 +174,20 @@ export function CommandPalette({
             <kbd>{t('esc')}</kbd>
           </button>
         </div>
-        <div className="palette-results">
+        <div
+          className="palette-results"
+          id="command-results"
+          role="listbox"
+          aria-label={t('Commands & sessions')}
+        >
           {commands.map((command, i) => (
             <button
-              className={selected === i ? 'selected' : ''}
+              className={active === i ? 'selected' : ''}
+              id={`command-${command.id}`}
+              role="option"
+              aria-selected={active === i}
+              tabIndex={-1}
+              data-command-index={i}
               disabled={command.disabled}
               key={command.id}
               onMouseEnter={() => setSelected(i)}

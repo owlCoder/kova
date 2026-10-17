@@ -1,6 +1,6 @@
 {
   "name": "kova",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "private": true,
   "description": "Local-first AI coding workspace for desktop and VS Code",
   "type": "module",

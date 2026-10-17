@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import logo from '../../assets/logo.png';
 import { ChatFooter } from './components/ChatFooter.js';
 import { Icon } from './components/Icon.js';
@@ -57,6 +57,7 @@ function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
   const [setupDismissed, setSetupDismissed] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [showLatest, setShowLatest] = useState(false);
   const scroller = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLTextAreaElement>(null);
   const nearBottom = useRef(true);
@@ -80,12 +81,13 @@ function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
     [resources.setInspectorOpen],
   );
   const closePreview = useCallback(() => resources.setPreview(null), [resources.setPreview]);
-  useEffect(() => {
+  useLayoutEffect(() => {
+    nearBottom.current = true;
+    setShowLatest(false);
+  }, [snapshot?.conversationId]);
+  useLayoutEffect(() => {
     if (!showSetup && nearBottom.current && scroller.current) {
-      const frame = requestAnimationFrame(() => {
-        if (scroller.current) scroller.current.scrollTop = scroller.current.scrollHeight;
-      });
-      return () => cancelAnimationFrame(frame);
+      scroller.current.scrollTop = scroller.current.scrollHeight;
     }
   }, [snapshot?.messages, chat.activities, showSetup]);
   useEffect(() => {
@@ -106,6 +108,14 @@ function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
   useEffect(() => {
     const keyboard = (event: KeyboardEvent) => {
       if (!(event.metaKey || event.ctrlKey)) return;
+      if (resources.preferences) return;
+      if (paletteOpen) {
+        if (event.key.toLowerCase() === 'k') {
+          event.preventDefault();
+          setPaletteOpen(false);
+        }
+        return;
+      }
       if (
         isDesktop &&
         ((event.shiftKey && event.code === 'KeyT') || (event.ctrlKey && event.code === 'Backquote'))
@@ -148,7 +158,14 @@ function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
     };
     window.addEventListener('keydown', keyboard);
     return () => window.removeEventListener('keydown', keyboard);
-  }, [preferences, resources.setInspectorOpen, resources.setInspectorTab, toggleTerminal]);
+  }, [
+    preferences,
+    resources.preferences,
+    paletteOpen,
+    resources.setInspectorOpen,
+    resources.setInspectorTab,
+    toggleTerminal,
+  ]);
   const closeSetup = () => {
     setSetupOpen(false);
     setSetupDismissed(true);
@@ -159,6 +176,7 @@ function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
         <WindowTitlebar
           desktop={snapshot?.desktop}
           terminalOpen={terminalOpen}
+          inert={resources.preferences || paletteOpen}
           onTerminal={toggleTerminal}
           onCommands={openPalette}
         />
@@ -260,38 +278,59 @@ function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
               )}
             </div>
           </header>
-          <div
-            className="conversation"
-            ref={scroller}
-            onScroll={() => {
-              const view = scroller.current;
-              if (view)
-                nearBottom.current = view.scrollHeight - view.scrollTop - view.clientHeight < 120;
-            }}
-          >
-            {showSetup && snapshot ? (
-              <Onboarding
-                snapshot={snapshot}
-                mode={chat.mode}
-                onModeChange={chat.setMode}
-                onClose={closeSetup}
-              />
-            ) : !snapshot?.messages.length ? (
-              <Welcome
-                snapshot={snapshot}
-                onChoose={(prompt) => {
-                  chat.setPrompt(prompt);
-                  input.current?.focus();
+          <div className="conversation-stage">
+            <div
+              className="conversation"
+              ref={scroller}
+              onScroll={() => {
+                const view = scroller.current;
+                if (view) {
+                  nearBottom.current = view.scrollHeight - view.scrollTop - view.clientHeight < 120;
+                  setShowLatest(!nearBottom.current);
+                }
+              }}
+            >
+              {showSetup && snapshot ? (
+                <Onboarding
+                  snapshot={snapshot}
+                  mode={chat.mode}
+                  onModeChange={chat.setMode}
+                  onClose={closeSetup}
+                />
+              ) : !snapshot?.messages.length ? (
+                <Welcome
+                  snapshot={snapshot}
+                  onChoose={(prompt) => {
+                    chat.setPrompt(prompt);
+                    input.current?.focus();
+                  }}
+                />
+              ) : null}
+              {!showSetup && snapshot && (
+                <Conversation
+                  snapshot={snapshot}
+                  thinking={chat.thinking}
+                  activities={chat.activities}
+                  busy={busy}
+                />
+              )}
+            </div>
+            {showLatest && !showSetup && Boolean(snapshot?.messages.length) && (
+              <button
+                className="jump-latest"
+                onClick={() => {
+                  scroller.current?.scrollTo({
+                    top: scroller.current.scrollHeight,
+                    behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+                      ? 'instant'
+                      : 'smooth',
+                  });
+                  input.current?.focus({ preventScroll: true });
                 }}
-              />
-            ) : null}
-            {!showSetup && snapshot && (
-              <Conversation
-                snapshot={snapshot}
-                thinking={chat.thinking}
-                activities={chat.activities}
-                busy={busy}
-              />
+              >
+                <Icon name="down" size={14} />
+                {t('Latest messages')}
+              </button>
             )}
           </div>
           {!showSetup && (

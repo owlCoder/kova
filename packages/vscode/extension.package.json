@@ -2,7 +2,7 @@
   "name": "kova-local",
   "displayName": "Kova — AI Coding Workspace",
   "description": "Modern local-first coding workspace with guided setup, Ollama, DeepSeek and configurable AI providers",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "publisher": "owlcoder",
   "license": "MIT",
   "engines": {

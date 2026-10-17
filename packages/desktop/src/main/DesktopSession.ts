@@ -72,7 +72,7 @@ export class DesktopSession {
     readonly store: DesktopStore,
     readonly keys: DesktopKeyStore,
     private readonly deliver: (message: HostMessage) => void,
-    private readonly version = '0.5.0',
+    private readonly version = 'development',
   ) {
     this.providers = new DesktopProviderManager(store, keys);
   }

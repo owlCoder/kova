@@ -6,6 +6,25 @@ import { send, subscribe } from '../messaging/bridge.js';
 import { Icon } from '../components/Icon.js';
 import { useI18n } from '../i18n/I18n.js';
 
+function readTerminalTheme(element: Element) {
+  const palette = getComputedStyle(element);
+  const color = (token: string) => palette.getPropertyValue(token).trim();
+  return {
+    background: color('--terminal-background'),
+    foreground: color('--text'),
+    cursor: color('--accent'),
+    selectionBackground: color('--selection'),
+    black: color('--sidebar'),
+    red: color('--red'),
+    green: color('--green'),
+    yellow: color('--accent'),
+    blue: color('--blue'),
+    magenta: '#c5a4cf',
+    cyan: '#8bc6c2',
+    white: color('--text'),
+  };
+}
+
 export default function TerminalPanel({
   root,
   visible,
@@ -56,12 +75,7 @@ export default function TerminalPanel({
       scrollback: 3000,
       screenReaderMode: true,
       allowProposedApi: false,
-      theme: {
-        background: '#111315',
-        foreground: '#e1e4e8',
-        cursor: '#e2be91',
-        selectionBackground: '#4d566a88',
-      },
+      theme: readTerminalTheme(container.current),
     });
     const fit = new FitAddon();
     term.loadAddon(fit);
@@ -172,25 +186,20 @@ export default function TerminalPanel({
     active.term.options.fontSize = textSize === 'larger' ? 17 : textSize === 'large' ? 16 : 14;
     const media = window.matchMedia('(prefers-color-scheme: dark)');
     const apply = () => {
-      const light = theme === 'light' || (theme === 'system' && !media.matches);
-      active.term.options.theme = light
-        ? {
-            background: '#f5f6f7',
-            foreground: '#20242b',
-            cursor: '#805e31',
-            selectionBackground: '#bdc7d588',
-          }
-        : {
-            background: '#111315',
-            foreground: '#e1e4e8',
-            cursor: '#e2be91',
-            selectionBackground: '#4d566a88',
-          };
+      active.term.options.theme = readTerminalTheme(container.current ?? document.documentElement);
       if (visibleRef.current) active.fit.fit();
     };
-    apply();
-    media.addEventListener('change', apply);
-    return () => media.removeEventListener('change', apply);
+    // The workspace theme effect updates the root first; use its resolved CSS tokens.
+    let frame = requestAnimationFrame(apply);
+    const update = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(apply);
+    };
+    media.addEventListener('change', update);
+    return () => {
+      cancelAnimationFrame(frame);
+      media.removeEventListener('change', update);
+    };
   }, [theme, textSize]);
   useEffect(() => {
     current.current?.term.textarea?.setAttribute('aria-label', t('Terminal input'));

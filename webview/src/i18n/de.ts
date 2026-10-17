@@ -1,4 +1,10 @@
 export const de: Readonly<Record<string, string>> = {
+  'Search…': 'Suchen…',
+  'Latest messages': 'Neueste Nachrichten',
+  'YOUR WORKSPACE': 'DEIN ARBEITSRAUM',
+  'What are we working on?': 'Woran arbeiten wir heute?',
+  Session: 'Sitzung',
+
   'A focused space to think, build, and ship. Connect your AI and make it yours.':
     'Ein Ort zum Denken, Entwickeln und Veröffentlichen. Verbinde deine KI und gestalte ihn nach deinen Wünschen.',
   'A space that feels right.': 'Ein Arbeitsplatz, der zu dir passt.',

@@ -7,6 +7,7 @@ import { send, subscribe } from '../messaging/bridge.js';
 import { AboutKova } from './AboutKova.js';
 import { AppearanceSettings } from './AppearanceSettings.js';
 import { Icon } from '../components/Icon.js';
+import { useDialogFocus } from '../components/useDialogFocus.js';
 
 export function ProviderPreferences({
   desktop,
@@ -41,6 +42,7 @@ export function ProviderPreferences({
   const [checked, setChecked] = useState(false);
   const requests = useRef({ test: '', save: '' });
   const dialog = useRef<HTMLDivElement>(null);
+  useDialogFocus(dialog);
   const update = (patch: Partial<ProviderDraft>) => {
     setDraft((previous) => ({ ...previous, ...patch }));
     setChecked(false);
@@ -72,9 +74,6 @@ export function ProviderPreferences({
       }),
     [draft.model, onClose],
   );
-  useEffect(() => {
-    dialog.current?.querySelector<HTMLButtonElement>('button')?.focus();
-  }, []);
   const preset = desktop.providerPresets.findIndex(
     (preset) => preset.kind === draft.kind && preset.baseUrl === draft.baseUrl,
   );
@@ -97,39 +96,32 @@ export function ProviderPreferences({
         ref={dialog}
         onKeyDown={(event) => {
           if (event.key === 'Escape' && !saving) onClose();
-          if (event.key === 'Tab') {
-            const controls = [
-              ...(dialog.current?.querySelectorAll<HTMLElement>(
-                'button:not(:disabled),input:not(:disabled),select:not(:disabled),a[href]',
-              ) ?? []),
-            ];
-            const first = controls[0],
-              last = controls.at(-1);
-            if (event.shiftKey && document.activeElement === first) {
-              event.preventDefault();
-              last?.focus();
-            } else if (!event.shiftKey && document.activeElement === last) {
-              event.preventDefault();
-              first?.focus();
-            }
-          }
         }}
       >
         <nav className="preferences-nav">
           <h2 id="preferences-title">{t('Settings')}</h2>
           <small>{t('MAKE KOVA YOURS')}</small>
-          <button className={tab === 'provider' ? 'active' : ''} onClick={() => setTab('provider')}>
+          <button
+            aria-current={tab === 'provider' ? 'page' : undefined}
+            className={tab === 'provider' ? 'active' : ''}
+            onClick={() => setTab('provider')}
+          >
             <Icon name="sparkles" />
             {t('AI connection')}
           </button>
           <button
             className={tab === 'appearance' ? 'active' : ''}
+            aria-current={tab === 'appearance' ? 'page' : undefined}
             onClick={() => setTab('appearance')}
           >
             <Icon name="monitor" />
             {t('Appearance')}
           </button>
-          <button className={tab === 'about' ? 'active' : ''} onClick={() => setTab('about')}>
+          <button
+            aria-current={tab === 'about' ? 'page' : undefined}
+            className={tab === 'about' ? 'active' : ''}
+            onClick={() => setTab('about')}
+          >
             <Icon name="help" />
             {t('About Kova')}
           </button>

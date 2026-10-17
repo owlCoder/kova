@@ -149,7 +149,7 @@ npm run package
 npm run verify:package
 ```
 
-Press F5 in VS Code to launch the development extension. Packaging writes `dist/kova-local-<version>.vsix`, using the name and version in `packages/vscode/extension.package.json`. The Marketplace extension identifier is `owlcoder.kova-local`; the current extension release is `0.5.0`.
+Press F5 in VS Code to launch the development extension. Packaging writes `dist/kova-local-<version>.vsix`, using the name and version in `packages/vscode/extension.package.json`. The Marketplace extension identifier is `owlcoder.kova-local`; the current extension release is `0.5.1`.
 
 Use `npm run desktop:dev` for Vite hot reload and automatic main/preload rebuilds. `desktop:verify` checks the production desktop bundle; `desktop:smoke` starts an isolated native UI fixture without external AI calls. Extension integration checks are `smoke:ollama`, `smoke:vscode`, `smoke:vsix` and `smoke:ers`.
 
@@ -164,7 +164,7 @@ npm run package
 npm run verify:package
 ```
 
-Then upload `dist/kova-local-0.5.0.vsix` through the Visual Studio Marketplace publisher management portal for publisher `owlcoder`. No Marketplace PAT, repository secret or automatic publish workflow is required.
+Then upload `dist/kova-local-0.5.1.vsix` through the Visual Studio Marketplace publisher management portal for publisher `owlcoder`. No Marketplace PAT, repository secret or automatic publish workflow is required.
 
 [Setup](https://github.com/owlCoder/kova/blob/main/docs/SETUP.md) · [Providers](https://github.com/owlCoder/kova/blob/main/docs/PROVIDERS.md) · [Architecture](https://github.com/owlCoder/kova/blob/main/docs/ARCHITECTURE.md) · [Marketplace release](https://github.com/owlCoder/kova/blob/main/docs/MARKETPLACE.md) · [Release checks](https://github.com/owlCoder/kova/blob/main/docs/TESTING.md)
 

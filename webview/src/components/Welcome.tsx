@@ -18,12 +18,11 @@ export function Welcome({
       <div className="welcome-mark">
         <img src={logo} alt="" />
       </div>
-      <div className="eyebrow">{t('YOUR IDEAS. YOUR MODELS. YOUR CODE.')}</div>
-      <h1>
-        {t('What will you')}
-        <br />
-        <span>{t('build next?')}</span>
-      </h1>
+      <div className="eyebrow">
+        <span className="welcome-rule" />
+        {t('YOUR WORKSPACE')}
+      </div>
+      <h1>{t('What are we working on?')}</h1>
       <p>
         {project && snapshot?.desktop?.workspacePath
           ? t(
@@ -53,9 +52,12 @@ export function Welcome({
             )
           }
         >
+          <span className="suggestion-index">01</span>
           <Icon name="code" />
-          <strong>{t('Explore the code')}</strong>
-          <small>{t('Understand how it fits together')}</small>
+          <span className="suggestion-copy">
+            <strong>{t('Explore the code')}</strong>
+            <small>{t('Understand how it fits together')}</small>
+          </span>
           <Icon name="upLeft" />
         </button>
         <button
@@ -63,9 +65,12 @@ export function Welcome({
             onChoose('Review the current Git diff for bugs, regressions and missing tests.')
           }
         >
+          <span className="suggestion-index">02</span>
           <Icon name="review" />
-          <strong>{t('Review changes')}</strong>
-          <small>{t('Find what needs a closer look')}</small>
+          <span className="suggestion-copy">
+            <strong>{t('Review changes')}</strong>
+            <small>{t('Find what needs a closer look')}</small>
+          </span>
           <Icon name="upLeft" />
         </button>
         <button
@@ -75,9 +80,12 @@ export function Welcome({
             )
           }
         >
+          <span className="suggestion-index">03</span>
           <Icon name="sparkles" />
-          <strong>{t('Plan something new')}</strong>
-          <small>{t('Turn an idea into a clear next step')}</small>
+          <span className="suggestion-copy">
+            <strong>{t('Plan something new')}</strong>
+            <small>{t('Turn an idea into a clear next step')}</small>
+          </span>
           <Icon name="upLeft" />
         </button>
       </div>

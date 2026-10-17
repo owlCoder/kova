@@ -48,12 +48,12 @@ else {
         minWidth: 960,
         minHeight: 640,
         title: 'Kova',
-        backgroundColor: '#111315',
+        backgroundColor: '#101416',
         show: false,
         titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'hidden',
         ...(process.platform === 'darwin'
           ? { trafficLightPosition: { x: 18, y: 18 } }
-          : { titleBarOverlay: { color: '#111315', symbolColor: '#b8bbc2', height: 48 } }),
+          : { titleBarOverlay: { color: '#101416', symbolColor: '#abb5b8', height: 46 } }),
         webPreferences: {
           preload: join(__dirname, '../preload.cjs'),
           contextIsolation: true,
@@ -63,17 +63,22 @@ else {
         },
       });
       const currentWindow = window;
-      agent = new DesktopSession(store, keys, (message) => {
-        if (!currentWindow.isDestroyed()) currentWindow.webContents.send('kova:message', message);
-      });
+      agent = new DesktopSession(
+        store,
+        keys,
+        (message) => {
+          if (!currentWindow.isDestroyed()) currentWindow.webContents.send('kova:message', message);
+        },
+        app.getVersion(),
+      );
       const applyChrome = () => {
         if (currentWindow.isDestroyed()) return;
         const light = !nativeTheme.shouldUseDarkColors;
-        currentWindow.setBackgroundColor(light ? '#f5f6f7' : '#111315');
+        currentWindow.setBackgroundColor(light ? '#eeeee8' : '#101416');
         if (process.platform !== 'darwin')
           currentWindow.setTitleBarOverlay({
-            color: light ? '#f5f6f7' : '#111315',
-            symbolColor: light ? '#20242b' : '#b8bbc2',
+            color: light ? '#eeeee8' : '#101416',
+            symbolColor: light ? '#253137' : '#abb5b8',
             height: 46,
           });
       };

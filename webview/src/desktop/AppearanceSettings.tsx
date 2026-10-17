@@ -65,14 +65,23 @@ export function AppearanceSettings({ desktop }: { desktop: DesktopState }) {
             <button
               key={theme}
               className={`theme-option ${desktop.theme === theme ? 'selected' : ''}`}
+              aria-pressed={desktop.theme === theme}
               onClick={() => send({ type: 'SetTheme', theme })}
             >
-              <Icon
-                name={theme === 'dark' ? 'moon' : theme === 'light' ? 'sun' : 'monitor'}
-                size={24}
-              />
-              <strong>{t({ dark: 'Dark', light: 'Light', system: 'System' }[theme])}</strong>
-              <span>{desktop.theme === theme ? t('Selected') : t('Use theme')}</span>
+              <span className={`theme-preview preview-${theme}`} aria-hidden="true">
+                <i />
+                <i />
+                <i />
+                <i />
+              </span>
+              <span className="theme-caption">
+                <Icon
+                  name={theme === 'dark' ? 'moon' : theme === 'light' ? 'sun' : 'monitor'}
+                  size={15}
+                />
+                <strong>{t({ dark: 'Dark', light: 'Light', system: 'System' }[theme])}</strong>
+                {desktop.theme === theme && <Icon name="check" size={15} />}
+              </span>
             </button>
           ))}
         </div>

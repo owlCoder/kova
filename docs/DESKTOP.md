@@ -54,6 +54,8 @@ Markdown supports lists, tables and fenced code. Code blocks and messages have c
 
 **Settings → Appearance** supports dark/light/system themes, three readable text sizes and English, Serbian Latin and German. Changes apply immediately and persist after restart. Code, terminal output and conversation content are not automatically translated. **About Kova** includes privacy information, shortcut help, source/docs/issue/license links, a local data-folder action and copyable version diagnostics without keys, conversations or project paths.
 
+The graphite/copper dark palette is shared by the interface, terminal and native window controls. Theme tiles preview the actual layout. Dialogs return keyboard focus to their opener; the command palette wraps through available actions and keeps the active result visible. The composer grows with your draft. Reading older messages pauses automatic following; **Latest messages** returns to the end. Motion respects the operating system's reduced-motion preference.
+
 ## Interactive terminal
 
 Use **Cmd/Ctrl+Shift+T**, **Ctrl+`**, the command palette or the title-bar terminal button. The panel starts your login shell on macOS/Linux and PowerShell on Windows in the current project. It supports interactive CLI applications, ANSI colors, Ctrl+C, clear, restart and drag/keyboard resizing. Hide preserves the process; Close terminates it. Changing projects or quitting closes the current shell.

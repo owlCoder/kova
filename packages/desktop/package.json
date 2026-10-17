@@ -1,6 +1,6 @@
 {
   "name": "@kova/desktop",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "private": true,
   "type": "module",
   "description": "Kova desktop workspace for macOS, Windows and Linux",

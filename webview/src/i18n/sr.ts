@@ -1,4 +1,10 @@
 export const sr: Readonly<Record<string, string>> = {
+  'Search…': 'Pretraži…',
+  'Latest messages': 'Najnovije poruke',
+  'YOUR WORKSPACE': 'VAŠ RADNI PROSTOR',
+  'What are we working on?': 'Na čemu danas radimo?',
+  Session: 'Sesija',
+
   'A focused space to think, build, and ship. Connect your AI and make it yours.':
     'Prostor za razmišljanje, razvoj i završavanje projekata. Povežite AI po svom izboru.',
   'A space that feels right.': 'Prostor po vašoj meri.',

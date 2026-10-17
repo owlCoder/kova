@@ -62,9 +62,14 @@ export const Sidebar = memo(function Sidebar({
           {t('N')}
         </kbd>
       </button>
-      <button className="sidebar-search" onClick={onSearch}>
+      <button
+        className="sidebar-search"
+        onClick={onSearch}
+        aria-label={t('Commands & sessions')}
+        title={t('Commands & sessions')}
+      >
         <Icon name="search" size={15} />
-        <span>{t('Commands & sessions')}</span>
+        <span>{t('Search…')}</span>
         <kbd>
           {mod}
           {t('K')}
@@ -160,6 +165,7 @@ export const Sidebar = memo(function Sidebar({
               <>
                 <button
                   className="session-select"
+                  aria-current={session.id === conversationId ? 'page' : undefined}
                   disabled={busy}
                   title={session.title}
                   onClick={() => send({ type: 'SelectConversation', conversationId: session.id })}

@@ -1,5 +1,5 @@
 import { useI18n } from '../i18n/I18n.js';
-import { useRef, type RefObject } from 'react';
+import { useLayoutEffect, useRef, type RefObject } from 'react';
 import type { AgentMode } from '../../../packages/protocol/src/AgentMode.js';
 import type { SessionSnapshot } from '../../../packages/protocol/src/SessionSnapshot.js';
 import { inHost, isDesktop, send } from '../messaging/bridge.js';
@@ -37,6 +37,17 @@ export function ChatFooter({
 }: Props) {
   const { t } = useI18n();
   const contextMenu = useRef<HTMLDetailsElement>(null);
+  useLayoutEffect(() => {
+    const resize = () => {
+      const field = inputRef.current;
+      if (!field) return;
+      field.style.height = 'auto';
+      field.style.height = `${Math.min(field.scrollHeight, 240)}px`;
+    };
+    resize();
+    window.addEventListener('resize', resize);
+    return () => window.removeEventListener('resize', resize);
+  }, [prompt, inputRef, snapshot?.desktop?.textSize, snapshot?.textSize]);
   const usage = snapshot?.usage;
   const used = usage
     ? (usage.actualInputTokens ?? usage.estimatedInputTokens) + (usage.actualOutputTokens ?? 0)

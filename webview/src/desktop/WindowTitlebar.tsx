@@ -7,11 +7,13 @@ import { useI18n } from '../i18n/I18n.js';
 export function WindowTitlebar({
   desktop,
   terminalOpen,
+  inert,
   onTerminal,
   onCommands,
 }: {
   desktop: DesktopState | undefined;
   terminalOpen: boolean;
+  inert: boolean;
   onTerminal(): void;
   onCommands(): void;
 }) {
@@ -37,6 +39,7 @@ export function WindowTitlebar({
   return (
     <div
       className={`native-titlebar platform-${desktop?.platform ?? 'darwin'} ${windowState.fullscreen ? 'fullscreen' : ''}`}
+      inert={inert}
       onDoubleClick={(event) => {
         if (!(event.target as HTMLElement).closest('button'))
           send({ type: 'WindowAction', action: 'maximize' });

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.1
+
+- Refine the workspace with a graphite/copper dark palette, clearer surface layers, readable secondary text and shared terminal/native chrome colors.
+- Replace generic starter cards with numbered actions, add real theme previews and unify control radii, focus rings, selection accents and dialog motion.
+- Grow the composer with its content, keep manual conversation scrolling stable and provide a shortcut back to the latest messages.
+- Keep dialog keyboard focus contained and restore its opener; wrap command navigation, skip unavailable actions and scroll the selected result into view.
+- Respect reduced-motion preferences and check text/control contrast in both standalone palettes.
+
 ## 0.5.0
 
 - Increase interface typography and add persistent Comfortable, Large and Extra large text sizes.
