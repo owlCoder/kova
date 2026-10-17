@@ -2,6 +2,10 @@
 
 Kova Desktop is the standalone Electron host for the same agent runtime and React chat used in the VS Code extension. Native packaging runs on macOS, Windows and Linux; local desktop interaction is verified on macOS.
 
+## Install a release
+
+Download the latest installers and `SHA256SUMS` from [GitHub Releases](https://github.com/owlCoder/kova/releases/latest). Current packages target Apple Silicon macOS, x64 Windows and x64 Linux (AppImage/DEB). See the [installation table](../README.md#download-and-install). Builds are unsigned and not notarized; OS publisher warnings are expected. Updates are manual.
+
 ## Start from source
 
 Use Node 24 and npm 11:

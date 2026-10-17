@@ -4,7 +4,7 @@ Status: **Accepted**.
 
 `LlmProvider.streamChat(ChatRequest, CancellationToken)` is the Core boundary. It streams `TextDelta`, `ThinkingDelta`, complete `ToolCallReady` candidates, localized `MalformedToolCall` diagnostics and one final `Finished` event with normalized usage. Providers never execute tools. Model discovery remains separate from generation.
 
-The VS Code host owns provider composition. Core has no HTTP, credential-storage or vendor SDK dependency.
+The shared runtime composes providers for the desktop and VS Code hosts. Each host supplies its own credential store. Core has no HTTP, credential-storage or vendor SDK dependency.
 
 ## Supported providers
 
@@ -50,7 +50,7 @@ Preset references: [OpenAI Chat Completions](https://developers.openai.com/api/r
 
 ## Credentials
 
-API keys are stored only through VS Code `SecretStorage`.
+The extension stores API keys through VS Code `SecretStorage`. Desktop uses Electron OS encryption and falls back to in-memory storage if secure encryption is unavailable, including Linux `basic_text`. See [desktop credentials](DESKTOP.md#local-data-and-keys).
 
 Keys are scoped by provider kind and a hash of the endpoint. Legacy provider keys migrate to the current endpoint on first use. A setup draft never includes a saved key in Webview messages or snapshots; native password inputs keep that value inside the extension host.
 

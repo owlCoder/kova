@@ -1,0 +1,55 @@
+name: Bug report
+description: Report a reproducible problem in desktop or VS Code.
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Search existing issues first. Remove API keys, private code, conversations and personal paths. Report security vulnerabilities privately through the Security tab.
+  - type: input
+    id: version
+    attributes:
+      label: Kova version
+      description: Desktop Settings → About Kova, or the VS Code extension version.
+      placeholder: 0.5.2
+    validations:
+      required: true
+  - type: dropdown
+    id: host
+    attributes:
+      label: Host
+      options:
+        - Desktop
+        - VS Code
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Operating system and architecture
+      placeholder: macOS arm64, Windows x64, or Ubuntu x64; include OS and VS Code versions when relevant.
+    validations:
+      required: true
+  - type: input
+    id: provider
+    attributes:
+      label: Provider and model
+      description: If relevant. Do not include credentials or private endpoint URLs.
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Use a minimal example with dummy data.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected and actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Screenshots or redacted diagnostics
+      description: Include safe About diagnostics or relevant errors. Check attachments for private data before submitting.

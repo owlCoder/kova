@@ -6,6 +6,8 @@
 - Reduce control, tab and panel radii; add typography icons and selected-state checks to text-size choices.
 - Replace browser checkbox styling with accessible, theme-aware checkmarks and clearer settings rows.
 - Add a searchable model chooser with keyboard navigation, capability/context details, bounded results and native light-dismiss behavior. Provider settings retain direct manual model-ID entry.
+- Close dialogs consistently with Escape after clicking their content, restore opener focus and keep nested model-picker dismissal separate.
+- Publish native installers and the VSIX with checksums, and expand open-source documentation with screenshots, contribution guidance, private security reporting and issue templates.
 
 ## 0.5.1
 

@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/owlCoder/kova/security/advisories/new
+    about: Send vulnerability details privately to the maintainers.
+  - name: Setup and documentation
+    url: https://github.com/owlCoder/kova#documentation
+    about: Check installation, provider compatibility and configuration guides.
