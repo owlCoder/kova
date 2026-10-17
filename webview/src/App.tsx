@@ -84,9 +84,10 @@ function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
   useLayoutEffect(() => {
     nearBottom.current = true;
     setShowLatest(false);
+    if (scroller.current) scroller.current.scrollTop = 0;
   }, [snapshot?.conversationId]);
   useLayoutEffect(() => {
-    if (!showSetup && nearBottom.current && scroller.current) {
+    if (!showSetup && snapshot?.messages.length && nearBottom.current && scroller.current) {
       scroller.current.scrollTop = scroller.current.scrollHeight;
     }
   }, [snapshot?.messages, chat.activities, showSetup]);
