@@ -43,7 +43,7 @@ export function ProviderPreferences({
   const [checked, setChecked] = useState(false);
   const requests = useRef({ test: '', save: '' });
   const dialog = useRef<HTMLDivElement>(null);
-  useDialogFocus(dialog);
+  useDialogFocus(dialog, onClose, saving);
   const update = (patch: Partial<ProviderDraft>) => {
     setDraft((previous) => ({ ...previous, ...patch }));
     setChecked(false);
@@ -95,9 +95,6 @@ export function ProviderPreferences({
         aria-modal="true"
         aria-labelledby="preferences-title"
         ref={dialog}
-        onKeyDown={(event) => {
-          if (event.key === 'Escape' && !saving) onClose();
-        }}
       >
         <nav className="preferences-nav">
           <h2 id="preferences-title">{t('Settings')}</h2>

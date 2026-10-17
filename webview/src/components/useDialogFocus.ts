@@ -1,7 +1,15 @@
-import { useEffect, type RefObject } from 'react';
+import { useEffect, useRef, type RefObject } from 'react';
 
 /** Keep keyboard navigation inside a dialog and return to its opener when it closes. */
-export function useDialogFocus(dialog: RefObject<HTMLElement | null>) {
+export function useDialogFocus(
+  dialog: RefObject<HTMLElement | null>,
+  onClose?: () => void,
+  preventClose = false,
+) {
+  const close = useRef(onClose);
+  const locked = useRef(preventClose);
+  close.current = onClose;
+  locked.current = preventClose;
   useEffect(() => {
     const opener = document.activeElement;
     const controls = () =>
@@ -17,6 +25,12 @@ export function useDialogFocus(dialog: RefObject<HTMLElement | null>) {
       );
     const frame = requestAnimationFrame(() => controls()[0]?.focus());
     const trap = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || event.isComposing) return;
+      if (event.key === 'Escape' && !locked.current && close.current) {
+        event.preventDefault();
+        close.current();
+        return;
+      }
       if (event.key !== 'Tab') return;
       const items = controls();
       const first = items[0];

@@ -25,7 +25,7 @@ export function CommandPalette({
   const [selected, setSelected] = useState(0);
   const input = useRef<HTMLInputElement>(null);
   const dialog = useRef<HTMLElement>(null);
-  useDialogFocus(dialog);
+  useDialogFocus(dialog, onClose);
   const mod =
     snapshot?.desktop?.platform === 'win32' || snapshot?.desktop?.platform === 'linux'
       ? 'Ctrl'
@@ -134,7 +134,6 @@ export function CommandPalette({
         aria-label={t('Command palette')}
         onKeyDown={(event) => {
           if (event.nativeEvent.isComposing) return;
-          if (event.key === 'Escape') onClose();
           if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
             event.preventDefault();
             const direction = event.key === 'ArrowDown' ? 1 : -1;
