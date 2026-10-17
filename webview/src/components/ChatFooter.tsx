@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n/I18n.js';
 import { useRef, type RefObject } from 'react';
 import type { AgentMode } from '../../../packages/protocol/src/AgentMode.js';
 import type { SessionSnapshot } from '../../../packages/protocol/src/SessionSnapshot.js';
@@ -34,6 +35,7 @@ export function ChatFooter({
   onModelChange,
   onModeChange,
 }: Props) {
+  const { t } = useI18n();
   const contextMenu = useRef<HTMLDetailsElement>(null);
   const usage = snapshot?.usage;
   const used = usage
@@ -50,7 +52,7 @@ export function ChatFooter({
         <div className="error-banner" role="alert">
           <Icon name="warning" size={15} />
           <span>{error}</span>
-          <button aria-label="Dismiss error" onClick={onDismissError}>
+          <button aria-label={t('Dismiss error')} onClick={onDismissError}>
             <Icon name="close" size={14} />
           </button>
         </div>
@@ -60,11 +62,11 @@ export function ChatFooter({
           <span className="status-dot" />
           <span>
             {snapshot.providerStatus === 'ModelMissing'
-              ? 'Choose an available model'
-              : 'Connect an AI provider to get started'}
+              ? t('Choose an available model')
+              : t('Connect an AI provider to get started')}
           </span>
           <button disabled={busy} onClick={() => send({ type: 'OpenProviderSetup' })}>
-            Connect
+            {t('Connect')}
             <Icon name="arrow" size={13} />
           </button>
         </div>
@@ -75,7 +77,7 @@ export function ChatFooter({
             {snapshot.contextAttachments.map((item) => (
               <button
                 key={item.id}
-                title={`Remove ${item.label}`}
+                title={t('Remove {name}', { name: item.label })}
                 disabled={busy}
                 onClick={() => send({ type: 'RemoveContext', attachmentId: item.id })}
               >
@@ -87,8 +89,8 @@ export function ChatFooter({
           </div>
         )}
         <textarea
-          aria-label="Ask Kova"
-          placeholder="Ask anything, or describe what you want to build…"
+          aria-label={t('Ask Kova')}
+          placeholder={t('Ask anything, or describe what you want to build…')}
           value={prompt}
           ref={inputRef}
           disabled={!inHost || snapshot?.configuringProvider}
@@ -105,51 +107,59 @@ export function ChatFooter({
         <div className="composer-actions">
           <div className="composer-tools">
             <details className="attach-menu" ref={contextMenu}>
-              <summary title="Add context" aria-label="Add context">
+              <summary title={t('Add context')} aria-label={t('Add context')}>
                 <Icon name="plus" />
               </summary>
               <div className="floating-menu">
                 {!isDesktop && (
                   <button disabled={busy} onClick={() => attach('Selection')}>
                     <Icon name="code" size={14} />
-                    Selection
+                    {t('Selection')}
                   </button>
                 )}
                 <button disabled={busy} onClick={() => attach('CurrentFile')}>
                   <Icon name="file" size={14} />
-                  {isDesktop ? 'Current preview' : 'Current file'}
+                  {isDesktop ? t('Current preview') : t('Current file')}
                 </button>
                 <button disabled={busy} onClick={() => attach('PickFiles')}>
                   <Icon name="folderOpen" size={14} />
-                  Choose files…
+                  {t('Choose files…')}
                 </button>
               </div>
             </details>
             <label className="mode-control">
               <Icon name={mode === 'Plan' ? 'plan' : mode === 'Auto' ? 'zap' : 'code'} size={14} />
               <select
-                aria-label="Agent mode"
+                aria-label={t('Agent mode')}
+                title={t(
+                  {
+                    Manual: 'Manual · approve changes',
+                    Plan: 'Plan · read only',
+                    Edit: 'Edit · approve commands',
+                    Auto: 'Auto · allowlisted commands',
+                  }[mode],
+                )}
                 value={mode}
                 disabled={busy}
                 onChange={(event) => onModeChange(event.target.value as AgentMode)}
               >
-                <option value="Manual">Manual · approve changes</option>
-                <option value="Plan">Plan · read only</option>
-                <option value="Edit">Edit · approve commands</option>
-                <option value="Auto">Auto · allowlisted commands</option>
+                <option value="Manual">{t('Manual · approve changes')}</option>
+                <option value="Plan">{t('Plan · read only')}</option>
+                <option value="Edit">{t('Edit · approve commands')}</option>
+                <option value="Auto">{t('Auto · allowlisted commands')}</option>
               </select>
             </label>
             {!!snapshot?.skills.length && (
               <select
                 className="skill-picker"
-                aria-label="Skill"
+                aria-label={t('Skill')}
                 value={snapshot.activeSkillId ?? ''}
                 disabled={busy}
                 onChange={(event) =>
                   send({ type: 'SelectSkill', skillId: event.target.value || null })
                 }
               >
-                <option value="">No skill</option>
+                <option value="">{t('No skill')}</option>
                 {snapshot.skills.map((skill) => (
                   <option value={skill.id} key={skill.id}>
                     {skill.name}
@@ -161,8 +171,8 @@ export function ChatFooter({
           {busy && !snapshot?.configuringProvider ? (
             <button
               className="send stop"
-              title="Stop generation"
-              aria-label="Stop generation"
+              title={t('Stop generation')}
+              aria-label={t('Stop generation')}
               onClick={() =>
                 snapshot?.activeRunId && send({ type: 'CancelRun', runId: snapshot.activeRunId })
               }
@@ -172,8 +182,8 @@ export function ChatFooter({
           ) : (
             <button
               className="send"
-              title="Send message"
-              aria-label="Send"
+              title={t('Send message')}
+              aria-label={t('Send')}
               disabled={
                 busy || !prompt.trim() || !snapshot?.models.some((item) => item.id === model)
               }
@@ -187,12 +197,12 @@ export function ChatFooter({
       <div className="composer-meta">
         <div className="provider-control">
           <button
-            title="Configure AI provider"
+            title={t('Configure AI provider')}
             disabled={busy}
             onClick={() => send({ type: 'OpenProviderSetup' })}
           >
             <Icon name="sparkles" size={13} />
-            <span>{snapshot?.providerLabel ?? 'AI provider'}</span>
+            <span>{snapshot?.providerLabel ?? t('AI provider')}</span>
           </button>
           <span className="meta-divider">/</span>
           <ModelPicker
@@ -203,23 +213,26 @@ export function ChatFooter({
           />
         </div>
         <details className="context">
-          <summary title="Context usage">
+          <summary title={t('Context usage')}>
             <span className="context-ring">◔</span>
             <span>
               {Math.round(used / 100) / 10}k / {Math.round(max / 100) / 10}k
             </span>
           </summary>
           <div className="context-details">
-            <strong>Context window</strong>
+            <strong>{t('Context window')}</strong>
             <progress value={Math.min(used, max)} max={max} />
             <span>
-              Input <b>{usage?.actualInputTokens ?? usage?.estimatedInputTokens ?? 0}</b>
+              {t('Input')}
+              <b>{usage?.actualInputTokens ?? usage?.estimatedInputTokens ?? 0}</b>
             </span>
             <span>
-              Output <b>{usage?.actualOutputTokens ?? '—'}</b>
+              {t('Output')}
+              <b>{usage?.actualOutputTokens ?? '—'}</b>
             </span>
             <span>
-              Tool definitions <b>{usage?.toolDefinitionTokens ?? 0}</b>
+              {t('Tool definitions')}
+              <b>{usage?.toolDefinitionTokens ?? 0}</b>
             </span>
           </div>
         </details>
@@ -228,8 +241,8 @@ export function ChatFooter({
         <span
           className={`status-dot ${snapshot?.providerStatus === 'Available' ? 'online' : ''}`}
         />
-        {snapshot?.toolsEnabled ? 'Workspace tools ready' : 'Chat mode'}
-        <span>Shift + Enter for a new line</span>
+        {snapshot?.toolsEnabled ? t('Workspace tools ready') : t('Chat mode')}
+        <span>{t('Shift + Enter for a new line')}</span>
       </div>
     </footer>
   );

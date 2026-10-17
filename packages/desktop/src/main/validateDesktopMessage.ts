@@ -11,9 +11,18 @@ const fields: Record<string, readonly string[]> = {
   SearchWorkspaceFiles: ['query'],
   OpenWorkspaceFile: ['path'],
   WorkspaceDiff: [],
+  OpenDataDirectory: [],
   TestProvider: ['draft'],
   SaveProvider: ['draft'],
   SetTheme: ['theme'],
+  SetLanguage: ['language'],
+  SetTextSize: ['textSize'],
+  WindowAction: ['action'],
+  OpenTerminal: ['cols', 'rows'],
+  TerminalInput: ['terminalId', 'data'],
+  ResizeTerminal: ['terminalId', 'cols', 'rows'],
+  TerminalAck: ['terminalId', 'characters'],
+  CloseTerminal: ['terminalId'],
 };
 
 export function validateDesktopMessage(raw: unknown): WebviewMessage {
@@ -32,6 +41,28 @@ export function validateDesktopMessage(raw: unknown): WebviewMessage {
     allowed.some((key) => !(key in value))
   )
     throw new Error('Invalid request fields.');
+  if ('language' in value && !['en', 'sr', 'de'].includes(String(value.language)))
+    throw new Error('Invalid language.');
+  if ('textSize' in value && !['standard', 'large', 'larger'].includes(String(value.textSize)))
+    throw new Error('Invalid text size.');
+  if ('action' in value && !['sync', 'maximize'].includes(String(value.action)))
+    throw new Error('Invalid window action.');
+  if (
+    'terminalId' in value &&
+    (typeof value.terminalId !== 'string' || !/^[a-f0-9-]{36}$/.test(value.terminalId))
+  )
+    throw new Error('Invalid terminal ID.');
+  if ('data' in value && (typeof value.data !== 'string' || value.data.length > 16_384))
+    throw new Error('Terminal input exceeds the limit.');
+  for (const key of ['cols', 'rows', 'characters'])
+    if (
+      key in value &&
+      (typeof value[key] !== 'number' ||
+        !Number.isInteger(value[key]) ||
+        (value[key] as number) < 1 ||
+        (value[key] as number) > (key === 'characters' ? 65_536 : key === 'cols' ? 500 : 200))
+    )
+      throw new Error('Invalid terminal dimensions or acknowledgment.');
   if (
     'query' in value &&
     (typeof value.query !== 'string' || !value.query.trim() || value.query.length > 128)

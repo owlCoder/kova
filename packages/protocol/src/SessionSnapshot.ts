@@ -9,6 +9,8 @@ import type { DesktopState } from './DesktopState.js';
 /** Presentation history is bounded and excludes model thinking. */
 export interface SessionSnapshot {
   readonly desktop?: DesktopState;
+  readonly language?: 'en' | 'sr' | 'de';
+  readonly textSize?: 'standard' | 'large' | 'larger';
   readonly conversationId: string;
   readonly activeRunId: string | null;
   readonly state: AgentState;

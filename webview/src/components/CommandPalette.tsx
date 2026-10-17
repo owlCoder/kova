@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n/I18n.js';
 import { useEffect, useRef, useState } from 'react';
 import type { SessionSnapshot } from '../../../packages/protocol/src/SessionSnapshot.js';
 import { isDesktop, send } from '../messaging/bridge.js';
@@ -9,22 +10,29 @@ export function CommandPalette({
   onClose,
   onPreferences,
   onTogglePanel,
+  onToggleTerminal,
 }: {
   snapshot: SessionSnapshot | null;
   busy: boolean;
   onClose(): void;
   onPreferences(): void;
   onTogglePanel(): void;
+  onToggleTerminal(): void;
 }) {
+  const { t } = useI18n();
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState(0);
   const input = useRef<HTMLInputElement>(null);
+  const mod =
+    snapshot?.desktop?.platform === 'win32' || snapshot?.desktop?.platform === 'linux'
+      ? 'Ctrl'
+      : '⌘';
   const commands = [
     {
       id: 'new',
-      label: 'New session',
+      label: t('New session'),
       icon: 'plus' as const,
-      shortcut: '⌘ N',
+      shortcut: `${mod} N`,
       disabled: busy,
       run: () => send({ type: 'NewConversation' }),
     },
@@ -32,17 +40,25 @@ export function CommandPalette({
       ? [
           {
             id: 'project',
-            label: 'Open project…',
+            label: t('Open project…'),
             icon: 'folderOpen' as const,
-            shortcut: '⌘ O',
+            shortcut: `${mod} O`,
             disabled: busy,
             run: () => send({ type: 'OpenWorkspace' }),
           },
           {
+            id: 'terminal',
+            label: t('Toggle terminal'),
+            icon: 'terminal' as const,
+            shortcut: `${mod} ⇧ T`,
+            disabled: false,
+            run: onToggleTerminal,
+          },
+          {
             id: 'panel',
-            label: 'Toggle project panel',
+            label: t('Toggle project panel'),
             icon: 'panelRight' as const,
-            shortcut: '⌘ J',
+            shortcut: `${mod} J`,
             disabled: false,
             run: onTogglePanel,
           },
@@ -50,7 +66,7 @@ export function CommandPalette({
       : []),
     {
       id: 'provider',
-      label: 'Configure AI provider',
+      label: t('Configure AI provider'),
       icon: 'sparkles' as const,
       shortcut: '',
       disabled: busy,
@@ -58,9 +74,9 @@ export function CommandPalette({
     },
     {
       id: 'settings',
-      label: 'Open settings',
+      label: t('Open settings'),
       icon: 'settings' as const,
-      shortcut: '⌘ ,',
+      shortcut: `${mod} ,`,
       disabled: false,
       run: () => (isDesktop ? onPreferences() : send({ type: 'OpenSettings' })),
     },
@@ -68,7 +84,7 @@ export function CommandPalette({
       ? [
           {
             id: 'stop',
-            label: 'Stop active task',
+            label: t('Stop active task'),
             icon: 'stop' as const,
             shortcut: '',
             disabled: false,
@@ -106,7 +122,7 @@ export function CommandPalette({
         className="command-palette"
         role="dialog"
         aria-modal="true"
-        aria-label="Command palette"
+        aria-label={t('Command palette')}
         onKeyDown={(event) => {
           if (event.key === 'Escape') onClose();
           if (event.key === 'ArrowDown') {
@@ -127,8 +143,8 @@ export function CommandPalette({
           <Icon name="search" size={19} />
           <input
             ref={input}
-            aria-label="Search commands and sessions"
-            placeholder="Search commands or sessions…"
+            aria-label={t('Search commands and sessions')}
+            placeholder={t('Search commands or sessions…')}
             value={query}
             onChange={(event) => {
               setQuery(event.target.value);
@@ -136,7 +152,7 @@ export function CommandPalette({
             }}
           />
           <button onClick={onClose}>
-            <kbd>esc</kbd>
+            <kbd>{t('esc')}</kbd>
           </button>
         </div>
         <div className="palette-results">
@@ -153,12 +169,12 @@ export function CommandPalette({
               <kbd>{command.shortcut}</kbd>
             </button>
           ))}
-          {!commands.length && <p>No matching commands or sessions.</p>}
+          {!commands.length && <p>{t('No matching commands or sessions.')}</p>}
         </div>
         <div className="palette-footer">
-          <span>↑ ↓ navigate</span>
-          <span>↵ select</span>
-          <span>esc close</span>
+          <span>{t('↑ ↓ navigate')}</span>
+          <span>{t('↵ select')}</span>
+          <span>{t('esc close')}</span>
         </div>
       </section>
     </div>

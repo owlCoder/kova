@@ -12,6 +12,9 @@ export function useHostResources(snapshot: SessionSnapshot | null) {
   > | null>(null);
   const [files, setFiles] = useState<Files | null>(null);
   const [preview, setPreview] = useState<Preview | null>(null);
+  const [preferencesTab, setPreferencesTab] = useState<'provider' | 'appearance' | 'about'>(
+    'provider',
+  );
   const [preferences, setPreferences] = useState(false);
   const [notice, setNotice] = useState('');
   const [inspectorOpen, setInspectorOpen] = useState(true);
@@ -30,7 +33,10 @@ export function useHostResources(snapshot: SessionSnapshot | null) {
     () =>
       subscribe((message) => {
         if (message.type === 'Notice' || message.type === 'Rejected') setNotice(message.message);
-        if (message.type === 'OpenPreferences') setPreferences(true);
+        if (message.type === 'OpenPreferences') {
+          setPreferencesTab(message.section ?? 'provider');
+          setPreferences(true);
+        }
         if (message.type === 'WorkspaceSearchResults' && message.workspaceId === root)
           setSearch(message);
         if (
@@ -103,6 +109,8 @@ export function useHostResources(snapshot: SessionSnapshot | null) {
     search,
     preview,
     setPreview,
+    preferencesTab,
+    setPreferencesTab,
     preferences,
     setPreferences,
     notice,

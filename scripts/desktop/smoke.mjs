@@ -148,7 +148,20 @@ try {
   console.log(
     `Desktop smoke finished: exit=${code}; chat requests=${chats}; approved edit=${updated}; persisted session=${Boolean(settings.lastConversationId)}.`,
   );
-  if (process.argv.includes('--verify') && (!updated || chats < 2 || code !== 0))
+  if (process.argv.includes('--interface-only')) {
+    const terminalFile = await readFile(join(project, 'terminal-smoke.txt'), 'utf8').catch(
+      () => '',
+    );
+    const passed =
+      terminalFile === 'KOVA_TERMINAL_OK' &&
+      settings.language === 'sr' &&
+      settings.textSize === 'large' &&
+      code === 0;
+    console.log(
+      `Interface smoke: terminal=${terminalFile === 'KOVA_TERMINAL_OK'}; language=${settings.language}; textSize=${settings.textSize}; passed=${passed}`,
+    );
+    if (!passed) process.exitCode = 1;
+  } else if (process.argv.includes('--verify') && (!updated || chats < 2 || code !== 0))
     process.exitCode = 1;
 } finally {
   server.closeAllConnections();

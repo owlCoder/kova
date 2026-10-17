@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFile, readdir } from 'node:fs/promises';
+import { readFile, readdir, stat } from 'node:fs/promises';
 import { resolve } from 'node:path';
 const root = resolve(import.meta.dirname, '../..', 'dist/desktop');
 const manifest = JSON.parse(await readFile(root + '/package.json', 'utf8'));
@@ -17,6 +17,13 @@ assert(!preload.includes('exposeInMainWorld("ipcRenderer"'));
 assert(html.includes('Content-Security-Policy'));
 assert(html.includes("connect-src 'none'"));
 assert(html.includes("default-src 'none'"));
+assert(html.includes("script-src 'self'"));
+assert(!html.includes("script-src 'self' 'unsafe-inline'"));
+assert.equal(manifest.dependencies['node-pty'], '1.1.0');
+const native = `${root}/node_modules/node-pty/prebuilds/${process.platform}-${process.arch}`;
+assert((await stat(`${native}/${process.platform === 'win32' ? 'conpty' : 'pty'}.node`)).size > 0);
+if (process.platform !== 'win32') assert((await stat(`${native}/spawn-helper`)).mode & 0o111);
+assert((await readFile(root + '/THIRD-PARTY-NOTICES.txt', 'utf8')).includes('node-pty@1.1.0'));
 assert((await readdir(root + '/renderer/assets')).some((name) => name.endsWith('.js')));
 assert((await readFile(root + '/THIRD-PARTY-NOTICES.txt', 'utf8')).includes('react@'));
 console.log(

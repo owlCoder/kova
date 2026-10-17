@@ -1,3 +1,4 @@
+import { DesktopTerminal } from './DesktopTerminal.js';
 import { dialog, shell, clipboard, nativeTheme, type BrowserWindow } from 'electron';
 import { randomUUID } from 'node:crypto';
 import { extname } from 'node:path';
@@ -16,12 +17,14 @@ import { DesktopSession } from './DesktopSession.js';
 import { validateDesktopMessage } from './validateDesktopMessage.js';
 
 export class DesktopController {
+  readonly terminal = new DesktopTerminal((message) => this.session.send(message));
   private readonly requests = new Set<string>();
   private previewPath: string | null = null;
   private search: CancellationSource | null = null;
   constructor(
     readonly session: DesktopSession,
     private readonly window: BrowserWindow,
+    private readonly preferencesChanged: () => void = () => {},
   ) {}
   async handle(raw: unknown): Promise<void> {
     let requestId = 'invalid';
@@ -39,11 +42,54 @@ export class DesktopController {
         code: 'DesktopRequestFailed',
         message: error instanceof Error ? error.message : 'Request failed.',
       });
+    } finally {
+      this.terminal.syncWorkspace(this.session.root);
     }
   }
   private async route(message: WebviewMessage): Promise<void> {
     const session = this.session;
     switch (message.type) {
+      case 'OpenTerminal':
+        this.terminal.open(this.root(), message.cols, message.rows);
+        return;
+      case 'OpenDataDirectory': {
+        const error = await shell.openPath(session.store.directory);
+        if (error) throw new Error('Could not open the local data folder.');
+        return;
+      }
+      case 'TerminalInput':
+        this.terminal.input(message.terminalId, message.data);
+        return;
+      case 'ResizeTerminal':
+        this.terminal.resize(message.terminalId, message.cols, message.rows);
+        return;
+      case 'TerminalAck':
+        this.terminal.acknowledge(message.terminalId, message.characters);
+        return;
+      case 'CloseTerminal':
+        this.terminal.close(message.terminalId);
+        return;
+      case 'WindowAction':
+        if (message.action === 'maximize') {
+          if (this.window.isMaximized()) this.window.unmaximize();
+          else this.window.maximize();
+        }
+        session.send({
+          type: 'WindowState',
+          maximized: this.window.isMaximized(),
+          fullscreen: this.window.isFullScreen(),
+          focused: this.window.isFocused(),
+        });
+        return;
+      case 'SetLanguage':
+        await session.store.updatePreferences({ language: message.language });
+        this.preferencesChanged();
+        await session.snapshot(message.requestId);
+        return;
+      case 'SetTextSize':
+        await session.store.updatePreferences({ textSize: message.textSize });
+        await session.snapshot(message.requestId);
+        return;
       case 'Ready':
         await session.snapshot(message.requestId);
         return;
@@ -174,6 +220,7 @@ export class DesktopController {
       case 'SetTheme':
         await session.store.updatePreferences({ theme: message.theme });
         nativeTheme.themeSource = message.theme;
+        this.preferencesChanged();
         await session.snapshot(message.requestId);
         return;
       case 'TestProvider':

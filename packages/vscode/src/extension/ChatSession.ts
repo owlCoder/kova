@@ -1,3 +1,4 @@
+import { readUiPreferences } from './readUiPreferences.js';
 import { randomUUID } from 'node:crypto';
 import * as vscode from 'vscode';
 import { ChatAgent } from '../../../core/src/agents/ChatAgent.js';
@@ -241,6 +242,7 @@ export class ChatSession {
       this.streamingResponse,
     );
     const snapshot: SessionSnapshot = {
+      ...readUiPreferences(),
       conversationId: this.conversationId,
       activeRunId: activeRun?.id ?? null,
       state: this.state,

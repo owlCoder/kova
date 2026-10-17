@@ -52,7 +52,15 @@ Markdown supports lists, tables and fenced code. Code blocks and messages have c
 | Cmd/Ctrl+B | Toggle sidebar              |
 | Cmd/Ctrl+J | Toggle project panel        |
 
-Appearance supports dark, light and system themes. Project `AGENTS.md`, `.kova/skills`, `.kova/mcp.json` and `.kova/hooks.json` work in both hosts. Use trusted projects: hooks, MCP and approved commands run with your user privileges.
+**Settings → Appearance** supports dark/light/system themes, three readable text sizes and English, Serbian Latin and German. Changes apply immediately and persist after restart. Code, terminal output and conversation content are not automatically translated. **About Kova** includes privacy information, shortcut help, source/docs/issue/license links, a local data-folder action and copyable version diagnostics without keys, conversations or project paths.
+
+## Interactive terminal
+
+Use **Cmd/Ctrl+Shift+T**, **Ctrl+`**, the command palette or the title-bar terminal button. The panel starts your login shell on macOS/Linux and PowerShell on Windows in the current project. It supports interactive CLI applications, ANSI colors, Ctrl+C, clear, restart and drag/keyboard resizing. Hide preserves the process; Close terminates it. Changing projects or quitting closes the current shell.
+
+The terminal is operated by you and is independent of the AI tool approval pipeline. Commands have your user permissions and can change directories or access files outside the project. Terminal output is not automatically added to AI context or conversation history. Display scrollback and host replay buffers are bounded, and acknowledgment-based backpressure prevents fast command output from flooding the renderer.
+
+Project `AGENTS.md`, `.kova/skills`, `.kova/mcp.json` and `.kova/hooks.json` work in both hosts. Use trusted projects: hooks, MCP and approved commands run with your user privileges.
 
 ## Local data and keys
 
@@ -72,4 +80,4 @@ Installers appear in `dist/installers`: DMG/ZIP on macOS, NSIS EXE on Windows, A
 
 ## Native smoke check
 
-After `desktop:build`, run `npm run desktop:smoke`. It starts a disposable project, isolated profile and local synthetic Ollama server. Send a prompt, ask **Update note.txt**, inspect and approve the diff, test a long answer with Stop, test settings and appearance, then quit. The script verifies the approved edit and saved history and removes temporary data. It does not contact an external AI service.
+After `desktop:build`, run `npm run desktop:smoke`. It starts a disposable project, isolated profile and local synthetic Ollama server. Send a prompt, ask **Update note.txt**, inspect and approve the diff, test a long answer with Stop, test settings and appearance, then quit. `node scripts/desktop/smoke.mjs --interface-only` instead verifies that a UI-run terminal command writes `terminal-smoke.txt` containing `KOVA_TERMINAL_OK` and that Serbian/large text preferences persist. The fixture can target a packaged app with `--app=/absolute/path/to/executable`. The script verifies the approved edit and saved history and removes temporary data. It does not contact an external AI service.

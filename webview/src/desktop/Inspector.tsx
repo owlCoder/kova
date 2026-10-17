@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n/I18n.js';
 import { memo, useEffect, useState } from 'react';
 import type { HostMessage } from '../../../packages/protocol/src/HostMessage.js';
 import { send } from '../messaging/bridge.js';
@@ -27,6 +28,7 @@ export const Inspector = memo(function Inspector({
   onClosePreview(): void;
   hasWorkspace: boolean;
 }) {
+  const { t } = useI18n();
   const [query, setQuery] = useState('');
   useEffect(() => {
     if (!hasWorkspace || query.trim().length < 2) return;
@@ -57,13 +59,13 @@ export const Inspector = memo(function Inspector({
             className={tab === item ? 'active' : ''}
             onClick={() => chooseTab(item)}
           >
-            {item.charAt(0).toUpperCase() + item.slice(1)}
+            {t({ files: 'Files', changes: 'Changes', activity: 'Activity' }[item])}
           </button>
         ))}
         <button
           className="inspector-close icon-button"
-          title="Close panel"
-          aria-label="Close panel"
+          title={t('Close panel')}
+          aria-label={t('Close panel')}
           onClick={onClose}
         >
           <Icon name="panelRight" size={15} />
@@ -74,15 +76,16 @@ export const Inspector = memo(function Inspector({
           <label className="file-search">
             <Icon name="search" size={13} />
             <input
-              aria-label="Search project files"
-              placeholder="Find files…"
+              data-file-search
+              aria-label={t('Search project files')}
+              placeholder={t('Find files…')}
               value={query}
               disabled={!hasWorkspace}
               maxLength={128}
               onChange={(event) => setQuery(event.target.value)}
             />
             {query && (
-              <button aria-label="Clear file search" onClick={() => setQuery('')}>
+              <button aria-label={t('Clear file search')} onClick={() => setQuery('')}>
                 <Icon name="close" size={12} />
               </button>
             )}
@@ -91,19 +94,19 @@ export const Inspector = memo(function Inspector({
             <button
               className="icon-button"
               disabled={directory === '.'}
-              title="Parent directory"
-              aria-label="Parent directory"
+              title={t('Parent directory')}
+              aria-label={t('Parent directory')}
               onClick={() => send({ type: 'ListWorkspaceFiles', path: parent })}
             >
               <Icon name="upLeft" size={13} />
             </button>
             <span>
-              {searching ? 'Search results' : directory === '.' ? 'Project files' : directory}
+              {searching ? t('Search results') : directory === '.' ? t('Project files') : directory}
             </span>
             <button
               className="icon-button"
-              title="Refresh files"
-              aria-label="Refresh files"
+              title={t('Refresh files')}
+              aria-label={t('Refresh files')}
               disabled={!hasWorkspace}
               onClick={() => send({ type: 'ListWorkspaceFiles', path: directory })}
             >
@@ -139,18 +142,22 @@ export const Inspector = memo(function Inspector({
             {searching && !entries?.length && (
               <div className="panel-empty">
                 <Icon name="search" size={27} />
-                <p>{search?.query === query.trim() ? 'No matching files' : 'Searching…'}</p>
+                <p>{search?.query === query.trim() ? t('No matching files') : t('Searching…')}</p>
               </div>
             )}
             {searching && search?.query === query.trim() && search.truncated && (
               <small className="preview-limit">
-                Search limit reached. Use a more specific path.
+                {t('Search limit reached. Use a more specific path.')}
               </small>
             )}
             {!searching && !files && (
               <div className="panel-empty">
                 <Icon name="folderOpen" size={27} />
-                <p>{hasWorkspace ? 'Loading project files…' : 'Open a project to explore files'}</p>
+                <p>
+                  {hasWorkspace
+                    ? t('Loading project files…')
+                    : t('Open a project to explore files')}
+                </p>
               </div>
             )}
           </div>
@@ -159,16 +166,16 @@ export const Inspector = memo(function Inspector({
               <div className="preview-toolbar">
                 <span title={preview.file.path}>{preview.file.path.split('/').pop()}</span>
                 <button
-                  title="Attach this file"
-                  aria-label="Attach preview file"
+                  title={t('Attach this file')}
+                  aria-label={t('Attach preview file')}
                   disabled={busy}
                   onClick={() => send({ type: 'AddContext', source: 'CurrentFile' })}
                 >
                   <Icon name="paperclip" size={13} />
                 </button>
                 <button
-                  title="Close preview"
-                  aria-label="Close file preview"
+                  title={t('Close preview')}
+                  aria-label={t('Close file preview')}
                   onClick={onClosePreview}
                 >
                   <Icon name="close" size={13} />
@@ -186,7 +193,7 @@ export const Inspector = memo(function Inspector({
                 </pre>
               </div>
               {preview.file.content.split('\n').length > 2000 && (
-                <small className="preview-limit">Showing the first 2,000 lines.</small>
+                <small className="preview-limit">{t('Showing the first 2,000 lines.')}</small>
               )}
             </section>
           )}
@@ -196,7 +203,7 @@ export const Inspector = memo(function Inspector({
         <div className="diff-panel">
           {preview?.type === 'DiffPreview' ? (
             <>
-              <div className="panel-section-label">{preview.title}</div>
+              <div className="panel-section-label">{t(preview.title)}</div>
               {preview.changes.map((change) => (
                 <details className="diff-file" key={change.path} open>
                   <summary>
@@ -204,11 +211,11 @@ export const Inspector = memo(function Inspector({
                     {change.path}
                   </summary>
                   <div className="diff-before">
-                    <span>BEFORE</span>
+                    <span>{t('BEFORE')}</span>
                     <pre>{change.before || '(new file)'}</pre>
                   </div>
                   <div className="diff-after">
-                    <span>AFTER</span>
+                    <span>{t('AFTER')}</span>
                     <pre>{change.after}</pre>
                   </div>
                 </details>
@@ -231,7 +238,7 @@ export const Inspector = memo(function Inspector({
                 !preview.changes.length && (
                   <div className="panel-empty">
                     <Icon name="check" size={27} />
-                    <p>No uncommitted changes</p>
+                    <p>{t('No uncommitted changes')}</p>
                   </div>
                 )
               )}
@@ -241,11 +248,13 @@ export const Inspector = memo(function Inspector({
               <Icon name="review" size={27} />
               <p>
                 {hasWorkspace
-                  ? 'Review your working tree changes'
-                  : 'Open a Git project to review changes'}
+                  ? t('Review your working tree changes')
+                  : t('Open a Git project to review changes')}
               </p>
               {hasWorkspace && (
-                <button onClick={() => send({ type: 'WorkspaceDiff' })}>Refresh changes</button>
+                <button onClick={() => send({ type: 'WorkspaceDiff' })}>
+                  {t('Refresh changes')}
+                </button>
               )}
             </div>
           )}
@@ -266,8 +275,8 @@ export const Inspector = memo(function Inspector({
           ) : (
             <div className="panel-empty">
               <Icon name="terminal" size={27} />
-              <p>Agent activity will appear here</p>
-              <small>Tool calls, permissions and results.</small>
+              <p>{t('Agent activity will appear here')}</p>
+              <small>{t('Tool calls, permissions and results.')}</small>
             </div>
           )}
         </div>

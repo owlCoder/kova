@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.5.0
+
+- Increase interface typography and add persistent Comfortable, Large and Extra large text sizes.
+- Add Serbian Latin, English and German interface languages, including desktop menus; preserve code and conversation content as written.
+- Expand About Kova with privacy/local-data details, keyboard shortcuts, documentation, issue/license links and safe copyable runtime diagnostics.
+- Refine the native title bar with project commands, terminal access, focus/maximize state and theme-aware window controls.
+- Add an interactive project terminal using xterm.js and native PTYs: login shell/PowerShell, resize, Ctrl+C, clear, restart, hide and close.
+- Keep terminal processes separate from AI tool permissions, close them on project changes/exit, and bound output with backpressure and lazy UI loading.
+- Package the platform-specific N-API terminal binaries without Electron rebuilds and add real-shell, localization and IPC validation tests.
+
 ## 0.4.0
 
 - Add a cross-platform Electron desktop app with project switching, persistent sessions, session rename/archive and automatic history restoration.

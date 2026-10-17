@@ -72,7 +72,7 @@ export class DesktopSession {
     readonly store: DesktopStore,
     readonly keys: DesktopKeyStore,
     private readonly deliver: (message: HostMessage) => void,
-    private readonly version = '0.4.0',
+    private readonly version = '0.5.0',
   ) {
     this.providers = new DesktopProviderManager(store, keys);
   }
@@ -190,6 +190,13 @@ export class DesktopSession {
         provider: { ...settings.provider, thinking: settings.thinking, hasApiKey },
         theme: settings.theme,
         platform: process.platform,
+        language: settings.language,
+        textSize: settings.textSize,
+        runtimeVersions: {
+          electron: process.versions.electron ?? 'development',
+          chrome: process.versions.chrome ?? 'development',
+          node: process.versions.node,
+        },
       },
     };
     this.events.flush();

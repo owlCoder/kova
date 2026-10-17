@@ -1,20 +1,27 @@
+import { useI18n } from '../i18n/I18n.js';
 import { useEffect, useRef, useState } from 'react';
 import type { DesktopState } from '../../../packages/protocol/src/DesktopState.js';
 import type { ProviderDraft } from '../../../packages/protocol/src/DesktopMessage.js';
 import type { ModelInfo } from '../../../packages/protocol/src/ModelInfo.js';
 import { send, subscribe } from '../messaging/bridge.js';
+import { AboutKova } from './AboutKova.js';
+import { AppearanceSettings } from './AppearanceSettings.js';
 import { Icon } from '../components/Icon.js';
 
 export function ProviderPreferences({
   desktop,
   busy,
+  initialTab,
   onClose,
 }: {
   desktop: DesktopState;
   busy: boolean;
+  initialTab: 'provider' | 'appearance' | 'about';
   onClose(): void;
 }) {
-  const [tab, setTab] = useState<'provider' | 'appearance' | 'about'>('provider');
+  const { t } = useI18n();
+  const [tab, setTab] = useState<'provider' | 'appearance' | 'about'>(initialTab);
+  useEffect(() => setTab(initialTab), [initialTab]);
   const [draft, setDraft] = useState<ProviderDraft>({
     kind: desktop.provider.kind,
     label: desktop.provider.label,
@@ -109,29 +116,29 @@ export function ProviderPreferences({
         }}
       >
         <nav className="preferences-nav">
-          <h2 id="preferences-title">Settings</h2>
-          <small>MAKE KOVA YOURS</small>
+          <h2 id="preferences-title">{t('Settings')}</h2>
+          <small>{t('MAKE KOVA YOURS')}</small>
           <button className={tab === 'provider' ? 'active' : ''} onClick={() => setTab('provider')}>
             <Icon name="sparkles" />
-            AI connection
+            {t('AI connection')}
           </button>
           <button
             className={tab === 'appearance' ? 'active' : ''}
             onClick={() => setTab('appearance')}
           >
             <Icon name="monitor" />
-            Appearance
+            {t('Appearance')}
           </button>
           <button className={tab === 'about' ? 'active' : ''} onClick={() => setTab('about')}>
             <Icon name="help" />
-            About Kova
+            {t('About Kova')}
           </button>
           <span className="settings-version">Kova {desktop.appVersion}</span>
         </nav>
         <div className="preferences-content">
           <button
             className="modal-close icon-button"
-            aria-label="Close settings"
+            aria-label={t('Close settings')}
             onClick={onClose}
             disabled={saving}
           >
@@ -139,10 +146,10 @@ export function ProviderPreferences({
           </button>
           {tab === 'provider' && (
             <>
-              <div className="eyebrow">AI CONNECTION</div>
-              <h2>Bring your own intelligence.</h2>
+              <div className="eyebrow">{t('AI CONNECTION')}</div>
+              <h2>{t('Bring your own intelligence.')}</h2>
               <p className="settings-description">
-                Local models or cloud APIs. Your provider, your choice.
+                {t('Local models or cloud APIs. Your provider, your choice.')}
               </p>
               <form
                 onSubmit={(event) => {
@@ -153,9 +160,9 @@ export function ProviderPreferences({
                 }}
               >
                 <label>
-                  Provider
+                  {t('Provider')}
                   <select
-                    aria-label="AI provider preset"
+                    aria-label={t('AI provider preset')}
                     value={preset < 0 ? 'custom' : String(preset)}
                     onChange={(event) => {
                       const selected = desktop.providerPresets[Number(event.target.value)];
@@ -174,17 +181,17 @@ export function ProviderPreferences({
                       setModels([]);
                     }}
                   >
-                    {preset < 0 && <option value="custom">Custom connection</option>}
+                    {preset < 0 && <option value="custom">{t('Custom connection')}</option>}
                     {desktop.providerPresets.map((preset, i) => (
                       <option key={preset.label} value={i}>
-                        {preset.label} · {preset.description.split(' · ')[0]}
+                        {t(preset.label)} · {t(preset.description.split(' · ')[0]!)}
                       </option>
                     ))}
                   </select>
                 </label>
                 <div className="settings-grid">
                   <label>
-                    Connection name
+                    {t('Connection name')}
                     <input
                       value={draft.label}
                       maxLength={100}
@@ -193,7 +200,7 @@ export function ProviderPreferences({
                     />
                   </label>
                   <label>
-                    API format
+                    {t('API format')}
                     <select
                       value={draft.kind}
                       onChange={(event) =>
@@ -210,28 +217,28 @@ export function ProviderPreferences({
                   </label>
                 </div>
                 <label>
-                  API base URL
+                  {t('API base URL')}
                   <input
                     type="url"
                     spellCheck={false}
                     value={draft.baseUrl}
                     onChange={(event) => update({ baseUrl: event.target.value })}
-                    placeholder="http://localhost:11434"
+                    placeholder={t('http://localhost:11434')}
                     required
                   />
-                  <small>Use the base endpoint. Kova adds the API paths.</small>
+                  <small>{t('Use the base endpoint. Kova adds the API paths.')}</small>
                 </label>
                 {draft.kind !== 'ollama' && (
                   <div className="provider-key-field">
                     <label htmlFor="provider-api-key">
-                      API key{' '}
+                      {t('API key')}{' '}
                       <span className="optional">
-                        {storedKey ? 'Saved for this endpoint' : 'Optional for local servers'}
+                        {storedKey ? t('Saved for this endpoint') : t('Optional for local servers')}
                       </span>
                     </label>
                     <input
                       id="provider-api-key"
-                      aria-label="Provider API key"
+                      aria-label={t('Provider API key')}
                       type="password"
                       autoComplete="off"
                       spellCheck={false}
@@ -239,7 +246,7 @@ export function ProviderPreferences({
                       placeholder={
                         storedKey && draft.keyAction !== 'remove'
                           ? '•••••••• · leave blank to keep saved key'
-                          : 'Enter your provider API key'
+                          : t('Enter your provider API key')
                       }
                       maxLength={8192}
                       onChange={(event) =>
@@ -257,7 +264,9 @@ export function ProviderPreferences({
                           checked={draft.rememberKey}
                           onChange={(event) => update({ rememberKey: event.target.checked })}
                         />
-                        <label htmlFor="remember-key">Remember securely on this device</label>
+                        <label htmlFor="remember-key">
+                          {t('Remember securely on this device')}
+                        </label>
                       </span>
                       {storedKey && (
                         <button
@@ -269,22 +278,22 @@ export function ProviderPreferences({
                             })
                           }
                         >
-                          {draft.keyAction === 'remove' ? 'Keep stored key' : 'Remove key'}
+                          {draft.keyAction === 'remove' ? t('Keep stored key') : t('Remove key')}
                         </button>
                       )}
                     </span>
                   </div>
                 )}
                 <label>
-                  Model
+                  {t('Model')}
                   <div className="model-input-row">
                     <input
-                      aria-label="Provider model ID"
+                      aria-label={t('Provider model ID')}
                       list="provider-models"
                       value={draft.model}
                       spellCheck={false}
                       onChange={(event) => update({ model: event.target.value })}
-                      placeholder="Choose or enter a chat model ID"
+                      placeholder={t('Choose or enter a chat model ID')}
                       maxLength={256}
                       required
                     />
@@ -301,7 +310,7 @@ export function ProviderPreferences({
                       }}
                     >
                       <Icon name={checking ? 'refresh' : 'search'} size={14} />
-                      {checking ? 'Checking…' : 'Load models'}
+                      {checking ? t('Checking…') : t('Load models')}
                     </button>
                   </div>
                   <datalist id="provider-models">
@@ -312,7 +321,7 @@ export function ProviderPreferences({
                     ))}
                   </datalist>
                   <small>
-                    Choose a chat-capable model. Loading models sends no project content.
+                    {t('Choose a chat-capable model. Loading models sends no project content.')}
                   </small>
                 </label>
                 {draft.kind === 'openaiCompatible' && (
@@ -324,8 +333,8 @@ export function ProviderPreferences({
                         onChange={(event) => update({ discoverModels: event.target.checked })}
                       />
                       <span>
-                        Discover available models
-                        <small>Turn off for APIs that only accept a manual model ID.</small>
+                        {t('Discover available models')}
+                        <small>{t('Turn off for APIs that only accept a manual model ID.')}</small>
                       </span>
                     </label>
                     <label className="checkbox-field">
@@ -335,8 +344,8 @@ export function ProviderPreferences({
                         onChange={(event) => update({ supportsTools: event.target.checked })}
                       />
                       <span>
-                        Enable workspace tools
-                        <small>The model must support function calling.</small>
+                        {t('Enable workspace tools')}
+                        <small>{t('The model must support function calling.')}</small>
                       </span>
                     </label>
                   </>
@@ -349,15 +358,17 @@ export function ProviderPreferences({
                       onChange={(event) => update({ thinking: event.target.checked })}
                     />
                     <span>
-                      Enable model thinking
-                      <small>Show transient reasoning when the model supports it.</small>
+                      {t('Enable model thinking')}
+                      <small>{t('Show transient reasoning when the model supports it.')}</small>
                     </span>
                   </label>
                 )}
                 {checked && (
                   <div className="settings-success">
                     <Icon name="check" size={15} />
-                    Connection checked · {models.length} models available
+                    {t('Connection checked ·')}
+                    {models.length}
+                    {t('models available')}
                   </div>
                 )}
                 {error && (
@@ -368,81 +379,28 @@ export function ProviderPreferences({
                 )}
                 {busy && !saving && (
                   <div className="settings-error">
-                    Stop the active task before saving a connection.
+                    {t('Stop the active task before saving a connection.')}
                   </div>
                 )}
                 <div className="settings-footer">
                   <span>
                     <Icon name="shield" size={13} />
-                    Keys never enter model context.
+                    {t('Keys never enter model context.')}
                   </span>
                   <button
                     className="primary"
                     type="submit"
                     disabled={saving || checking || busy || !draft.model.trim()}
                   >
-                    {saving ? 'Saving…' : 'Save connection'}
+                    {saving ? t('Saving…') : t('Save connection')}
                     <Icon name="arrow" size={14} />
                   </button>
                 </div>
               </form>
             </>
           )}
-          {tab === 'appearance' && (
-            <>
-              <div className="eyebrow">APPEARANCE</div>
-              <h2>A space that feels right.</h2>
-              <p className="settings-description">Choose how Kova looks on this device.</p>
-              <div className="theme-options">
-                {(['dark', 'light', 'system'] as const).map((theme) => (
-                  <button
-                    key={theme}
-                    className={`theme-option ${desktop.theme === theme ? 'selected' : ''}`}
-                    onClick={() => send({ type: 'SetTheme', theme })}
-                  >
-                    <Icon
-                      name={theme === 'dark' ? 'moon' : theme === 'light' ? 'sun' : 'monitor'}
-                      size={27}
-                    />
-                    <strong>{theme.charAt(0).toUpperCase() + theme.slice(1)}</strong>
-                    <span>{desktop.theme === theme ? 'Selected' : 'Use theme'}</span>
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-          {tab === 'about' && (
-            <>
-              <div className="eyebrow">KOVA DESKTOP</div>
-              <h2>Your code. Your workspace.</h2>
-              <p className="settings-description">
-                A local-first coding agent for focused work. Built on the same agent runtime as the
-                Kova VS Code extension.
-              </p>
-              <div className="about-facts">
-                <span>
-                  Version<strong>{desktop.appVersion}</strong>
-                </span>
-                <span>
-                  Platform<strong>{desktop.platform}</strong>
-                </span>
-                <span>
-                  Session storage<strong>On this device</strong>
-                </span>
-                <span>
-                  Telemetry<strong>None</strong>
-                </span>
-              </div>
-              <button
-                onClick={() =>
-                  send({ type: 'OpenExternal', url: 'https://github.com/owlCoder/kova' })
-                }
-              >
-                <Icon name="external" size={14} />
-                Source & documentation
-              </button>
-            </>
-          )}
+          {tab === 'appearance' && <AppearanceSettings desktop={desktop} />}
+          {tab === 'about' && <AboutKova desktop={desktop} />}
         </div>
       </div>
     </div>

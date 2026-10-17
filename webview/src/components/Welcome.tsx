@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n/I18n.js';
 import type { SessionSnapshot } from '../../../packages/protocol/src/SessionSnapshot.js';
 import logo from '../../../assets/logo.png';
 import { isDesktop, send } from '../messaging/bridge.js';
@@ -10,22 +11,26 @@ export function Welcome({
   snapshot: SessionSnapshot | null;
   onChoose(value: string): void;
 }) {
+  const { t } = useI18n();
   const project = snapshot?.desktop?.workspaceName;
   return (
     <section className="welcome">
       <div className="welcome-mark">
         <img src={logo} alt="" />
       </div>
-      <div className="eyebrow">YOUR IDEAS. YOUR MODELS. YOUR CODE.</div>
+      <div className="eyebrow">{t('YOUR IDEAS. YOUR MODELS. YOUR CODE.')}</div>
       <h1>
-        What will you
+        {t('What will you')}
         <br />
-        <span>build next?</span>
+        <span>{t('build next?')}</span>
       </h1>
       <p>
         {project && snapshot?.desktop?.workspacePath
-          ? `You're working in ${project}. Ask a question, explore your code, or make something new.`
-          : 'A focused space to think, build, and ship. Connect your AI and make it yours.'}
+          ? t(
+              'You’re working in {project}. Ask a question, explore your code, or make something new.',
+              { project },
+            )
+          : t('A focused space to think, build, and ship. Connect your AI and make it yours.')}
       </p>
       {isDesktop && !snapshot?.desktop?.workspacePath && (
         <button
@@ -33,7 +38,11 @@ export function Welcome({
           onClick={() => send({ type: 'OpenWorkspace' })}
         >
           <Icon name="folderOpen" />
-          Open a project<kbd>{snapshot?.desktop?.platform === 'darwin' ? '⌘' : 'Ctrl'} O</kbd>
+          {t('Open a project')}
+          <kbd>
+            {snapshot?.desktop?.platform === 'darwin' ? '⌘' : t('Ctrl')}
+            {t('O')}
+          </kbd>
         </button>
       )}
       <div className="suggestions">
@@ -45,8 +54,8 @@ export function Welcome({
           }
         >
           <Icon name="code" />
-          <strong>Explore the code</strong>
-          <small>Understand how it fits together</small>
+          <strong>{t('Explore the code')}</strong>
+          <small>{t('Understand how it fits together')}</small>
           <Icon name="upLeft" />
         </button>
         <button
@@ -55,8 +64,8 @@ export function Welcome({
           }
         >
           <Icon name="review" />
-          <strong>Review changes</strong>
-          <small>Find what needs a closer look</small>
+          <strong>{t('Review changes')}</strong>
+          <small>{t('Find what needs a closer look')}</small>
           <Icon name="upLeft" />
         </button>
         <button
@@ -67,14 +76,14 @@ export function Welcome({
           }
         >
           <Icon name="sparkles" />
-          <strong>Plan something new</strong>
-          <small>Turn an idea into a clear next step</small>
+          <strong>{t('Plan something new')}</strong>
+          <small>{t('Turn an idea into a clear next step')}</small>
           <Icon name="upLeft" />
         </button>
       </div>
       <div className="welcome-note">
         <Icon name="shield" size={13} />
-        Local-first. You choose where your context goes.
+        {t('Local-first. You choose where your context goes.')}
       </div>
     </section>
   );

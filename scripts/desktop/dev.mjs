@@ -1,9 +1,11 @@
+import { preparePty } from './prepare-pty.mjs';
 import { createServer } from 'vite';
 import { context } from 'esbuild';
 import { spawn } from 'node:child_process';
 import { mkdir, writeFile, readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { createRequire } from 'node:module';
+await preparePty();
 const root = resolve(import.meta.dirname, '../..');
 const output = resolve(root, 'dist/desktop');
 await mkdir(output, { recursive: true });
@@ -34,7 +36,7 @@ const options = {
   platform: 'node',
   format: 'cjs',
   target: 'node22',
-  external: ['electron'],
+  external: ['electron', 'node-pty'],
   sourcemap: true,
 };
 const main = await context({

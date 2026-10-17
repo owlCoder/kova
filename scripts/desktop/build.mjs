@@ -2,6 +2,7 @@ import { build } from 'esbuild';
 import { build as viteBuild } from 'vite';
 import { mkdir, readFile, writeFile, copyFile, rm } from 'node:fs/promises';
 import { resolve } from 'node:path';
+import { preparePty } from './prepare-pty.mjs';
 import { writeDependencyNotices } from '../dependency-notices.mjs';
 
 const root = resolve(import.meta.dirname, '../..');
@@ -18,7 +19,7 @@ await viteBuild({
       transformIndexHtml: (html) =>
         html.replace(
           '<head>',
-          `<head><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'none'; base-uri 'none'; form-action 'none';">`,
+          `<head><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'none'; base-uri 'none'; form-action 'none';">`,
         ),
     },
   ],
@@ -28,7 +29,7 @@ const common = {
   platform: 'node',
   format: 'cjs',
   target: 'node22',
-  external: ['electron'],
+  external: ['electron', 'node-pty'],
   sourcemap: true,
   legalComments: 'external',
   metafile: true,
@@ -54,6 +55,7 @@ await writeFile(
       license: 'MIT',
       main: 'main/main.cjs',
       private: true,
+      dependencies: { 'node-pty': '1.1.0' },
     },
     null,
     2,
@@ -62,9 +64,10 @@ await writeFile(
 for (const file of ['LICENSE', 'README.md', 'CHANGELOG.md'])
   await copyFile(resolve(root, file), output + '/' + file);
 await copyFile(resolve(root, 'assets/logo.png'), output + '/icon.png');
+await preparePty(output);
 const count = await writeDependencyNotices(
   root,
-  Object.keys(main.metafile.inputs),
+  [...Object.keys(main.metafile.inputs), 'node_modules/node-pty/lib/index.js'],
   output + '/THIRD-PARTY-NOTICES.txt',
 );
 console.log(`Built Kova Desktop ${manifest.version}; bundled ${count} dependency notices.`);

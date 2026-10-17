@@ -26,6 +26,13 @@ export interface DesktopState {
   readonly provider: ProviderSettings;
   readonly theme: 'dark' | 'light' | 'system';
   readonly platform: string;
+  readonly language: 'en' | 'sr' | 'de';
+  readonly textSize: 'standard' | 'large' | 'larger';
+  readonly runtimeVersions: {
+    readonly electron: string;
+    readonly chrome: string;
+    readonly node: string;
+  };
 }
 
 export interface WorkspaceEntry {

@@ -1,8 +1,8 @@
 {
   "name": "kova-local",
-  "displayName": "Kova \u2014 AI Coding Workspace",
+  "displayName": "Kova — AI Coding Workspace",
   "description": "Modern local-first coding workspace with guided setup, Ollama, DeepSeek and configurable AI providers",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "publisher": "owlcoder",
   "license": "MIT",
   "engines": {
@@ -192,6 +192,20 @@
           "type": "boolean",
           "default": true,
           "description": "Fetch /models. Disable to use the configured model ID with endpoints that do not expose a model list. Manual mode checks the connection on the first prompt."
+        },
+        "kova.ui.language": {
+          "type": "string",
+          "enum": ["en", "sr", "de"],
+          "enumDescriptions": ["English", "Srpski (latinica)", "Deutsch"],
+          "default": "en",
+          "description": "Interface language. Code, model responses and conversation content are not translated."
+        },
+        "kova.ui.textSize": {
+          "type": "string",
+          "enum": ["standard", "large", "larger"],
+          "enumDescriptions": ["Comfortable", "Large", "Extra large"],
+          "default": "standard",
+          "description": "Text size for the Kova interface."
         }
       }
     }

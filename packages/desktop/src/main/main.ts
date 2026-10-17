@@ -7,21 +7,22 @@ import {
   nativeTheme,
 } from 'electron';
 import { join } from 'node:path';
-import { randomUUID } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
+import { createDesktopMenu } from './createDesktopMenu.js';
 import { DesktopStore } from '../state/DesktopStore.js';
 import { DesktopKeyStore } from '../state/DesktopKeyStore.js';
 import { DesktopSession } from './DesktopSession.js';
 import { DesktopController } from './DesktopController.js';
 
+app.setName('Kova');
+if (process.env.KOVA_DESKTOP_DATA) app.setPath('userData', process.env.KOVA_DESKTOP_DATA);
 const single = app.requestSingleInstanceLock();
 if (!single) app.quit();
 else {
   let window: BrowserWindow | null = null;
   let agent: DesktopSession | null = null;
+  let desktopController: DesktopController | null = null;
   let closing = false;
-  app.setName('Kova');
-  if (process.env.KOVA_DESKTOP_DATA) app.setPath('userData', process.env.KOVA_DESKTOP_DATA);
   app.on('second-instance', () => {
     if (window?.isMinimized()) window.restore();
     window?.focus();
@@ -47,9 +48,9 @@ else {
         title: 'Kova',
         backgroundColor: '#111315',
         show: false,
-        titleBarStyle: 'hiddenInset',
+        titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'hidden',
         ...(process.platform === 'darwin'
-          ? { trafficLightPosition: { x: 18, y: 20 } }
+          ? { trafficLightPosition: { x: 18, y: 18 } }
           : { titleBarOverlay: { color: '#111315', symbolColor: '#b8bbc2', height: 48 } }),
         webPreferences: {
           preload: join(__dirname, '../preload.cjs'),
@@ -63,7 +64,36 @@ else {
       agent = new DesktopSession(store, keys, (message) => {
         if (!currentWindow.isDestroyed()) currentWindow.webContents.send('kova:message', message);
       });
-      const controller = new DesktopController(agent, currentWindow);
+      const applyChrome = () => {
+        if (currentWindow.isDestroyed()) return;
+        const light = !nativeTheme.shouldUseDarkColors;
+        currentWindow.setBackgroundColor(light ? '#f5f6f7' : '#111315');
+        if (process.platform !== 'darwin')
+          currentWindow.setTitleBarOverlay({
+            color: light ? '#f5f6f7' : '#111315',
+            symbolColor: light ? '#20242b' : '#b8bbc2',
+            height: 46,
+          });
+      };
+      const controller = (desktopController = new DesktopController(agent, currentWindow, () => {
+        applyChrome();
+        if (agent) Menu.setApplicationMenu(createDesktopMenu(controller, agent, app.isPackaged));
+      }));
+      const windowState = () =>
+        agent?.send({
+          type: 'WindowState',
+          maximized: currentWindow.isMaximized(),
+          fullscreen: currentWindow.isFullScreen(),
+          focused: currentWindow.isFocused(),
+        });
+      currentWindow.on('maximize', windowState);
+      currentWindow.on('unmaximize', windowState);
+      currentWindow.on('enter-full-screen', windowState);
+      currentWindow.on('leave-full-screen', windowState);
+      currentWindow.on('focus', windowState);
+      currentWindow.on('blur', windowState);
+      nativeTheme.on('updated', applyChrome);
+      applyChrome();
       electronSession.defaultSession.setPermissionRequestHandler(
         (_webContents, _permission, callback) => callback(false),
       );
@@ -85,74 +115,7 @@ else {
           return;
         void controller.handle(message);
       });
-      Menu.setApplicationMenu(
-        Menu.buildFromTemplate([
-          ...(process.platform === 'darwin'
-            ? [
-                {
-                  label: 'Kova',
-                  submenu: [
-                    { role: 'about' as const },
-                    { type: 'separator' as const },
-                    { role: 'quit' as const },
-                  ],
-                },
-              ]
-            : []),
-          {
-            label: 'File',
-            submenu: [
-              {
-                label: 'Open Project…',
-                accelerator: 'CmdOrCtrl+O',
-                click: () => {
-                  void controller.handle({
-                    protocolVersion: 1,
-                    requestId: randomUUID(),
-                    type: 'OpenWorkspace',
-                  });
-                },
-              },
-              {
-                label: 'New Session',
-                accelerator: 'CmdOrCtrl+N',
-                click: () => {
-                  void agent?.newConversation().catch(() => {});
-                },
-              },
-              {
-                label: 'Settings',
-                accelerator: 'CmdOrCtrl+,',
-                click: () => agent?.send({ type: 'OpenPreferences' }),
-              },
-              { type: 'separator' },
-              { role: 'close' },
-            ],
-          },
-          {
-            label: 'Edit',
-            submenu: [
-              { role: 'undo' },
-              { role: 'redo' },
-              { type: 'separator' },
-              { role: 'cut' },
-              { role: 'copy' },
-              { role: 'paste' },
-              { role: 'selectAll' },
-            ],
-          },
-          {
-            label: 'View',
-            submenu: [
-              { role: 'togglefullscreen' },
-              { role: 'resetZoom' },
-              { role: 'zoomIn' },
-              { role: 'zoomOut' },
-              ...(!app.isPackaged ? [{ role: 'toggleDevTools' as const }] : []),
-            ],
-          },
-        ]),
-      );
+      Menu.setApplicationMenu(createDesktopMenu(controller, agent, app.isPackaged));
       currentWindow.once('ready-to-show', () => currentWindow.show());
       if (devUrl) await currentWindow.loadURL(devUrl);
       else await currentWindow.loadFile(renderer);
@@ -175,6 +138,7 @@ else {
     if (closing) return;
     closing = true;
     event.preventDefault();
+    desktopController?.terminal.close();
     void agent?.dispose().finally(() => app.quit());
     if (!agent) app.quit();
   });

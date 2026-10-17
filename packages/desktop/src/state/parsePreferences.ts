@@ -45,6 +45,12 @@ export function parsePreferences(raw: unknown): DesktopPreferences {
     theme: themes.includes(String(input.theme))
       ? (input.theme as DesktopPreferences['theme'])
       : 'dark',
+    language: ['en', 'sr', 'de'].includes(String(input.language))
+      ? (input.language as DesktopPreferences['language'])
+      : 'en',
+    textSize: ['standard', 'large', 'larger'].includes(String(input.textSize))
+      ? (input.textSize as DesktopPreferences['textSize'])
+      : 'standard',
     recentWorkspaces: Array.isArray(input.recentWorkspaces)
       ? input.recentWorkspaces
           .filter((path): path is string => typeof path === 'string' && path.length <= 4096)

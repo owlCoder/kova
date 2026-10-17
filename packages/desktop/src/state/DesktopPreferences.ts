@@ -5,6 +5,8 @@ export interface DesktopPreferences {
   readonly thinking: boolean;
   readonly contextMaxTokens: number;
   readonly theme: 'dark' | 'light' | 'system';
+  readonly language: 'en' | 'sr' | 'de';
+  readonly textSize: 'standard' | 'large' | 'larger';
   readonly recentWorkspaces: readonly string[];
   readonly lastConversationId: string | null;
   readonly setupCompleted: boolean;
@@ -23,6 +25,8 @@ export const defaultPreferences: DesktopPreferences = {
   thinking: false,
   contextMaxTokens: 32768,
   theme: 'dark',
+  language: 'en',
+  textSize: 'standard',
   recentWorkspaces: [],
   lastConversationId: null,
   setupCompleted: false,

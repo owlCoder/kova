@@ -16,9 +16,11 @@ npm run desktop:build
 npm run desktop:start
 ```
 
-Choose **Open project**, follow **Setup** to connect a provider, and start in Manual mode to review edits. **Settings → Provider** offers local/cloud presets, custom endpoints, model discovery or a manual model ID, tool/thinking controls and secure API-key storage. **Settings → Appearance** switches dark, light or system themes.
+Choose **Open project**, follow **Setup** to connect a provider, and start in Manual mode to review edits. **Settings → Provider** offers local/cloud presets, custom endpoints, model discovery or a manual model ID, tool/thinking controls and secure API-key storage. **Settings → Appearance** switches dark, light or system themes, sets a comfortable text size, and selects English, Serbian Latin or German. **About Kova** includes privacy details, shortcuts, local data access, help links and runtime diagnostics.
 
 Sessions are saved locally and restored when reopening a project. Browse or search files with **Cmd/Ctrl+P**, inspect a proposed change before **Allow once**, attach files to context, and stop a run without losing the partial response. **Cmd/Ctrl+K** opens commands and sessions; **Cmd/Ctrl+N** starts a session; **Cmd/Ctrl+O** opens a project; **Cmd/Ctrl+,** opens settings. **Cmd/Ctrl+B** and **Cmd/Ctrl+J** toggle the side panels.
+
+Open the built-in terminal with **Cmd/Ctrl+Shift+T**, **Ctrl+`**, or the title-bar terminal button. It starts your login shell (PowerShell on Windows) in the selected project and supports interactive CLI programs, Ctrl+C and resizing. Hide keeps the shell running; Close terminates it. Terminal commands are user-operated, run with your user privileges and are separate from AI approvals. Switching projects closes the old shell.
 
 `npm run desktop:package` creates native installers for the current OS under `dist/installers`. The Desktop builds workflow packages macOS DMG/ZIP, Windows NSIS and Linux AppImage/DEB on their native runners. Local builds are unsigned; signing and notarization need release credentials. See [desktop setup and development](docs/DESKTOP.md).
 
@@ -88,7 +90,7 @@ Use **Add context** to attach a selection, the current file or chosen files. Whe
 
 The default context budget is 32,768 tokens, with 4,096 reserved for output and a 10% safety margin. The context indicator shows estimated input before generation and measured input/output afterwards. Tool-definition cost remains an estimate. Larger local contexts require more memory; explicit VS Code settings override these defaults.
 
-Run **Kova: Open Settings** to change:
+Run **Kova: Open Settings** to change provider settings, `kova.ui.language` (`en`, `sr`, `de`) and `kova.ui.textSize` (`standard`, `large`, `larger`):
 
 | Setting                                | Default                      |
 | -------------------------------------- | ---------------------------- |
@@ -147,7 +149,7 @@ npm run package
 npm run verify:package
 ```
 
-Press F5 in VS Code to launch the development extension. Packaging writes `dist/kova-local-<version>.vsix`, using the name and version in `packages/vscode/extension.package.json`. The Marketplace extension identifier is `owlcoder.kova-local`; the current extension release is `0.4.0`.
+Press F5 in VS Code to launch the development extension. Packaging writes `dist/kova-local-<version>.vsix`, using the name and version in `packages/vscode/extension.package.json`. The Marketplace extension identifier is `owlcoder.kova-local`; the current extension release is `0.5.0`.
 
 Use `npm run desktop:dev` for Vite hot reload and automatic main/preload rebuilds. `desktop:verify` checks the production desktop bundle; `desktop:smoke` starts an isolated native UI fixture without external AI calls. Extension integration checks are `smoke:ollama`, `smoke:vscode`, `smoke:vsix` and `smoke:ers`.
 
@@ -162,7 +164,7 @@ npm run package
 npm run verify:package
 ```
 
-Then upload `dist/kova-local-0.4.0.vsix` through the Visual Studio Marketplace publisher management portal for publisher `owlcoder`. No Marketplace PAT, repository secret or automatic publish workflow is required.
+Then upload `dist/kova-local-0.5.0.vsix` through the Visual Studio Marketplace publisher management portal for publisher `owlcoder`. No Marketplace PAT, repository secret or automatic publish workflow is required.
 
 [Setup](https://github.com/owlCoder/kova/blob/main/docs/SETUP.md) · [Providers](https://github.com/owlCoder/kova/blob/main/docs/PROVIDERS.md) · [Architecture](https://github.com/owlCoder/kova/blob/main/docs/ARCHITECTURE.md) · [Marketplace release](https://github.com/owlCoder/kova/blob/main/docs/MARKETPLACE.md) · [Release checks](https://github.com/owlCoder/kova/blob/main/docs/TESTING.md)
 

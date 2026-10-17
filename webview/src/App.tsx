@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import logo from '../../assets/logo.png';
 import { ChatFooter } from './components/ChatFooter.js';
 import { Icon } from './components/Icon.js';
@@ -10,11 +10,47 @@ import { Sidebar } from './desktop/Sidebar.js';
 import { Inspector } from './desktop/Inspector.js';
 import { ProviderPreferences } from './desktop/ProviderPreferences.js';
 import { isDesktop, send } from './messaging/bridge.js';
+import { WindowTitlebar } from './desktop/WindowTitlebar.js';
+import { I18nProvider, useI18n } from './i18n/I18n.js';
+import { subscribe } from './messaging/bridge.js';
 import { useChat } from './state/useChat.js';
 import { useHostResources } from './state/useHostResources.js';
 
+const TerminalPanel = lazy(() => import('./desktop/TerminalPanel.js'));
 export function App() {
   const chat = useChat();
+  return (
+    <I18nProvider language={chat.snapshot?.desktop?.language ?? chat.snapshot?.language ?? 'en'}>
+      <Workspace chat={chat} />
+    </I18nProvider>
+  );
+}
+function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
+  const { t } = useI18n();
+  const [terminalOpen, setTerminalOpen] = useState(false);
+  const [terminalMounted, setTerminalMounted] = useState(false);
+  const toggleTerminal = useCallback(() => {
+    setTerminalMounted(true);
+    setTerminalOpen((open) => !open);
+  }, []);
+  const hideTerminal = useCallback(() => setTerminalOpen(false), []);
+  useEffect(
+    () =>
+      subscribe((message) => {
+        if (message.type === 'ToggleTerminal') toggleTerminal();
+      }),
+    [toggleTerminal],
+  );
+  useEffect(() => {
+    document.documentElement.style.setProperty(
+      '--text-scale',
+      (chat.snapshot?.desktop?.textSize ?? chat.snapshot?.textSize) === 'larger'
+        ? '1.24'
+        : (chat.snapshot?.desktop?.textSize ?? chat.snapshot?.textSize) === 'large'
+          ? '1.12'
+          : '1',
+    );
+  }, [chat.snapshot?.desktop?.textSize, chat.snapshot?.textSize]);
   const { snapshot, busy } = chat;
   const resources = useHostResources(snapshot);
   const [setupOpen, setSetupOpen] = useState(false);
@@ -31,11 +67,13 @@ export function App() {
   );
   const title =
     snapshot?.desktop?.sessions.find((session) => session.id === snapshot.conversationId)?.title ??
-    'New session';
+    t('New session');
   const preferences = useCallback(() => {
-    if (isDesktop) resources.setPreferences(true);
-    else send({ type: 'OpenSettings' });
-  }, [resources.setPreferences]);
+    if (isDesktop) {
+      resources.setPreferencesTab('provider');
+      resources.setPreferences(true);
+    } else send({ type: 'OpenSettings' });
+  }, [resources.setPreferences, resources.setPreferencesTab]);
   const openPalette = useCallback(() => setPaletteOpen(true), []);
   const closeInspector = useCallback(
     () => resources.setInspectorOpen(false),
@@ -68,6 +106,21 @@ export function App() {
   useEffect(() => {
     const keyboard = (event: KeyboardEvent) => {
       if (!(event.metaKey || event.ctrlKey)) return;
+      if (
+        isDesktop &&
+        ((event.shiftKey && event.code === 'KeyT') || (event.ctrlKey && event.code === 'Backquote'))
+      ) {
+        event.preventDefault();
+        toggleTerminal();
+      }
+      if (
+        event.target instanceof Element &&
+        event.target.closest('.xterm') &&
+        event.ctrlKey &&
+        !event.metaKey &&
+        !event.shiftKey
+      )
+        return;
       if (event.key.toLowerCase() === 'k') {
         event.preventDefault();
         setPaletteOpen((open) => !open);
@@ -85,7 +138,7 @@ export function App() {
         resources.setInspectorOpen(true);
         resources.setInspectorTab('files');
         requestAnimationFrame(() =>
-          document.querySelector<HTMLInputElement>('[aria-label="Search project files"]')?.focus(),
+          document.querySelector<HTMLInputElement>('[data-file-search]')?.focus(),
         );
       }
       if (isDesktop && event.key.toLowerCase() === 'j') {
@@ -95,7 +148,7 @@ export function App() {
     };
     window.addEventListener('keydown', keyboard);
     return () => window.removeEventListener('keydown', keyboard);
-  }, [preferences, resources.setInspectorOpen, resources.setInspectorTab]);
+  }, [preferences, resources.setInspectorOpen, resources.setInspectorTab, toggleTerminal]);
   const closeSetup = () => {
     setSetupOpen(false);
     setSetupDismissed(true);
@@ -103,10 +156,12 @@ export function App() {
   return (
     <div className={isDesktop ? 'desktop-frame' : 'extension-frame'}>
       {isDesktop && (
-        <div className="native-titlebar">
-          <span>KOVA</span>
-          <span className="native-titlebar-caption">A workspace for what’s next</span>
-        </div>
+        <WindowTitlebar
+          desktop={snapshot?.desktop}
+          terminalOpen={terminalOpen}
+          onTerminal={toggleTerminal}
+          onCommands={openPalette}
+        />
       )}
       <main
         className={`workspace ${isDesktop ? 'desktop-workspace' : 'extension-workspace'}`}
@@ -128,8 +183,8 @@ export function App() {
                 <>
                   <button
                     className="icon-button"
-                    aria-label="Toggle sidebar"
-                    title="Toggle sidebar"
+                    aria-label={t('Toggle sidebar')}
+                    title={t('Toggle sidebar')}
                     onClick={() => setSidebarOpen((open) => !open)}
                   >
                     <Icon name="panelLeft" size={16} />
@@ -143,14 +198,14 @@ export function App() {
                   </span>
                   <span className="breadcrumb-divider">/</span>
                   <span className="breadcrumb-session" title={title}>
-                    {title}
+                    {title === 'New session' ? t('New session') : title}
                   </span>
                 </>
               ) : (
                 <>
                   <img className="brand-logo" src={logo} alt="" />
                   <strong>Kova</strong>
-                  <span className="extension-caption">Coding workspace</span>
+                  <span className="extension-caption">{t('Coding workspace')}</span>
                 </>
               )}
             </div>
@@ -163,13 +218,13 @@ export function App() {
                   if (scroller.current) scroller.current.scrollTop = 0;
                 }}
               >
-                Setup
+                {t('Setup')}
               </button>
               {!isDesktop && (
                 <button
                   className="icon-button"
-                  title="New conversation"
-                  aria-label="New conversation"
+                  title={t('New conversation')}
+                  aria-label={t('New conversation')}
                   disabled={busy}
                   onClick={() => send({ type: 'NewConversation' })}
                 >
@@ -178,8 +233,8 @@ export function App() {
               )}
               <button
                 className="icon-button"
-                title="Commands and sessions"
-                aria-label="Commands and sessions"
+                title={t('Commands and sessions')}
+                aria-label={t('Commands and sessions')}
                 onClick={() => setPaletteOpen(true)}
               >
                 <Icon name="command" size={16} />
@@ -187,8 +242,8 @@ export function App() {
               {isDesktop ? (
                 <button
                   className={`icon-button ${resources.inspectorOpen ? 'active' : ''}`}
-                  title="Toggle project panel"
-                  aria-label="Toggle project panel"
+                  title={t('Toggle project panel')}
+                  aria-label={t('Toggle project panel')}
                   onClick={() => resources.setInspectorOpen((open) => !open)}
                 >
                   <Icon name="panelRight" size={16} />
@@ -196,8 +251,8 @@ export function App() {
               ) : (
                 <button
                   className="icon-button"
-                  title="Settings"
-                  aria-label="Settings"
+                  title={t('Settings')}
+                  aria-label={t('Settings')}
                   onClick={preferences}
                 >
                   <Icon name="settings" size={16} />
@@ -255,23 +310,34 @@ export function App() {
               onModeChange={chat.setMode}
             />
           )}
+          {isDesktop && terminalMounted && (
+            <Suspense fallback={<div className="terminal-loading">{t('Opening terminal…')}</div>}>
+              <TerminalPanel
+                root={snapshot?.desktop?.workspacePath ?? null}
+                visible={terminalOpen}
+                theme={snapshot?.desktop?.theme ?? 'dark'}
+                textSize={snapshot?.desktop?.textSize ?? 'standard'}
+                onHide={hideTerminal}
+              />
+            </Suspense>
+          )}
           {isDesktop && (
             <div className="workspace-status">
               <span>
                 <Icon name="shield" size={12} />
                 {snapshot?.desktop?.workspacePath
-                  ? 'Project boundaries enforced'
-                  : 'Open a project to enable tools'}
+                  ? t('Project boundaries enforced')
+                  : t('Open a project to enable tools')}
               </span>
               <span>
                 <span
                   className={`status-dot ${snapshot?.providerStatus === 'Available' ? 'online' : ''}`}
                 />
                 {busy
-                  ? 'Working'
+                  ? t('Working')
                   : snapshot?.providerStatus === 'Available'
-                    ? 'Ready'
-                    : 'Not connected'}
+                    ? t('Ready')
+                    : t('Not connected')}
               </span>
             </div>
           )}
@@ -296,6 +362,7 @@ export function App() {
         <ProviderPreferences
           desktop={snapshot.desktop}
           busy={busy}
+          initialTab={resources.preferencesTab}
           onClose={() => resources.setPreferences(false)}
         />
       )}
@@ -305,14 +372,15 @@ export function App() {
           busy={busy}
           onClose={() => setPaletteOpen(false)}
           onPreferences={preferences}
+          onToggleTerminal={toggleTerminal}
           onTogglePanel={() => resources.setInspectorOpen((open) => !open)}
         />
       )}
       {resources.notice && (
         <div className="toast" role="status">
           <Icon name="help" size={16} />
-          <span>{resources.notice}</span>
-          <button aria-label="Dismiss notification" onClick={() => resources.setNotice('')}>
+          <span>{t(resources.notice)}</span>
+          <button aria-label={t('Dismiss notification')} onClick={() => resources.setNotice('')}>
             <Icon name="close" size={14} />
           </button>
         </div>

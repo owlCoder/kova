@@ -10,6 +10,26 @@ export type HostMessage = {
   readonly workspaceId: string | null;
 } & (
   | {
+      readonly type: 'WindowState';
+      readonly maximized: boolean;
+      readonly fullscreen: boolean;
+      readonly focused: boolean;
+    }
+  | { readonly type: 'ToggleTerminal' }
+  | {
+      readonly type: 'TerminalOpened';
+      readonly terminalId: string;
+      readonly root: string;
+      readonly shell: string;
+      readonly buffer: string;
+    }
+  | { readonly type: 'TerminalData'; readonly terminalId: string; readonly data: string }
+  | {
+      readonly type: 'TerminalClosed';
+      readonly terminalId: string;
+      readonly exitCode: number | null;
+    }
+  | {
       readonly type: 'WorkspaceSearchResults';
       readonly query: string;
       readonly entries: readonly WorkspaceEntry[];
@@ -37,7 +57,7 @@ export type HostMessage = {
       readonly models: readonly ModelInfo[];
       readonly error: string | null;
     }
-  | { readonly type: 'OpenPreferences' }
+  | { readonly type: 'OpenPreferences'; readonly section?: 'provider' | 'appearance' | 'about' }
   | { readonly type: 'Notice'; readonly message: string }
   | { readonly type: 'Snapshot'; readonly requestId: string; readonly snapshot: SessionSnapshot }
   | { readonly type: 'Event'; readonly runId: string | null; readonly event: PresentationEvent }
