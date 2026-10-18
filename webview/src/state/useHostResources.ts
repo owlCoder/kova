@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { HostMessage } from '../../../packages/protocol/src/HostMessage.js';
 import type { SessionSnapshot } from '../../../packages/protocol/src/SessionSnapshot.js';
 import { isDesktop, send, subscribe } from '../messaging/bridge.js';
@@ -15,7 +15,25 @@ export function useHostResources(snapshot: SessionSnapshot | null) {
   const [preferencesTab, setPreferencesTab] = useState<'provider' | 'appearance' | 'about'>(
     'provider',
   );
-  const [preferences, setPreferences] = useState(false);
+  const [preferences, updatePreferences] = useState(false);
+  // Capture the opener before the lazy settings module loads and the workspace becomes inert.
+  const preferenceFocus = useRef<{ open: boolean; element: HTMLElement | null }>({
+    open: false,
+    element: null,
+  });
+  const setPreferences = useCallback((open: boolean) => {
+    if (open && !preferenceFocus.current.open)
+      preferenceFocus.current.element =
+        document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    preferenceFocus.current.open = open;
+    updatePreferences(open);
+    if (!open)
+      requestAnimationFrame(() => {
+        const element = preferenceFocus.current.element;
+        if (element?.isConnected && !element.closest('[inert]'))
+          element.focus({ preventScroll: true });
+      });
+  }, []);
   const [notice, setNotice] = useState('');
   const [inspectorOpen, setInspectorOpen] = useState(true);
   const [inspectorTab, setInspectorTab] = useState<'files' | 'changes' | 'activity'>('files');
@@ -82,7 +100,7 @@ export function useHostResources(snapshot: SessionSnapshot | null) {
           setInspectorTab('changes');
         }
       }),
-    [root],
+    [root, setPreferences],
   );
   useEffect(() => {
     current.current.autoDirectory = null;

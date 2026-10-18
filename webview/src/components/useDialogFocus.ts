@@ -12,6 +12,7 @@ export function useDialogFocus(
   locked.current = preventClose;
   useEffect(() => {
     const opener = document.activeElement;
+    const container = dialog.current;
     const controls = () =>
       [
         ...(dialog.current?.querySelectorAll<HTMLElement>(
@@ -52,6 +53,14 @@ export function useDialogFocus(
       cancelAnimationFrame(frame);
       document.removeEventListener('keydown', trap);
       requestAnimationFrame(() => {
+        // Preserve deliberate focus transfers, such as a palette opening conversation search.
+        const focused = document.activeElement;
+        if (
+          focused !== document.body &&
+          focused !== document.documentElement &&
+          !container?.contains(focused)
+        )
+          return;
         if (opener instanceof HTMLElement && opener.isConnected && !opener.closest('[inert]'))
           opener.focus({ preventScroll: true });
       });
