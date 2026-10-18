@@ -71,7 +71,7 @@ Run `npm run desktop:build` and `npm run desktop:verify` to check packaged CSP, 
 
 The Desktop builds workflow runs checks and creates installers on macOS, Windows and Linux. A successful installer build is not evidence of native UI behavior; each OS still needs the manual workflow before claiming native interaction verification. Cloud-provider tests use fixture responses; live cloud credentials are not available in deterministic CI. Unsigned artifacts are for development/review until release signing is configured.
 
-Terminal regression tests start a real PTY on the native runner, verify project cwd and TTY status, resize, reattach, Ctrl+C and shell cleanup on project changes. Localization tests check matching Serbian/German catalogs, interpolation, English fallback, preference migration and invalid terminal/window/language requests. Native interface smoke checks cover all three languages, large typography, About content and actual terminal execution; repeat against the packaged app to verify native binaries outside ASAR.
+Terminal regression tests start a real PTY on the native runner, wait for PowerShell’s initial prompt before sending commands on Windows, verify project cwd and TTY status, resize, reattach, Ctrl+C and shell cleanup on project changes. Localization tests check matching Serbian/German catalogs, interpolation, English fallback, preference migration and invalid terminal/window/language requests. Native interface smoke checks cover all three languages, large typography, About content and actual terminal execution; repeat against the packaged app to verify native binaries outside ASAR.
 
 ## Conversation tools and draft recovery
 

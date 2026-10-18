@@ -39,85 +39,101 @@ const output = () =>
       .join(''),
   ).replaceAll('\r', '');
 
+/** PowerShell cold startup on a shared Windows runner can outlast the command assertion. */
+async function openTerminal(cols: number, rows: number) {
+  terminal.open(root, cols, rows);
+  const opened = messages.find((message) => message.type === 'TerminalOpened');
+  if (!opened || opened.type !== 'TerminalOpened') throw new Error('Terminal did not open');
+  if (process.platform === 'win32')
+    await vi.waitFor(() => expect(output()).toMatch(/PS [^\r\n]+>/), { timeout: 15_000 });
+  return opened;
+}
+
 describe('user-operated desktop PTY', () => {
-  it('reports a natural shell exit and can open a fresh terminal afterward', async () => {
-    terminal.open(root, 80, 24);
-    const opened = messages.find((message) => message.type === 'TerminalOpened')!;
-    if (opened.type !== 'TerminalOpened') throw new Error('No terminal');
-    terminal.input(opened.terminalId, 'exit\r');
-    await vi.waitFor(
-      () =>
-        expect(messages).toContainEqual({
-          type: 'TerminalClosed',
-          terminalId: opened.terminalId,
-          exitCode: 0,
-        }),
-      { timeout: 7000 },
-    );
-    expect(() => terminal.input(opened.terminalId, 'echo stale\r')).toThrow('no longer active');
-    terminal.open(root, 80, 24);
-    const next = messages.filter((message) => message.type === 'TerminalOpened').at(-1)!;
-    expect(next.terminalId).not.toBe(opened.terminalId);
-  });
+  it(
+    'reports a natural shell exit and can open a fresh terminal afterward',
+    { timeout: 30_000 },
+    async () => {
+      const opened = await openTerminal(80, 24);
+      terminal.input(opened.terminalId, 'exit\r');
+      await vi.waitFor(
+        () =>
+          expect(messages).toContainEqual({
+            type: 'TerminalClosed',
+            terminalId: opened.terminalId,
+            exitCode: 0,
+          }),
+        { timeout: 7000 },
+      );
+      expect(() => terminal.input(opened.terminalId, 'echo stale\r')).toThrow('no longer active');
+      terminal.open(root, 80, 24);
+      const next = messages.filter((message) => message.type === 'TerminalOpened').at(-1)!;
+      expect(next.terminalId).not.toBe(opened.terminalId);
+    },
+  );
 
-  it('runs a real interactive shell in the project, supports resize and reattaches without a new process', async () => {
-    terminal.open(root, 80, 24);
-    const opened = messages.find((message) => message.type === 'TerminalOpened');
-    expect(opened?.type).toBe('TerminalOpened');
-    if (!opened || opened.type !== 'TerminalOpened') throw new Error('Terminal did not open');
-    terminal.input(
-      opened.terminalId,
-      "node -e \"console.log('PTY_CWD:'+process.cwd());console.log('PTY_TTY:'+process.stdout.isTTY)\"\r",
-    );
-    await vi.waitFor(() => expect(output()).toContain('PTY_TTY:true'), { timeout: 7000 });
-    expect(output()).toContain(`PTY_CWD:${root}`);
-    terminal.resize(opened.terminalId, 100, 30);
-    terminal.input(
-      opened.terminalId,
-      "node -e \"console.log('PTY_SIZE:'+process.stdout.columns+':'+process.stdout.rows)\"\r",
-    );
-    await vi.waitFor(() => expect(output()).toContain('PTY_SIZE:100:30'), { timeout: 7000 });
-    terminal.open(root, 90, 28);
-    const replay = messages.filter((message) => message.type === 'TerminalOpened').at(-1);
-    expect(replay?.terminalId).toBe(opened.terminalId);
-    expect(replay?.buffer).toContain('PTY_TTY:true');
-    terminal.syncWorkspace(null);
-    expect(() => terminal.input(opened.terminalId, 'echo stale\r')).toThrow('no longer active');
-  });
+  it(
+    'runs a real interactive shell in the project, supports resize and reattaches without a new process',
+    { timeout: 30_000 },
+    async () => {
+      const opened = await openTerminal(80, 24);
+      terminal.input(
+        opened.terminalId,
+        "node -e \"console.log('PTY_CWD:'+process.cwd());console.log('PTY_TTY:'+process.stdout.isTTY)\"\r",
+      );
+      await vi.waitFor(() => expect(output()).toContain('PTY_TTY:true'), { timeout: 7000 });
+      expect(output()).toContain(`PTY_CWD:${root}`);
+      terminal.resize(opened.terminalId, 100, 30);
+      terminal.input(
+        opened.terminalId,
+        "node -e \"console.log('PTY_SIZE:'+process.stdout.columns+':'+process.stdout.rows)\"\r",
+      );
+      await vi.waitFor(() => expect(output()).toContain('PTY_SIZE:100:30'), { timeout: 7000 });
+      terminal.open(root, 90, 28);
+      const replay = messages.filter((message) => message.type === 'TerminalOpened').at(-1);
+      expect(replay?.terminalId).toBe(opened.terminalId);
+      expect(replay?.buffer).toContain('PTY_TTY:true');
+      terminal.syncWorkspace(null);
+      expect(() => terminal.input(opened.terminalId, 'echo stale\r')).toThrow('no longer active');
+    },
+  );
 
-  it('honors Ctrl+C without killing the shell and closes it on project changes', async () => {
-    terminal.open(root, 100, 30);
-    const opened = messages.find((message) => message.type === 'TerminalOpened')!;
-    if (opened.type !== 'TerminalOpened') throw new Error('No terminal');
-    terminal.input(
-      opened.terminalId,
-      "node -e \"setInterval(()=>require('fs').writeFileSync('pty-running','ready'),100)\"\r",
-    );
-    await vi.waitFor(
-      async () => expect(await readFile(join(root, 'pty-running'), 'utf8')).toBe('ready'),
-      { timeout: 7000 },
-    );
-    const beforeInterrupt = output().length;
-    terminal.input(opened.terminalId, '\u0003');
-    // PowerShell clears queued input while handling Ctrl+C; wait for its new prompt.
-    if (process.platform === 'win32')
-      await vi.waitFor(() => expect(output().slice(beforeInterrupt)).toMatch(/PS [^\r\n]+>/), {
-        timeout: 7000,
-      });
-    terminal.input(
-      opened.terminalId,
-      "node -e \"require('fs').writeFileSync('pty-alive','after-interrupt')\"\r",
-    );
-    await vi.waitFor(
-      async () => expect(await readFile(join(root, 'pty-alive'), 'utf8')).toBe('after-interrupt'),
-      { timeout: 7000 },
-    );
-    terminal.syncWorkspace(root + '-different');
-    expect(
-      messages.some(
-        (message) => message.type === 'TerminalClosed' && message.terminalId === opened.terminalId,
-      ),
-    ).toBe(true);
-    expect(() => terminal.resize(opened.terminalId, 80, 24)).toThrow();
-  });
+  it(
+    'honors Ctrl+C without killing the shell and closes it on project changes',
+    { timeout: 40_000 },
+    async () => {
+      const opened = await openTerminal(100, 30);
+      terminal.input(
+        opened.terminalId,
+        "node -e \"setInterval(()=>require('fs').writeFileSync('pty-running','ready'),100)\"\r",
+      );
+      await vi.waitFor(
+        async () => expect(await readFile(join(root, 'pty-running'), 'utf8')).toBe('ready'),
+        { timeout: 7000 },
+      );
+      const beforeInterrupt = output().length;
+      terminal.input(opened.terminalId, '\u0003');
+      // PowerShell clears queued input while handling Ctrl+C; wait for its new prompt.
+      if (process.platform === 'win32')
+        await vi.waitFor(() => expect(output().slice(beforeInterrupt)).toMatch(/PS [^\r\n]+>/), {
+          timeout: 7000,
+        });
+      terminal.input(
+        opened.terminalId,
+        "node -e \"require('fs').writeFileSync('pty-alive','after-interrupt')\"\r",
+      );
+      await vi.waitFor(
+        async () => expect(await readFile(join(root, 'pty-alive'), 'utf8')).toBe('after-interrupt'),
+        { timeout: 7000 },
+      );
+      terminal.syncWorkspace(root + '-different');
+      expect(
+        messages.some(
+          (message) =>
+            message.type === 'TerminalClosed' && message.terminalId === opened.terminalId,
+        ),
+      ).toBe(true);
+      expect(() => terminal.resize(opened.terminalId, 80, 24)).toThrow();
+    },
+  );
 });

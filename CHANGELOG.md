@@ -8,7 +8,7 @@
 - Load library code, styles and recent-message indexing only when opened. Cache normalized search text and defer filtering so typing remains responsive. Remove the old always-mounted prompt list.
 - Add host-confirmed clipboard feedback for messages, code, context previews and diagnostics, plus a clear selection-copy hint for oversized content. Clipboard listeners exist only while a copy is pending.
 - Extend Kova's visual language into the library, with compact icon navigation, themed surfaces, large-text support, keyboard focus and English, Serbian Latin and German copy.
-- Expand regression and installed-VSIX smoke coverage for library persistence, concurrent edits, context isolation and clipboard acknowledgments, and document storage and resource boundaries.
+- Expand regression and installed-VSIX smoke coverage for library persistence, concurrent edits, context isolation and clipboard acknowledgments, wait for PowerShell readiness in Windows terminal fixtures, and document storage and resource boundaries.
 
 ## 0.8.0
 
