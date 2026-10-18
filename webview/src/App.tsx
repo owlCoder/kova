@@ -64,6 +64,8 @@ function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [findOpen, setFindOpen] = useState(false);
   const openFind = useCallback(() => {
+    setSetupOpen(false);
+    setSetupDismissed(true);
     setFindOpen(true);
     requestAnimationFrame(() =>
       document.querySelector<HTMLInputElement>('.conversation-search input')?.focus(),
