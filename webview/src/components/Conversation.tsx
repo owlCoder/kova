@@ -2,7 +2,7 @@ import { useI18n } from '../i18n/I18n.js';
 import type { SessionSnapshot } from '../../../packages/protocol/src/SessionSnapshot.js';
 import { send } from '../messaging/bridge.js';
 import { Icon } from './Icon.js';
-import { MessageContent } from './MessageContent.js';
+import { ConversationMessage } from './ConversationMessage.js';
 
 type Activity = { id: number; text: string; error: boolean };
 export function Conversation({
@@ -21,45 +21,14 @@ export function Conversation({
   return (
     <div className="thread">
       {snapshot.messages.map((message) => (
-        <article className={`message ${message.role}`} key={message.id}>
-          <div className="message-label">
-            <span className={`avatar ${message.role}`}>
-              <Icon name={message.role === 'user' ? 'chat' : 'sparkles'} size={14} />
-            </span>
-            <strong>{message.role === 'user' ? t('You') : 'Kova'}</strong>
-            {message.partial && (
-              <span className="muted">{busy ? t('Working…') : t('Partial response')}</span>
-            )}
-            {!!message.content && (
-              <button
-                className="message-copy"
-                title={t('Copy message')}
-                aria-label={t('Copy message')}
-                onClick={() => send({ type: 'CopyText', text: message.content })}
-              >
-                <Icon name="copy" size={13} />
-              </button>
-            )}
-          </div>
-          {thinking[message.id] && (
-            <details className="thinking">
-              <summary>
-                <Icon name="sparkles" size={13} />
-                {t('Reasoning')}
-              </summary>
-              <pre>{thinking[message.id]}</pre>
-            </details>
-          )}
-          <MessageContent text={message.content} />
-          {message.partial && busy && !message.content && !thinking[message.id] && (
-            <div className="generating">
-              <span />
-              <span />
-              <span />
-              <small>{t('Thinking through your request')}</small>
-            </div>
-          )}
-        </article>
+        <ConversationMessage
+          key={message.id}
+          role={message.role}
+          content={message.content}
+          partial={message.partial}
+          working={message.partial && busy}
+          reasoning={thinking[message.id] ?? ''}
+        />
       ))}
       {!!activities.length && (
         <details className="activity" open={Boolean(approval) || busy}>

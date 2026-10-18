@@ -3,11 +3,16 @@ import type { AgentMode } from '../../../packages/protocol/src/AgentMode.js';
 import type { HostMessage } from '../../../packages/protocol/src/HostMessage.js';
 import type { SessionSnapshot } from '../../../packages/protocol/src/SessionSnapshot.js';
 import { send, subscribe } from '../messaging/bridge.js';
+import { useComposerDraft } from './useComposerDraft.js';
 import { activityText, applyEvent } from './presentation.js';
 
 export function useChat() {
   const [snapshot, setSnapshot] = useState<SessionSnapshot | null>(null);
-  const [prompt, setPrompt] = useState('');
+  const { prompt, setPrompt, getPrompt } = useComposerDraft(
+    snapshot?.conversationId,
+    snapshot?.draft ?? '',
+  );
+  const pendingSubmit = useRef<{ id: string; text: string; conversationId: string } | null>(null);
   const [model, setModel] = useState('qwen3:4b');
   const [mode, setMode] = useState<AgentMode>('Manual');
   const [activities, setActivities] = useState<{ id: number; text: string; error: boolean }[]>([]);
@@ -17,6 +22,7 @@ export function useChat() {
   const serial = useRef({ session: '', sequence: 0 });
   const hostSelection = useRef<{ modelId: string; mode: AgentMode } | null>(null);
   const active = useRef<string | null>(null);
+  const currentConversation = useRef('');
   const retired = useRef(new Set<string>());
 
   useEffect(() => {
@@ -40,6 +46,7 @@ export function useChat() {
       }
       serial.current.sequence = data.sequence;
       if (data.type === 'Snapshot') {
+        currentConversation.current = data.snapshot.conversationId;
         if (active.current && active.current !== data.snapshot.activeRunId)
           retired.current.add(active.current);
         if (retired.current.size > 200)
@@ -75,11 +82,19 @@ export function useChat() {
           setError('');
         setSubmitting(false);
       } else if (data.type === 'Rejected') {
+        if (pendingSubmit.current?.id === data.requestId) {
+          if (pendingSubmit.current.conversationId === currentConversation.current && !getPrompt())
+            setPrompt(pendingSubmit.current.text);
+          pendingSubmit.current = null;
+        }
         setError(data.message);
         setSubmitting(false);
         send({ type: 'Ready' });
       } else if (data.type === 'Accepted') {
-        setSubmitting(false);
+        if (pendingSubmit.current?.id === data.requestId) {
+          pendingSubmit.current = null;
+          setSubmitting(false);
+        }
         if (data.runId && !retired.current.has(data.runId)) {
           active.current = data.runId;
           setSnapshot((previous) =>
@@ -133,7 +148,7 @@ export function useChat() {
     const unsubscribe = subscribe(listener);
     send({ type: 'Ready' });
     return unsubscribe;
-  }, []);
+  }, [getPrompt, setPrompt]);
 
   const busy =
     submitting || Boolean(snapshot?.activeRunId) || Boolean(snapshot?.configuringProvider);
@@ -150,7 +165,7 @@ export function useChat() {
         { id: crypto.randomUUID(), role: 'user', content: prompt, partial: false },
       ],
     });
-    send({
+    const id = send({
       type: 'SubmitPrompt',
       prompt,
       modelId: model,
@@ -158,6 +173,7 @@ export function useChat() {
       skillId: snapshot.activeSkillId,
       attachmentIds: snapshot.contextAttachments.map((item) => item.id),
     });
+    pendingSubmit.current = { id, text: prompt, conversationId: snapshot.conversationId };
     setPrompt('');
   };
   return {

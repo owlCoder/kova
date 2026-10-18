@@ -72,3 +72,9 @@ Run `npm run desktop:build` and `npm run desktop:verify` to check packaged CSP, 
 The Desktop builds workflow runs checks and creates installers on macOS, Windows and Linux. A successful installer build is not evidence of native UI behavior; each OS still needs the manual workflow before claiming native interaction verification. Cloud-provider tests use fixture responses; live cloud credentials are not available in deterministic CI. Unsigned artifacts are for development/review until release signing is configured.
 
 Terminal regression tests start a real PTY on the native runner, verify project cwd and TTY status, resize, reattach, Ctrl+C and shell cleanup on project changes. Localization tests check matching Serbian/German catalogs, interpolation, English fallback, preference migration and invalid terminal/window/language requests. Native interface smoke checks cover all three languages, large typography, About content and actual terminal execution; repeat against the packaged app to verify native binaries outside ASAR.
+
+## Conversation tools and draft recovery
+
+Search tests cover literal regex characters, Unicode/emoji offsets and bounded result sets. Native UI checks verify matches in prose and code, forward/backward keyboard navigation, Escape focus return and both themes. Export checks verify native Markdown save/clipboard behavior and exclude tool/system/repair entries; active or stale-session exports are rejected.
+
+Draft tests cover persistence across new store/extension instances, isolation, bounds, clearing the consumed prompt and preserving a newer draft during submission. Native VSIX smoke checks include workspace draft storage and Markdown export. Set `KOVA_SMOKE_PROVIDER_URL` to a synthetic local Ollama endpoint to run the native extension checks without downloading a real model; omit it for the default local Ollama installation.

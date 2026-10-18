@@ -16,6 +16,8 @@ export function validateMessage(raw: unknown): WebviewMessage {
     SubmitPrompt: ['prompt', 'modelId', 'mode', 'skillId', 'attachmentIds'],
     CancelRun: ['runId'],
     NewConversation: [],
+    UpdateDraft: ['conversationId', 'prompt'],
+    ExportConversation: ['conversationId', 'action'],
     SelectSkill: ['skillId'],
     AddContext: ['source'],
     RemoveContext: ['attachmentId'],
@@ -47,6 +49,18 @@ export function validateMessage(raw: unknown): WebviewMessage {
     (typeof value.skillId !== 'string' || !/^[a-z0-9][a-z0-9-]{0,63}$/.test(value.skillId))
   )
     throw new Error('Invalid skill ID.');
+  if (
+    'conversationId' in value &&
+    (typeof value.conversationId !== 'string' || !/^[a-f0-9-]{36}$/.test(value.conversationId))
+  )
+    throw new Error('Invalid conversation ID.');
+  if (
+    value.type === 'UpdateDraft' &&
+    (typeof value.prompt !== 'string' || value.prompt.length > 16_000)
+  )
+    throw new Error('Draft exceeds the 16,000 character limit.');
+  if (value.type === 'ExportConversation' && !['save', 'copy'].includes(value.action as string))
+    throw new Error('Invalid export action.');
   if (
     value.type === 'SubmitPrompt' &&
     (typeof value.prompt !== 'string' ||

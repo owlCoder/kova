@@ -253,7 +253,15 @@ export function ChatFooter({
           className={`status-dot ${snapshot?.providerStatus === 'Available' ? 'online' : ''}`}
         />
         {snapshot?.toolsEnabled ? t('Workspace tools ready') : t('Chat mode')}
-        <span>{t('Shift + Enter for a new line')}</span>
+        <span>
+          {prompt ? (
+            <>
+              <Icon name="pencil" size={11} /> {t('Draft')}
+            </>
+          ) : (
+            t('Shift + Enter for a new line')
+          )}
+        </span>
       </div>
     </footer>
   );

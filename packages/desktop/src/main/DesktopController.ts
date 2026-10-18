@@ -15,6 +15,7 @@ import { discoverProviderModels } from '../../../runtime/src/providers/discoverP
 import type { ProviderConfiguration } from '../../../runtime/src/providers/ProviderConfiguration.js';
 import { DesktopSession } from './DesktopSession.js';
 import { validateDesktopMessage } from './validateDesktopMessage.js';
+import { exportTranscript } from './exportTranscript.js';
 
 export class DesktopController {
   readonly terminal = new DesktopTerminal((message) => this.session.send(message));
@@ -49,6 +50,25 @@ export class DesktopController {
   private async route(message: WebviewMessage): Promise<void> {
     const session = this.session;
     switch (message.type) {
+      case 'UpdateDraft':
+        if (
+          message.conversationId === session.conversationId ||
+          session.store.list().some((item) => item.id === message.conversationId)
+        )
+          await session.store.updateDraft(message.conversationId, message.prompt);
+        return;
+      case 'ExportConversation': {
+        const transcript = await session.exportTranscript(message.conversationId);
+        if (await exportTranscript(this.window, transcript, message.action))
+          session.send({
+            type: 'Notice',
+            message:
+              message.action === 'copy'
+                ? 'Conversation copied as Markdown.'
+                : 'Conversation exported.',
+          });
+        return;
+      }
       case 'OpenTerminal':
         this.terminal.open(this.root(), message.cols, message.rows);
         return;

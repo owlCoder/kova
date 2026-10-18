@@ -20,6 +20,7 @@ import { WorkspaceProjectInstructions } from '../../../runtime/src/adapters/Work
 import { StreamEventBuffer } from '../../../runtime/src/presentation/StreamEventBuffer.js';
 import { projectEvent, approvalView } from '../../../runtime/src/presentation/projectEvent.js';
 import { projectConversationMessages } from '../../../runtime/src/presentation/projectConversationMessages.js';
+import { conversationMarkdown } from '../../../runtime/src/presentation/conversationMarkdown.js';
 import type { DesktopStore } from '../state/DesktopStore.js';
 import type { DesktopKeyStore } from '../state/DesktopKeyStore.js';
 import { DesktopApprovalPort } from './DesktopApprovalPort.js';
@@ -155,6 +156,7 @@ export class DesktopSession {
     const selected = this.models.find((model) => model.id === this.selectedModel);
     const snapshot: SessionSnapshot = {
       conversationId: this.conversationId,
+      draft: this.store.getDraft(this.conversationId),
       activeRunId: this.activeRun?.id ?? null,
       state: this.state,
       mode: this.mode,
@@ -229,6 +231,17 @@ export class DesktopSession {
       await this.snapshot('workspace');
     }
   }
+  async exportTranscript(id: string): Promise<string> {
+    this.requireIdle();
+    if (id !== this.conversationId) throw new Error('This session is no longer selected.');
+    const conversation = await this.store.get(id);
+    this.requireIdle();
+    if (id !== this.conversationId) throw new Error('This session is no longer selected.');
+    return conversationMarkdown(
+      projectConversationMessages(conversation?.entries ?? [], this.partial, null, null),
+      { provider: this.store.preferences.provider.label, model: this.selectedModel },
+    );
+  }
   async newConversation(): Promise<void> {
     this.requireIdle();
     this.changing = true;
@@ -284,6 +297,7 @@ export class DesktopSession {
       if (settings.thinking && model.thinking !== 'Supported')
         throw new Error('Disable thinking for this model in provider settings.');
       const provider = await this.providers.forConversation(this.conversationId);
+      await this.store.updateDraft(this.conversationId, '', message.prompt);
       const cancellation = new CancellationSource();
       const runId = randomUUID();
       const agent = new ChatAgent(

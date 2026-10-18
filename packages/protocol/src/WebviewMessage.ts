@@ -18,6 +18,12 @@ export type WebviewMessage = {
     }
   | { readonly type: 'CancelRun'; readonly runId: string }
   | { readonly type: 'NewConversation' }
+  | { readonly type: 'UpdateDraft'; readonly conversationId: string; readonly prompt: string }
+  | {
+      readonly type: 'ExportConversation';
+      readonly conversationId: string;
+      readonly action: 'save' | 'copy';
+    }
   | { readonly type: 'SelectSkill'; readonly skillId: string | null }
   | { readonly type: 'AddContext'; readonly source: 'Selection' | 'CurrentFile' | 'PickFiles' }
   | { readonly type: 'RemoveContext'; readonly attachmentId: string }

@@ -25,6 +25,7 @@ try {
       'telemetry.telemetryLevel': 'off',
       'workbench.startupEditor': 'none',
       'chat.disableAIFeatures': true,
+      'kova.ollama.baseUrl': process.env.KOVA_SMOKE_PROVIDER_URL ?? 'http://127.0.0.1:11434',
     }),
   );
   const executable =

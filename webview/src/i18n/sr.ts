@@ -1,4 +1,22 @@
 export const sr: Readonly<Record<string, string>> = {
+  'Find in conversation': 'Pronađi u razgovoru',
+  'Find in conversation…': 'Pronađi u razgovoru…',
+  'Conversation actions': 'Radnje razgovora',
+  'Export Markdown…': 'Izvezi Markdown…',
+  'Copy conversation': 'Kopiraj razgovor',
+  'Exports include messages, without tool logs or reasoning.':
+    'Izvoz sadrži poruke, bez aktivnosti alata i razmišljanja.',
+  'Previous match (Shift+Enter)': 'Prethodni rezultat (Shift+Enter)',
+  'Next match (Enter)': 'Sledeći rezultat (Enter)',
+  'Close search': 'Zatvori pretragu',
+  'No matches': 'Nema rezultata',
+  'Find text': 'Pronađi tekst',
+  Draft: 'Nacrt',
+  'Your code. Your models. Your workspace.': 'Vaš kod. Vaši modeli. Vaš prostor.',
+  'Opening settings…': 'Otvaranje podešavanja…',
+  'Conversation copied as Markdown.': 'Razgovor je kopiran kao Markdown.',
+  'Conversation exported.': 'Razgovor je izvezen.',
+
   'Search models': 'Pretraži modele',
   'Search models…': 'Pretraži modele…',
   'Workspace tools': 'Alati projekta',

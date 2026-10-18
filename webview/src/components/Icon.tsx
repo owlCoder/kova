@@ -40,6 +40,8 @@ import {
   Type,
   Cpu,
   Brain,
+  ChevronUp,
+  Download,
 } from 'lucide-react';
 
 const icons = {
@@ -84,6 +86,8 @@ const icons = {
   type: Type,
   cpu: Cpu,
   brain: Brain,
+  up: ChevronUp,
+  download: Download,
 };
 export function Icon({
   name,

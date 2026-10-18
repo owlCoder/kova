@@ -49,6 +49,7 @@ Markdown supports lists, tables and fenced code. Code blocks and messages have c
 | Shortcut   | Action                      |
 | ---------- | --------------------------- |
 | Cmd/Ctrl+K | Commands and session search |
+| Cmd/Ctrl+F | Find in the conversation    |
 | Cmd/Ctrl+P | Search project files        |
 | Cmd/Ctrl+O | Open project                |
 | Cmd/Ctrl+N | New session                 |
@@ -62,6 +63,14 @@ The graphite/copper dark palette is shared by the interface, terminal and native
 
 The model chooser searches IDs and display names and shows discovered tool/context support. Use Up/Down and Enter to choose, or Escape to close. The provider model field also accepts a manual ID directly. Large catalogs show at most 80 matches; refine the query to find other models. Model choice controls do not request a model or send project content.
 
+## Conversation search, export and drafts
+
+Use **Cmd/Ctrl+F** or the header search button to find literal text in rendered conversation messages and code. Enter/Shift+Enter moves between matches; Escape closes search and returns focus to the composer. Search is limited to the current transcript, excludes tool activity and reasoning, and highlights up to 500 matches. Refine the query for larger results. Search does not send a request to your model or scan project files.
+
+The header's **Conversation actions** menu offers **Export Markdown…** and **Copy conversation**; export is also in the command palette. Stop the active run before exporting. The host captures the selected transcript and a native save dialog chooses the Markdown destination. Only user/assistant message content is exported, with an explicit partial-response marker when relevant; internal tool results, repair prompts and reasoning are omitted. Provider/model metadata describes the selection at export time.
+
+Unsent drafts are saved locally after a short typing pause, restored per session after reopening, and kept separate when switching projects or sessions. Up to 20 recent drafts are retained, each limited to 16,000 characters. A successful submission clears its matching draft; a newer draft typed during submission is preserved. Rejected submissions restore the prompt when the composer is still empty. Drafts are ordinary local application data and are not encrypted like API keys.
+
 ## Interactive terminal
 
 Use **Cmd/Ctrl+Shift+T**, **Ctrl+`**, the command palette or the title-bar terminal button. The panel starts your login shell on macOS/Linux and PowerShell on Windows in the current project. It supports interactive CLI applications, ANSI colors, Ctrl+C, clear, restart and drag/keyboard resizing. Hide preserves the process; Close terminates it. Changing projects or quitting closes the current shell.
@@ -72,7 +81,7 @@ Project `AGENTS.md`, `.kova/skills`, `.kova/mcp.json` and `.kova/hooks.json` wor
 
 ## Local data and keys
 
-Data lives in the platform's Electron user-data directory for `kova-desktop` (typically `~/Library/Application Support/kova-desktop` on macOS, `%APPDATA%/kova-desktop` on Windows and `~/.config/kova-desktop` on Linux). `settings.json` contains preferences, `session-index.json` contains metadata, and `sessions/<uuid>.json` contains history. Sessions load lazily; archiving hides a row and keeps its file. Back up this directory to retain history.
+Data lives in the platform's Electron user-data directory for `kova-desktop` (typically `~/Library/Application Support/kova-desktop` on macOS, `%APPDATA%/kova-desktop` on Windows and `~/.config/kova-desktop` on Linux). `drafts.json` contains the bounded unsent drafts, `settings.json` contains preferences, `session-index.json` contains metadata, and `sessions/<uuid>.json` contains history. Sessions load lazily; archiving hides a row and keeps its file. Back up this directory to retain history.
 
 `credentials.json` contains encrypted API keys scoped to provider type and endpoint. Electron safeStorage uses the OS credential system. If encryption is unavailable, including Linux `basic_text`, Kova keeps the key only in memory and displays a notice. No plaintext key is saved in ordinary settings or sent to the renderer. Removing a key removes it for that endpoint.
 

@@ -12,9 +12,18 @@ const fixture = vi.hoisted(() => ({
   chatBodies: [] as Record<string, unknown>[],
   logs: [] as string[],
   onboarding: new Map<string, boolean>(),
+  drafts: new Map<string, string>(),
+  clipboard: [] as string[],
 }));
 
 vi.mock('vscode', () => ({
+  env: {
+    clipboard: {
+      writeText: async (text: string) => {
+        fixture.clipboard.push(text);
+      },
+    },
+  },
   workspace: {
     getConfiguration: () => ({
       get: (key: string, fallback: unknown) => fixture.settings[key] ?? fallback,
@@ -58,6 +67,8 @@ beforeEach(() => {
   fixture.chatBodies = [];
   fixture.logs = [];
   fixture.onboarding.clear();
+  fixture.drafts.clear();
+  fixture.clipboard = [];
   vi.stubGlobal(
     'fetch',
     vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
@@ -80,6 +91,12 @@ beforeEach(() => {
   );
   session = new ChatSession(
     {
+      workspaceState: {
+        get: (key: string, fallback: string) => fixture.drafts.get(key) ?? fallback,
+        update: async (key: string, value: string) => {
+          fixture.drafts.set(key, value);
+        },
+      },
       globalState: {
         get: (key: string, fallback: boolean) => fixture.onboarding.get(key) ?? fallback,
         update: async (key: string, value: boolean) => {
@@ -134,6 +151,41 @@ const beginStream = async () => {
 };
 
 describe('shared chat session synchronization', () => {
+  it('persists workspace drafts, excludes reasoning from export and refuses active/stale exports', async () => {
+    await session.initialize();
+    await session.snapshot('draft-start');
+    const conversationId = latestSnapshot().conversationId;
+    await session.handle({
+      protocolVersion: 1,
+      requestId: 'draft',
+      type: 'UpdateDraft',
+      conversationId,
+      prompt: 'Unsent draft',
+    });
+    await session.snapshot('draft-restored');
+    expect(latestSnapshot().draft).toBe('Unsent draft');
+    expect(fixture.drafts.get('kova.composerDraft')).toBe('Unsent draft');
+    await beginStream();
+    const exportRequest = {
+      protocolVersion: 1 as const,
+      requestId: 'export-active',
+      type: 'ExportConversation' as const,
+      conversationId,
+      action: 'copy' as const,
+    };
+    await expect(session.handle(exportRequest)).rejects.toThrow('Stop the active task');
+    send({ message: { content: 'Public answer', thinking: 'private reasoning' } });
+    await finish();
+    await session.handle({ ...exportRequest, requestId: 'export-complete' });
+    expect(fixture.clipboard[0]).toContain('Public answer');
+    expect(fixture.clipboard[0]).not.toContain('private reasoning');
+    await session.newConversation();
+    await session.snapshot('draft-new');
+    expect(latestSnapshot().draft).toBe('');
+    expect(fixture.drafts.get('kova.composerDraft')).toBe('');
+    await expect(session.handle({ ...exportRequest, requestId: 'export-stale' })).rejects.toThrow();
+  });
+
   it('persists onboarding dismissal and serializes configuration against submission', async () => {
     await session.initialize();
     await session.handle({ protocolVersion: 1, requestId: 'setup-state', type: 'Ready' });

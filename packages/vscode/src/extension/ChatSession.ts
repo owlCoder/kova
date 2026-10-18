@@ -1,3 +1,6 @@
+import type { ActiveChatRun } from './ActiveChatRun.js';
+import { WorkspaceDraft } from './WorkspaceDraft.js';
+import { handlePresentationAction, presentationActions } from './handlePresentationAction.js';
 import { readUiPreferences } from './readUiPreferences.js';
 import { randomUUID } from 'node:crypto';
 import * as vscode from 'vscode';
@@ -32,6 +35,7 @@ export class ChatSession {
   readonly hostSessionId = randomUUID();
   readonly approval = new WebviewApprovalPort();
   private sequence = 0;
+  private readonly draft: WorkspaceDraft;
   private configuring = false;
   private providerRefreshPending = false;
   private readonly events = new StreamEventBuffer((event) =>
@@ -47,14 +51,7 @@ export class ChatSession {
   private readonly providers: ProviderManager;
   private readonly contextAttachments: ContextAttachmentManager;
   private conversationId = randomUUID();
-  private activeRun: {
-    id: string;
-    cancellation: CancellationSource;
-    task: Promise<void>;
-    prompt: string;
-    thinkingEnabled: boolean;
-    contextMaxTokens: number;
-  } | null = null;
+  private activeRun: ActiveChatRun | null = null;
   private preparingRun: CancellationSource | null = null;
   private streamingResponse: SessionSnapshot['messages'][number] | null = null;
   private modelDiscovery: CancellationSource | null = null;
@@ -85,6 +82,7 @@ export class ChatSession {
     this.providers =
       providers ?? new ProviderManager(new ProviderApiKeyStore(this.context.secrets));
     this.contextAttachments = new ContextAttachmentManager(root);
+    this.draft = new WorkspaceDraft(context.workspaceState);
   }
   connect(deliver: (message: HostMessage) => void): () => void {
     this.listeners.add(deliver);
@@ -244,6 +242,7 @@ export class ChatSession {
     const snapshot: SessionSnapshot = {
       ...readUiPreferences(),
       conversationId: this.conversationId,
+      draft: this.draft.text,
       activeRunId: activeRun?.id ?? null,
       state: this.state,
       mode: this.mode,
@@ -274,7 +273,25 @@ export class ChatSession {
     if (this.requests.has(message.requestId)) throw new Error('Duplicate request ID.');
     this.requests.add(message.requestId);
     if (this.requests.size > 200) this.requests.delete(this.requests.values().next().value!);
+    if (
+      presentationActions.has(message.type) &&
+      (await handlePresentationAction(message, this.context, {
+        read: (id) => this.repository.get(id),
+        current: (id) =>
+          id === this.conversationId && !this.activeRun && !this.preparingRun && !this.configuring,
+        partial: this.partial,
+        provider: this.providers.label(),
+        model: this.selectedModel,
+        notify: (message) => this.deliver({ ...this.envelope(), type: 'Notice', message }),
+      }))
+    )
+      return;
     switch (message.type) {
+      case 'UpdateDraft':
+        if (message.conversationId === this.conversationId) {
+          await this.draft.set(message.prompt);
+        }
+        return;
       case 'Ready':
         await this.snapshot(message.requestId);
         return;
@@ -333,31 +350,10 @@ export class ChatSession {
       case 'OpenDiffPreview':
         await this.approval.openDiff(message.approvalId);
         break;
-      case 'OpenProviderSetup':
-        await vscode.commands.executeCommand('kova.setup');
-        return;
       case 'CompleteSetup':
         await this.context.globalState?.update('kova.setupCompleted', true);
         await this.snapshot(message.requestId);
         return;
-      case 'OpenExternal':
-        await vscode.env.openExternal(vscode.Uri.parse(message.url));
-        break;
-      case 'CopyText':
-        await vscode.env.clipboard.writeText(message.text);
-        return;
-      case 'OpenSettings':
-        await vscode.commands.executeCommand(
-          'workbench.action.openSettings',
-          `@ext:${this.context.extension.id}`,
-        );
-        break;
-      case 'OpenSetupInstructions':
-        await vscode.commands.executeCommand(
-          'markdown.showPreview',
-          vscode.Uri.joinPath(this.context.extensionUri, 'SETUP.md'),
-        );
-        break;
     }
     this.deliver({
       ...this.envelope(),
@@ -426,6 +422,8 @@ export class ChatSession {
         this.skillsRepository ? new SkillLoader(this.skillsRepository) : null,
         this.projectInstructions,
       );
+      cancellation.throwIfCancellationRequested();
+      await this.draft.consume(message.prompt);
       this.state = 'BuildingContext';
       this.activeRun = {
         id: runId,
@@ -467,14 +465,14 @@ export class ChatSession {
     }
   }
   async newConversation(): Promise<void> {
-    this.preparingRun?.cancel();
     const active = this.activeRun;
-    active?.cancellation.cancel();
+    this.cancelActiveRun();
     await active?.task;
     const previousConversationId = this.conversationId;
     await this.repository.remove(previousConversationId);
     this.providers.forgetConversation(previousConversationId);
     this.conversationId = randomUUID();
+    await this.draft.set('');
     this.state = 'Idle';
     this.usage = null;
     this.partial = false;
@@ -485,8 +483,7 @@ export class ChatSession {
     this.events.dispose();
     this.modelDiscovery?.cancel();
     this.initializationCancellation?.cancel();
-    this.preparingRun?.cancel();
-    this.activeRun?.cancellation.cancel();
+    this.cancelActiveRun();
     await this.activeRun?.task;
     await this.initialization?.catch(() => {});
     this.approval.dispose();

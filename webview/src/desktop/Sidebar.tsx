@@ -1,6 +1,6 @@
 import { useI18n } from '../i18n/I18n.js';
 import { memo, useState } from 'react';
-import logo from '../../../assets/logo.png';
+import { BrandMark } from '../components/BrandMark.js';
 import type { DesktopState } from '../../../packages/protocol/src/DesktopState.js';
 import { send } from '../messaging/bridge.js';
 import { Icon } from '../components/Icon.js';
@@ -37,7 +37,7 @@ export const Sidebar = memo(function Sidebar({
   return (
     <aside className="sidebar-nav">
       <div className="sidebar-brand">
-        <img src={logo} alt="" />
+        <BrandMark />
         <strong>
           kova<span>DESKTOP</span>
         </strong>

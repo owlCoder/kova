@@ -11,7 +11,7 @@ body:
     attributes:
       label: Kova version
       description: Desktop Settings → About Kova, or the VS Code extension version.
-      placeholder: 0.5.2
+      placeholder: 0.6.0
     validations:
       required: true
   - type: dropdown

@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.6.0
+
+- Add conversation search in desktop and VS Code with Cmd/Ctrl+F, literal matching across Markdown/code, highlighted results and Enter/Shift+Enter navigation.
+- Export or copy the current conversation as Markdown from the header or command palette. Native save dialogs choose the destination; internal tool payloads, repair messages and reasoning are excluded.
+- Preserve unsent drafts per desktop session and in VS Code workspace storage, restore them after restart, and recover rejected submissions without replacing a newer draft.
+- Debounce draft writes, cap retained desktop drafts, and clear only the draft actually consumed by a successful submission.
+- Isolate completed message rendering during streaming, defer desktop preferences loading, and reduce the initial shared JavaScript bundle despite adding the new controls.
+- Unify the Kova mark and tagline across host headers, messages, welcome and About; refine compact header actions and use platform-correct shortcut hints.
+- Translate new controls into Serbian Latin and German, preserve search position as content updates, and keep terminal shortcuts separate from conversation search.
+- Expand native VSIX smoke checks with draft/export behavior and support a configurable local test provider.
+
 ## 0.5.2
 
 - Fix mixed light/dark desktop surfaces by scoping VS Code fallback colors exclusively to the extension host; add a regression check for that boundary.

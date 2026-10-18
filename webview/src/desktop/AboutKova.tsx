@@ -1,4 +1,4 @@
-import logo from '../../../assets/logo.png';
+import { BrandMark } from '../components/BrandMark.js';
 import type { DesktopState } from '../../../packages/protocol/src/DesktopState.js';
 import { send } from '../messaging/bridge.js';
 import { Icon } from '../components/Icon.js';
@@ -11,9 +11,9 @@ export function AboutKova({ desktop }: { desktop: DesktopState }) {
   return (
     <>
       <div className="about-hero">
-        <img src={logo} alt="" />
+        <BrandMark />
         <span className="eyebrow">KOVA DESKTOP</span>
-        <h2>{t('Your code. Your workspace.')}</h2>
+        <h2>{t('Your code. Your models. Your workspace.')}</h2>
         <p>
           {t(
             'A thoughtful home for your projects, models and ideas. Built for local-first work, with you in control of every change.',
@@ -74,6 +74,7 @@ export function AboutKova({ desktop }: { desktop: DesktopState }) {
           {[
             ['Commands & sessions', `${mod} K`],
             ['Find files', `${mod} P`],
+            ['Find in conversation', `${mod} F`],
             ['New session', `${mod} N`],
             ['Open project', `${mod} O`],
             ['Toggle terminal', `${mod} ⇧ T`],

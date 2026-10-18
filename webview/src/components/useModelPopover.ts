@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 
 /** Native light-dismiss behavior, with viewport placement and focus scoped to the control. */
-export function useModelPopover(allowCustom: boolean, disabled: boolean) {
+export function useModelPopover(allowCustom: boolean, disabled: boolean, minimumWidth = 340) {
   const root = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement | HTMLInputElement>(null);
   const panel = useRef<HTMLDivElement>(null);
@@ -18,7 +18,7 @@ export function useModelPopover(allowCustom: boolean, disabled: boolean) {
     const above = rect.top - 16;
     const below = window.innerHeight - rect.bottom - 16;
     const upward = below < 260 && above > below;
-    const width = Math.min(Math.max(rect.width, 340), window.innerWidth - 24);
+    const width = Math.min(Math.max(rect.width, minimumWidth), window.innerWidth - 24);
     setPosition({
       width,
       left: Math.max(12, Math.min(rect.left, window.innerWidth - width - 12)),

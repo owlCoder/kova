@@ -1,6 +1,6 @@
 import { useI18n } from '../i18n/I18n.js';
 import type { SessionSnapshot } from '../../../packages/protocol/src/SessionSnapshot.js';
-import logo from '../../../assets/logo.png';
+import { BrandMark } from './BrandMark.js';
 import { isDesktop, send } from '../messaging/bridge.js';
 import { Icon } from './Icon.js';
 
@@ -16,7 +16,7 @@ export function Welcome({
   return (
     <section className="welcome">
       <div className="welcome-mark">
-        <img src={logo} alt="" />
+        <BrandMark />
       </div>
       <div className="eyebrow">
         <span className="welcome-rule" />
@@ -91,7 +91,7 @@ export function Welcome({
       </div>
       <div className="welcome-note">
         <Icon name="shield" size={13} />
-        {t('Local-first. You choose where your context goes.')}
+        {t('Your code. Your models. Your workspace.')}
       </div>
     </section>
   );

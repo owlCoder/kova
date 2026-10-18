@@ -30,10 +30,23 @@ export class DesktopStore implements ConversationRepository {
   preferences: DesktopPreferences = structuredClone(defaultPreferences);
   private readonly sessions = new Map<string, SessionInfo>();
   private readonly cache = new Map<string, Conversation>();
+  private drafts: Record<string, string> = {};
   private queue = Promise.resolve();
   constructor(readonly directory: string) {}
 
   async load(): Promise<void> {
+    try {
+      const drafts = await this.read('drafts.json');
+      if (drafts && typeof drafts === 'object' && !Array.isArray(drafts))
+        this.drafts = Object.fromEntries(
+          Object.entries(drafts)
+            .filter(([id, text]) => /^[a-f0-9-]{36}$/.test(id) && typeof text === 'string')
+            .slice(-20)
+            .map(([id, text]) => [id, (text as string).slice(0, 16_000)]),
+        );
+    } catch {
+      // A missing/damaged draft file must not prevent opening saved conversations.
+    }
     try {
       this.preferences = parsePreferences(await this.read('settings.json'));
     } catch (error) {
@@ -116,6 +129,22 @@ export class DesktopStore implements ConversationRepository {
   }
   async flush(): Promise<void> {
     await this.queue;
+  }
+  getDraft(id: string): string {
+    return this.drafts[id] ?? '';
+  }
+  async updateDraft(id: string, text: string, expected?: string): Promise<void> {
+    if (!/^[a-f0-9-]{36}$/.test(id) || text.length > 16_000) throw new Error('Invalid draft.');
+    await this.persist(async () => {
+      if (expected !== undefined && this.getDraft(id) !== expected) return;
+      if (this.getDraft(id) === text) return;
+      const next = { ...this.drafts };
+      delete next[id];
+      if (text) next[id] = text;
+      const bounded = Object.fromEntries(Object.entries(next).slice(-20));
+      await writeJson(join(this.directory, 'drafts.json'), bounded);
+      this.drafts = bounded;
+    });
   }
   async remove(id: string): Promise<void> {
     await this.updateSession(id, { archived: true });

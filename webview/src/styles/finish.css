@@ -1,0 +1,184 @@
+.kova-mark {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  overflow: hidden;
+}
+.kova-mark > img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.sidebar-brand > .kova-mark {
+  width: 32px;
+  height: 32px;
+}
+.welcome-mark > .kova-mark {
+  width: 46px;
+  height: 46px;
+}
+.about-hero > .kova-mark {
+  width: 72px;
+  height: 72px;
+  margin-bottom: 14px;
+}
+.avatar.assistant {
+  border-color: var(--border-soft);
+  background: var(--surface);
+}
+.avatar .kova-mark {
+  width: 23px;
+  height: 23px;
+}
+.conversation-tools {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.conversation-actions {
+  position: fixed;
+  margin: 0;
+  padding: 5px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+  background: var(--elevated);
+  color: var(--text);
+  box-shadow: var(--shadow-float);
+  overflow: auto;
+}
+.conversation-actions > button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  padding: 10px;
+  text-align: left;
+  background: transparent;
+  border-radius: var(--radius-control);
+}
+.conversation-actions > button:focus-visible,
+.conversation-actions > button:hover {
+  background: var(--hover);
+}
+.conversation-actions > button > span {
+  flex: 1;
+}
+.conversation-actions kbd {
+  color: var(--faint);
+  font-size: calc(10px * var(--text-scale, 1));
+}
+.conversation-actions > small {
+  display: block;
+  padding: 10px;
+  border-top: 1px solid var(--border-soft);
+  color: var(--muted);
+  font-size: calc(11px * var(--text-scale, 1));
+  line-height: 1.6;
+}
+.conversation-search {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 6px;
+  padding: 9px 20px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border-soft);
+  color: var(--muted);
+}
+.conversation-search input {
+  flex: 1;
+  width: 0;
+  min-width: 60px;
+  height: 30px;
+  padding: 4px 8px;
+}
+.search-count {
+  font-size: calc(11px * var(--text-scale, 1));
+  white-space: nowrap;
+  min-width: 34px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.conversation-search .icon-button {
+  width: 26px;
+  height: 28px;
+}
+::highlight(kova-search) {
+  background-color: var(--selection);
+  color: inherit;
+}
+::highlight(kova-search-active) {
+  background-color: var(--accent);
+  color: var(--on-accent);
+}
+.settings-loading {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  background: var(--backdrop);
+  color: var(--text);
+}
+.footer-note > span:last-child {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+@container chat (max-width: 480px) {
+  .workspace-header {
+    padding-inline: 10px;
+    gap: 6px;
+  }
+  .extension-caption {
+    display: none;
+  }
+  .header-actions .setup-toggle {
+    font-size: calc(11px * var(--text-scale, 1));
+    padding-inline: 4px;
+  }
+  .header-actions .icon-button {
+    width: 27px;
+    min-width: 27px;
+    padding: 5px;
+  }
+  .workspace-breadcrumb {
+    gap: 5px;
+  }
+  .workspace-breadcrumb > .kova-mark {
+    width: 24px;
+    height: 24px;
+  }
+  .conversation-search {
+    padding-inline: 10px;
+    gap: 3px;
+  }
+}
+@media (hover: none) {
+  .message-copy {
+    opacity: 1;
+  }
+}
+@media (forced-colors: active) {
+  ::highlight(kova-search) {
+    background: Highlight;
+    color: HighlightText;
+  }
+  ::highlight(kova-search-active) {
+    background: Mark;
+    color: MarkText;
+  }
+}
+.setup-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+@container chat (max-width: 380px) {
+  .setup-toggle > span {
+    display: none;
+  }
+}

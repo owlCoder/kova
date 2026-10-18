@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { SessionSnapshot } from '../../../packages/protocol/src/SessionSnapshot.js';
 import { isDesktop, send } from '../messaging/bridge.js';
 import { Icon } from './Icon.js';
+import { modifierKey } from './modifierKey.js';
 import { useDialogFocus } from './useDialogFocus.js';
 
 export function CommandPalette({
@@ -12,6 +13,7 @@ export function CommandPalette({
   onPreferences,
   onTogglePanel,
   onToggleTerminal,
+  onFind,
 }: {
   snapshot: SessionSnapshot | null;
   busy: boolean;
@@ -19,6 +21,7 @@ export function CommandPalette({
   onPreferences(): void;
   onTogglePanel(): void;
   onToggleTerminal(): void;
+  onFind(): void;
 }) {
   const { t } = useI18n();
   const [query, setQuery] = useState('');
@@ -26,11 +29,30 @@ export function CommandPalette({
   const input = useRef<HTMLInputElement>(null);
   const dialog = useRef<HTMLElement>(null);
   useDialogFocus(dialog, onClose);
-  const mod =
-    snapshot?.desktop?.platform === 'win32' || snapshot?.desktop?.platform === 'linux'
-      ? 'Ctrl'
-      : '⌘';
+  const mod = modifierKey(snapshot?.desktop?.platform);
   const commands = [
+    {
+      id: 'find-conversation',
+      label: t('Find in conversation'),
+      icon: 'search' as const,
+      shortcut: `${mod} F`,
+      disabled: !snapshot?.messages.length,
+      run: onFind,
+    },
+    {
+      id: 'export-conversation',
+      label: t('Export Markdown…'),
+      icon: 'download' as const,
+      shortcut: '',
+      disabled: busy || !snapshot?.messages.length,
+      run: () =>
+        snapshot &&
+        send({
+          type: 'ExportConversation',
+          conversationId: snapshot.conversationId,
+          action: 'save',
+        }),
+    },
     {
       id: 'new',
       label: t('New session'),

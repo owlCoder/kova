@@ -26,6 +26,36 @@ afterEach(async () => {
 });
 
 describe('desktop session storage', () => {
+  it('restores independent drafts, serializes writes, clears sent text and bounds retained drafts', async () => {
+    const store = new DesktopStore(directory);
+    await store.load();
+    const first = randomUUID(),
+      second = randomUUID();
+    await Promise.all([
+      store.updateDraft(first, 'First project draft'),
+      store.updateDraft(second, 'Second project draft'),
+    ]);
+    const restored = new DesktopStore(directory);
+    await restored.load();
+    expect(restored.getDraft(first)).toBe('First project draft');
+    expect(restored.getDraft(second)).toBe('Second project draft');
+    await restored.updateDraft(first, 'Next prompt');
+    await restored.updateDraft(first, '', 'First project draft');
+    expect(restored.getDraft(first)).toBe('Next prompt');
+    await restored.updateDraft(first, '', 'Next prompt');
+    expect(restored.getDraft(first)).toBe('');
+    for (let i = 0; i < 21; i++) await restored.updateDraft(randomUUID(), 'bounded draft');
+    const disk = JSON.parse(await readFile(join(directory, 'drafts.json'), 'utf8'));
+    expect(Object.keys(disk)).toHaveLength(20);
+    expect(disk[first]).toBeUndefined();
+    await expect(restored.updateDraft('../escape', 'no')).rejects.toThrow('Invalid draft');
+    await expect(restored.updateDraft(first, 'a'.repeat(16001))).rejects.toThrow('Invalid draft');
+    await writeFile(join(directory, 'drafts.json'), '{broken');
+    const recovered = new DesktopStore(directory);
+    await recovered.load();
+    expect(recovered.getDraft(first)).toBe('');
+  });
+
   it('restores conversations, generates titles, and preserves renamed titles on later saves', async () => {
     const store = new DesktopStore(directory);
     await store.load();

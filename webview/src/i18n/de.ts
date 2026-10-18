@@ -1,4 +1,22 @@
 export const de: Readonly<Record<string, string>> = {
+  'Find in conversation': 'Im Gespräch suchen',
+  'Find in conversation…': 'Im Gespräch suchen…',
+  'Conversation actions': 'Gesprächsaktionen',
+  'Export Markdown…': 'Markdown exportieren…',
+  'Copy conversation': 'Gespräch kopieren',
+  'Exports include messages, without tool logs or reasoning.':
+    'Der Export enthält Nachrichten, ohne Werkzeugprotokolle oder Denkverlauf.',
+  'Previous match (Shift+Enter)': 'Vorheriger Treffer (Umschalt+Enter)',
+  'Next match (Enter)': 'Nächster Treffer (Enter)',
+  'Close search': 'Suche schließen',
+  'No matches': 'Keine Treffer',
+  'Find text': 'Text suchen',
+  Draft: 'Entwurf',
+  'Your code. Your models. Your workspace.': 'Dein Code. Deine Modelle. Dein Arbeitsbereich.',
+  'Opening settings…': 'Einstellungen werden geöffnet…',
+  'Conversation copied as Markdown.': 'Gespräch als Markdown kopiert.',
+  'Conversation exported.': 'Gespräch exportiert.',
+
   'Search models': 'Modelle durchsuchen',
   'Search models…': 'Modelle durchsuchen…',
   'Workspace tools': 'Projektwerkzeuge',

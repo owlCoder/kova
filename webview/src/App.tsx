@@ -1,5 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import logo from '../../assets/logo.png';
+import { WorkspaceHeader } from './components/WorkspaceHeader.js';
+import { ConversationSearch } from './components/ConversationSearch.js';
 import { ChatFooter } from './components/ChatFooter.js';
 import { Icon } from './components/Icon.js';
 import { Onboarding } from './components/Onboarding.js';
@@ -8,7 +9,7 @@ import { Conversation } from './components/Conversation.js';
 import { CommandPalette } from './components/CommandPalette.js';
 import { Sidebar } from './desktop/Sidebar.js';
 import { Inspector } from './desktop/Inspector.js';
-import { ProviderPreferences } from './desktop/ProviderPreferences.js';
+
 import { isDesktop, send } from './messaging/bridge.js';
 import { WindowTitlebar } from './desktop/WindowTitlebar.js';
 import { I18nProvider, useI18n } from './i18n/I18n.js';
@@ -16,6 +17,11 @@ import { subscribe } from './messaging/bridge.js';
 import { useChat } from './state/useChat.js';
 import { useHostResources } from './state/useHostResources.js';
 
+const ProviderPreferences = lazy(() =>
+  import('./desktop/ProviderPreferences.js').then((module) => ({
+    default: module.ProviderPreferences,
+  })),
+);
 const TerminalPanel = lazy(() => import('./desktop/TerminalPanel.js'));
 export function App() {
   const chat = useChat();
@@ -56,6 +62,13 @@ function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
   const [setupOpen, setSetupOpen] = useState(false);
   const [setupDismissed, setSetupDismissed] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [findOpen, setFindOpen] = useState(false);
+  const openFind = useCallback(() => {
+    setFindOpen(true);
+    requestAnimationFrame(() =>
+      document.querySelector<HTMLInputElement>('.conversation-search input')?.focus(),
+    );
+  }, []);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [showLatest, setShowLatest] = useState(false);
   const scroller = useRef<HTMLDivElement>(null);
@@ -87,10 +100,16 @@ function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
     if (scroller.current) scroller.current.scrollTop = 0;
   }, [snapshot?.conversationId]);
   useLayoutEffect(() => {
-    if (!showSetup && snapshot?.messages.length && nearBottom.current && scroller.current) {
+    if (
+      !showSetup &&
+      !findOpen &&
+      snapshot?.messages.length &&
+      nearBottom.current &&
+      scroller.current
+    ) {
       scroller.current.scrollTop = scroller.current.scrollHeight;
     }
-  }, [snapshot?.messages, chat.activities, showSetup]);
+  }, [snapshot?.messages, chat.activities, showSetup, findOpen]);
   useEffect(() => {
     if (!showSetup) input.current?.focus();
   }, [showSetup]);
@@ -136,6 +155,15 @@ function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
         event.preventDefault();
         setPaletteOpen((open) => !open);
       }
+      if (
+        event.key.toLowerCase() === 'f' &&
+        snapshot?.messages.length &&
+        !showSetup &&
+        !(event.target instanceof Element && event.target.closest('.xterm'))
+      ) {
+        event.preventDefault();
+        openFind();
+      }
       if (event.key === ',') {
         event.preventDefault();
         preferences();
@@ -166,6 +194,9 @@ function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
     resources.setInspectorOpen,
     resources.setInspectorTab,
     toggleTerminal,
+    openFind,
+    snapshot?.messages.length,
+    showSetup,
   ]);
   const closeSetup = () => {
     setSetupOpen(false);
@@ -196,89 +227,34 @@ function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
           />
         )}
         <div className="workspace-main">
-          <header className="workspace-header">
-            <div className="workspace-breadcrumb">
-              {isDesktop ? (
-                <>
-                  <button
-                    className="icon-button"
-                    aria-label={t('Toggle sidebar')}
-                    title={t('Toggle sidebar')}
-                    onClick={() => setSidebarOpen((open) => !open)}
-                  >
-                    <Icon name="panelLeft" size={16} />
-                  </button>
-                  <Icon name="folder" size={14} />
-                  <span
-                    className="breadcrumb-project"
-                    title={snapshot?.desktop?.workspacePath ?? undefined}
-                  >
-                    {snapshot?.desktop?.workspaceName ?? 'Kova'}
-                  </span>
-                  <span className="breadcrumb-divider">/</span>
-                  <span className="breadcrumb-session" title={title}>
-                    {title === 'New session' ? t('New session') : title}
-                  </span>
-                </>
-              ) : (
-                <>
-                  <img className="brand-logo" src={logo} alt="" />
-                  <strong>Kova</strong>
-                  <span className="extension-caption">{t('Coding workspace')}</span>
-                </>
-              )}
-            </div>
-            <div className="header-actions">
-              <button
-                className="setup-toggle"
-                disabled={busy}
-                onClick={() => {
-                  setSetupOpen((open) => !open);
-                  if (scroller.current) scroller.current.scrollTop = 0;
-                }}
-              >
-                {t('Setup')}
-              </button>
-              {!isDesktop && (
-                <button
-                  className="icon-button"
-                  title={t('New conversation')}
-                  aria-label={t('New conversation')}
-                  disabled={busy}
-                  onClick={() => send({ type: 'NewConversation' })}
-                >
-                  <Icon name="plus" />
-                </button>
-              )}
-              <button
-                className="icon-button"
-                title={t('Commands and sessions')}
-                aria-label={t('Commands and sessions')}
-                onClick={() => setPaletteOpen(true)}
-              >
-                <Icon name="command" size={16} />
-              </button>
-              {isDesktop ? (
-                <button
-                  className={`icon-button ${resources.inspectorOpen ? 'active' : ''}`}
-                  title={t('Toggle project panel')}
-                  aria-label={t('Toggle project panel')}
-                  onClick={() => resources.setInspectorOpen((open) => !open)}
-                >
-                  <Icon name="panelRight" size={16} />
-                </button>
-              ) : (
-                <button
-                  className="icon-button"
-                  title={t('Settings')}
-                  aria-label={t('Settings')}
-                  onClick={preferences}
-                >
-                  <Icon name="settings" size={16} />
-                </button>
-              )}
-            </div>
-          </header>
+          <WorkspaceHeader
+            desktop={snapshot?.desktop}
+            title={title}
+            busy={busy}
+            inspectorOpen={resources.inspectorOpen}
+            conversationId={snapshot?.conversationId}
+            hasMessages={Boolean(snapshot?.messages.length) && !showSetup}
+            onSidebar={() => setSidebarOpen((open) => !open)}
+            onSetup={() => {
+              setSetupOpen((open) => !open);
+              if (scroller.current) scroller.current.scrollTop = 0;
+            }}
+            onPalette={openPalette}
+            onInspector={() => resources.setInspectorOpen((open) => !open)}
+            onPreferences={preferences}
+            onFind={openFind}
+          />
+          {findOpen && !showSetup && (
+            <ConversationSearch
+              key={snapshot?.conversationId}
+              scroller={scroller}
+              revision={snapshot?.messages}
+              onClose={() => {
+                setFindOpen(false);
+                input.current?.focus({ preventScroll: true });
+              }}
+            />
+          )}
           <div className="conversation-stage">
             <div
               className="conversation"
@@ -399,12 +375,20 @@ function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
         )}
       </main>
       {resources.preferences && snapshot?.desktop && (
-        <ProviderPreferences
-          desktop={snapshot.desktop}
-          busy={busy}
-          initialTab={resources.preferencesTab}
-          onClose={() => resources.setPreferences(false)}
-        />
+        <Suspense
+          fallback={
+            <div className="settings-loading" role="status">
+              {t('Opening settings…')}
+            </div>
+          }
+        >
+          <ProviderPreferences
+            desktop={snapshot.desktop}
+            busy={busy}
+            initialTab={resources.preferencesTab}
+            onClose={() => resources.setPreferences(false)}
+          />
+        </Suspense>
       )}
       {paletteOpen && (
         <CommandPalette
@@ -412,6 +396,7 @@ function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
           busy={busy}
           onClose={() => setPaletteOpen(false)}
           onPreferences={preferences}
+          onFind={openFind}
           onToggleTerminal={toggleTerminal}
           onTogglePanel={() => resources.setInspectorOpen((open) => !open)}
         />

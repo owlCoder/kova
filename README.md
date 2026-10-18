@@ -18,6 +18,7 @@ Kova is an open-source, local-first AI coding workspace for **macOS, Windows, Li
 ## What you can do
 
 - **Work locally or connect an API.** Ollama is the default. Guided setup also offers DeepSeek, OpenAI, OpenRouter, Groq, Gemini, LM Studio and custom OpenAI-compatible endpoints.
+- **Find and keep your work.** Search conversation text and code with Cmd/Ctrl+F, export or copy a Markdown transcript, and restore unsent drafts after reopening.
 - **Keep a project workspace.** Desktop brings persistent sessions, file browsing and search, context attachments, working-tree diffs, tool activity and a command palette together.
 - **Review the work.** Inspect proposed file changes and commands, approve once, reject or stop a run. Choose Plan, Manual, Edit or Auto permissions for each task.
 - **Use your own CLI tools.** The desktop terminal runs your login shell or PowerShell with interactive programs, Ctrl+C, resizing and bounded scrollback.
@@ -33,21 +34,21 @@ Get the installers and extension from the [latest GitHub release](https://github
 
 | Platform                | Release asset                        | Install                                                           |
 | ----------------------- | ------------------------------------ | ----------------------------------------------------------------- |
-| macOS · Apple Silicon   | `Kova-0.5.2-mac-arm64.dmg` or `.zip` | Open the DMG and drag Kova into Applications, or extract the ZIP. |
-| Windows · x64           | `Kova-0.5.2-win-x64.exe`             | Run the installer and choose an installation directory.           |
-| Linux · x64             | `Kova-0.5.2-linux-x64.AppImage`      | Make it executable, then launch it.                               |
-| Debian / Ubuntu · amd64 | `Kova-0.5.2-linux-x64.deb`           | Install with your package manager.                                |
-| VS Code · 1.100+        | `kova-local-0.5.2.vsix`              | Run **Extensions: Install from VSIX…**, then select the file.     |
+| macOS · Apple Silicon   | `Kova-0.6.0-mac-arm64.dmg` or `.zip` | Open the DMG and drag Kova into Applications, or extract the ZIP. |
+| Windows · x64           | `Kova-0.6.0-win-x64.exe`             | Run the installer and choose an installation directory.           |
+| Linux · x64             | `Kova-0.6.0-linux-x64.AppImage`      | Make it executable, then launch it.                               |
+| Debian / Ubuntu · amd64 | `Kova-0.6.0-linux-x64.deb`           | Install with your package manager.                                |
+| VS Code · 1.100+        | `kova-local-0.6.0.vsix`              | Run **Extensions: Install from VSIX…**, then select the file.     |
 
 Desktop packages are currently **unsigned and not notarized**; your OS may show a publisher warning or require explicit approval. Download only from this repository's releases. `SHA256SUMS` accompanies each release so you can check file integrity. Updates are manual. An Intel macOS installer is not included in this release; source builds use the host architecture.
 
 For Linux, from the directory containing the downloaded file:
 
 ```sh
-chmod +x Kova-0.5.2-linux-x64.AppImage
-./Kova-0.5.2-linux-x64.AppImage
+chmod +x Kova-0.6.0-linux-x64.AppImage
+./Kova-0.6.0-linux-x64.AppImage
 # Or, on Debian / Ubuntu:
-sudo apt install ./Kova-0.5.2-linux-x64.deb
+sudo apt install ./Kova-0.6.0-linux-x64.deb
 ```
 
 AppImage support depends on your distribution's FUSE setup. The DEB is an alternative on Debian-based systems. Node.js and npm are needed to develop Kova, not to run a desktop installer.
@@ -96,6 +97,7 @@ Choose language, text size and theme in **Settings → Appearance**. Code, termi
 | Desktop shortcut           | Action                      |
 | -------------------------- | --------------------------- |
 | Cmd/Ctrl+K                 | Commands and session search |
+| Cmd/Ctrl+F                 | Find in the conversation    |
 | Cmd/Ctrl+P                 | Find project files          |
 | Cmd/Ctrl+O                 | Open project                |
 | Cmd/Ctrl+N                 | New session                 |
@@ -104,7 +106,7 @@ Choose language, text size and theme in **Settings → Appearance**. Code, termi
 | Cmd/Ctrl+J                 | Toggle project panel        |
 | Cmd/Ctrl+Shift+T or Ctrl+` | Open terminal               |
 
-Desktop sessions persist locally, load on demand and can be renamed or archived. Extension history lasts for the current extension session. The desktop terminal is user-operated: hiding it keeps the shell running, closing it terminates the shell, and changing projects closes the old process. Its output is not automatically sent to a model.
+Desktop sessions persist locally, load on demand and can be renamed or archived. Unsent drafts are stored per desktop session (up to 20 recent drafts) or in VS Code workspace storage; starting a new extension conversation clears its draft. Draft text is local application data, separate from API-key secure storage. Extension history lasts for the current extension session. The desktop terminal is user-operated: hiding it keeps the shell running, closing it terminates the shell, and changing projects closes the old process. Its output is not automatically sent to a model.
 
 ## Privacy and trust
 

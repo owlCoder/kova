@@ -12,6 +12,7 @@ export interface SessionSnapshot {
   readonly language?: 'en' | 'sr' | 'de';
   readonly textSize?: 'standard' | 'large' | 'larger';
   readonly conversationId: string;
+  readonly draft?: string;
   readonly activeRunId: string | null;
   readonly state: AgentState;
   readonly mode: AgentMode;

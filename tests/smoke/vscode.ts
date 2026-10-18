@@ -78,6 +78,28 @@ export async function run() {
   const firstSetup = messages.filter((message) => message.type === 'Snapshot').at(-1);
   assert.equal(firstSetup?.snapshot.providerLabel, 'Ollama');
   assert.equal(firstSetup?.snapshot.setupCompleted, false);
+  const draftConversation = firstSetup!.snapshot.conversationId;
+  await api.session.handle({
+    protocolVersion: 1,
+    requestId: 'smoke-draft',
+    type: 'UpdateDraft',
+    conversationId: draftConversation,
+    prompt: 'Native workspace draft',
+  });
+  await api.session.snapshot('smoke-draft-ready');
+  assert.equal(
+    messages.filter((message) => message.type === 'Snapshot').at(-1)?.snapshot.draft,
+    'Native workspace draft',
+  );
+  await api.session.handle({
+    protocolVersion: 1,
+    requestId: 'smoke-clear-draft',
+    type: 'UpdateDraft',
+    conversationId: draftConversation,
+    prompt: '',
+  });
+  console.log('PASS native workspace draft persistence and clearing.');
+
   await api.session.handle({
     protocolVersion: 1,
     requestId: 'smoke-setup-done',
@@ -171,6 +193,24 @@ export async function run() {
   assert.equal(reloaded(), capturedReloads + 1, 'Changed hooks become effective once idle');
   const completedSnapshot = messages.filter((message) => message.type === 'Snapshot').at(-1);
   assert(completedSnapshot && completedSnapshot.snapshot.messages.length > 0);
+  const exportId = completedSnapshot.snapshot.conversationId;
+  const previousClipboard = await vscode.env.clipboard.readText();
+  try {
+    await api.session.handle({
+      protocolVersion: 1,
+      requestId: 'smoke-export',
+      type: 'ExportConversation',
+      conversationId: exportId,
+      action: 'copy',
+    });
+    const markdown = await vscode.env.clipboard.readText();
+    assert(markdown.startsWith('# Kova conversation'));
+    assert(markdown.includes('## You') && markdown.includes('## Kova'));
+    assert(!markdown.includes('preparationKey'));
+  } finally {
+    await vscode.env.clipboard.writeText(previousClipboard);
+  }
+  console.log('PASS native Markdown transcript export through the installed extension.');
   await vscode.window.tabGroups.close(chatTabs());
   await waitFor(() => chatTabs().length === 0, 'Chat editor tab closes');
   await vscode.commands.executeCommand('kova.openInEditor');
@@ -275,6 +315,7 @@ export async function run() {
   assert.equal(localized?.snapshot.language, 'sr');
   assert.equal(localized?.snapshot.textSize, 'large');
   console.log('PASS Serbian interface language and larger text settings reach the shared UI.');
+
   await vscode.commands.executeCommand('kova.openInEditor');
   const closeOffset = messages.length;
   await api.session.handle({
