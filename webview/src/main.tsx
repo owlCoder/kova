@@ -5,6 +5,7 @@ import './index.css';
 import './styles/workbench.css';
 import './styles/controls.css';
 import './styles/finish.css';
+import './styles/session-tools.css';
 
 const root = document.getElementById('root');
 if (root)

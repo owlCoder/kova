@@ -7,6 +7,8 @@ const fields: Record<string, readonly string[]> = {
   SelectConversation: ['conversationId'],
   RenameConversation: ['conversationId', 'title'],
   ArchiveConversation: ['conversationId'],
+  RestoreConversation: ['conversationId'],
+  PinConversation: ['conversationId', 'pinned'],
   ListWorkspaceFiles: ['path'],
   SearchWorkspaceFiles: ['query'],
   OpenWorkspaceFile: ['path'],
@@ -43,6 +45,7 @@ export function validateDesktopMessage(raw: unknown): WebviewMessage {
     throw new Error('Invalid request fields.');
   if ('language' in value && !['en', 'sr', 'de'].includes(String(value.language)))
     throw new Error('Invalid language.');
+  if ('pinned' in value && typeof value.pinned !== 'boolean') throw new Error('Invalid pin state.');
   if ('textSize' in value && !['standard', 'large', 'larger'].includes(String(value.textSize)))
     throw new Error('Invalid text size.');
   if ('action' in value && !['sync', 'maximize'].includes(String(value.action)))

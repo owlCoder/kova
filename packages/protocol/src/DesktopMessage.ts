@@ -13,6 +13,8 @@ export type DesktopMessage =
   | { readonly type: 'SelectConversation'; readonly conversationId: string }
   | { readonly type: 'RenameConversation'; readonly conversationId: string; readonly title: string }
   | { readonly type: 'ArchiveConversation'; readonly conversationId: string }
+  | { readonly type: 'RestoreConversation'; readonly conversationId: string }
+  | { readonly type: 'PinConversation'; readonly conversationId: string; readonly pinned: boolean }
   | { readonly type: 'ListWorkspaceFiles'; readonly path: string }
   | { readonly type: 'SearchWorkspaceFiles'; readonly query: string }
   | { readonly type: 'OpenWorkspaceFile'; readonly path: string }

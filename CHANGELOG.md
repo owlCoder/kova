@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.7.0
+
+- Organize desktop conversations with persistent pins, accessible row menus, archive browsing and restore. Archiving preserves history, title, pin and retained draft.
+- Scope session lists to the current project before applying the 200-session view limit, and cache sorted metadata until it changes.
+- Defer desktop sidebar and inspector code so the extension loads only the shared interface. Keep late draft flushes valid after archiving or changing projects.
+- Add a searchable prompt library in desktop and VS Code: six localized templates and up to 12 recent distinct user messages from the open conversation.
+- Reuse a user message directly from its message actions. Insert text at the composer caret, preserve the existing draft and selected mode, and refuse overflow without truncating text.
+- Share welcome-screen templates with the composer, translate their prompt text into Serbian Latin and German, and disable composition until the initial host snapshot arrives.
+- Keep keyboard navigation, Escape dismissal, focus restoration, compact radii and light/dark surfaces consistent across session and prompt controls.
+- Cover session migration, archive/restart/index recovery, project-scoped limits, intent validation, prompt insertion and translation with regression tests.
+
 ## 0.6.0
 
 - Add conversation search in desktop and VS Code with Cmd/Ctrl+F, literal matching across Markdown/code, highlighted results and Enter/Shift+Enter navigation.

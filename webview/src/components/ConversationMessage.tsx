@@ -12,12 +12,14 @@ export const ConversationMessage = memo(function ConversationMessage({
   partial,
   working,
   reasoning,
+  onReuse,
 }: {
   role: 'user' | 'assistant';
   content: string;
   partial: boolean;
   working: boolean;
   reasoning: string;
+  onReuse(text: string): void;
 }) {
   const { t } = useI18n();
   return (
@@ -31,14 +33,26 @@ export const ConversationMessage = memo(function ConversationMessage({
           <span className="muted">{working ? t('Working…') : t('Partial response')}</span>
         )}
         {!!content && (
-          <button
-            className="message-copy"
-            title={t('Copy message')}
-            aria-label={t('Copy message')}
-            onClick={() => send({ type: 'CopyText', text: content })}
-          >
-            <Icon name="copy" size={13} />
-          </button>
+          <div className="message-actions">
+            {role === 'user' && content.length <= 16_000 && (
+              <button
+                className="message-copy"
+                title={t('Reuse prompt')}
+                aria-label={t('Reuse prompt')}
+                onClick={() => onReuse(content)}
+              >
+                <Icon name="upLeft" size={13} />
+              </button>
+            )}
+            <button
+              className="message-copy"
+              title={t('Copy message')}
+              aria-label={t('Copy message')}
+              onClick={() => send({ type: 'CopyText', text: content })}
+            >
+              <Icon name="copy" size={13} />
+            </button>
+          </div>
         )}
       </div>
       {reasoning && (

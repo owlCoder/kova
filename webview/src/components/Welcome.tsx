@@ -3,6 +3,7 @@ import type { SessionSnapshot } from '../../../packages/protocol/src/SessionSnap
 import { BrandMark } from './BrandMark.js';
 import { isDesktop, send } from '../messaging/bridge.js';
 import { Icon } from './Icon.js';
+import { promptTemplates } from './promptTemplates.js';
 
 export function Welcome({
   snapshot,
@@ -45,49 +46,17 @@ export function Welcome({
         </button>
       )}
       <div className="suggestions">
-        <button
-          onClick={() =>
-            onChoose(
-              'Explore this project and explain its architecture. Read the relevant files before answering.',
-            )
-          }
-        >
-          <span className="suggestion-index">01</span>
-          <Icon name="code" />
-          <span className="suggestion-copy">
-            <strong>{t('Explore the code')}</strong>
-            <small>{t('Understand how it fits together')}</small>
-          </span>
-          <Icon name="upLeft" />
-        </button>
-        <button
-          onClick={() =>
-            onChoose('Review the current Git diff for bugs, regressions and missing tests.')
-          }
-        >
-          <span className="suggestion-index">02</span>
-          <Icon name="review" />
-          <span className="suggestion-copy">
-            <strong>{t('Review changes')}</strong>
-            <small>{t('Find what needs a closer look')}</small>
-          </span>
-          <Icon name="upLeft" />
-        </button>
-        <button
-          onClick={() =>
-            onChoose(
-              'Help me plan a change. Inspect the relevant code, then outline a practical implementation.',
-            )
-          }
-        >
-          <span className="suggestion-index">03</span>
-          <Icon name="sparkles" />
-          <span className="suggestion-copy">
-            <strong>{t('Plan something new')}</strong>
-            <small>{t('Turn an idea into a clear next step')}</small>
-          </span>
-          <Icon name="upLeft" />
-        </button>
+        {promptTemplates.slice(0, 3).map((item, index) => (
+          <button key={item.id} disabled={!snapshot} onClick={() => onChoose(t(item.text))}>
+            <span className="suggestion-index">0{index + 1}</span>
+            <Icon name={item.icon} />
+            <span className="suggestion-copy">
+              <strong>{t(item.title)}</strong>
+              <small>{t(item.description)}</small>
+            </span>
+            <Icon name="upLeft" />
+          </button>
+        ))}
       </div>
       <div className="welcome-note">
         <Icon name="shield" size={13} />

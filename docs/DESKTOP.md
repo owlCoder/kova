@@ -36,11 +36,13 @@ Ollama defaults to `http://127.0.0.1:11434`, model `qwen3:4b`. Install it with `
 
 ## Workspace controls
 
-The sidebar lists projects and sessions. Reopening a project resumes its latest session. Rename or archive a session from its row actions. New sessions keep earlier history. The right panel contains:
+The sidebar lists projects and sessions. Reopening a project resumes a pinned session first, then the latest session. Pin, rename or archive a session from its row actions. Switch between Recent and Archived to restore previous work; archive does not delete messages or the retained draft. Each view lists up to 200 sessions scoped to the current project. New sessions keep earlier history. The right panel contains:
 
 - **Files:** directory browsing, filename/path search, bounded text preview and context attachments. Search skips dependencies and symlinks; use a specific path if the bounded search reaches its limit.
 - **Changes:** actual proposed before/after content during approval, or the working-tree Git diff.
 - **Activity:** tool calls, project rules, permissions and results.
+
+The composer’s Prompt library includes six translated templates and the 12 most recent distinct user messages in the current conversation. Insertion preserves existing text and the selected agent mode, and never sends automatically. User messages also have a Reuse prompt action.
 
 Markdown supports lists, tables and fenced code. Code blocks and messages have copy controls. External images do not load automatically. HTTP(S) links open through the operating system.
 

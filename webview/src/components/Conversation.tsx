@@ -10,11 +10,13 @@ export function Conversation({
   thinking,
   activities,
   busy,
+  onReuse,
 }: {
   snapshot: SessionSnapshot;
   thinking: Record<string, string>;
   activities: readonly Activity[];
   busy: boolean;
+  onReuse(text: string): void;
 }) {
   const { t } = useI18n();
   const approval = snapshot.pendingApproval;
@@ -28,6 +30,7 @@ export function Conversation({
           partial={message.partial}
           working={message.partial && busy}
           reasoning={thinking[message.id] ?? ''}
+          onReuse={onReuse}
         />
       ))}
       {!!activities.length && (

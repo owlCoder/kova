@@ -120,7 +120,7 @@ export function CommandPalette({
     ...(snapshot?.desktop?.sessions ?? []).map((session) => ({
       id: session.id,
       label: session.title,
-      icon: 'chat' as const,
+      icon: session.pinned ? ('pin' as const) : ('chat' as const),
       shortcut: t('Session'),
       disabled: busy,
       run: () => send({ type: 'SelectConversation', conversationId: session.id }),

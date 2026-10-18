@@ -42,6 +42,11 @@ import {
   Brain,
   ChevronUp,
   Download,
+  Pin,
+  Archive,
+  ArchiveRestore,
+  Library,
+  FlaskConical,
 } from 'lucide-react';
 
 const icons = {
@@ -88,6 +93,11 @@ const icons = {
   brain: Brain,
   up: ChevronUp,
   download: Download,
+  pin: Pin,
+  archive: Archive,
+  restore: ArchiveRestore,
+  library: Library,
+  test: FlaskConical,
 };
 export function Icon({
   name,

@@ -4,6 +4,7 @@ import { useI18n } from '../i18n/I18n.js';
 import { Icon } from './Icon.js';
 import { modifierKey } from './modifierKey.js';
 import { useModelPopover } from './useModelPopover.js';
+import { menuKeydown } from './menuKeydown.js';
 
 export function ConversationTools({
   conversationId,
@@ -60,27 +61,7 @@ export function ConversationTools({
         aria-label={t('Conversation actions')}
         className="conversation-actions"
         style={menu.position}
-        onKeyDown={(event) => {
-          if (event.key === 'Escape') {
-            event.preventDefault();
-            event.stopPropagation();
-            menu.hide(true);
-          }
-          if (['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) {
-            event.preventDefault();
-            const items = [
-              ...event.currentTarget.querySelectorAll<HTMLButtonElement>('button:not(:disabled)'),
-            ];
-            const index = items.indexOf(document.activeElement as HTMLButtonElement);
-            const next =
-              event.key === 'Home'
-                ? 0
-                : event.key === 'End'
-                  ? items.length - 1
-                  : (index + (event.key === 'ArrowUp' ? -1 : 1) + items.length) % items.length;
-            items[next]?.focus();
-          }
-        }}
+        onKeyDown={(event) => menuKeydown(event, () => menu.hide(true))}
       >
         <button
           role="menuitem"

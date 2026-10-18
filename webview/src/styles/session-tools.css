@@ -1,0 +1,155 @@
+.session-views {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 9px;
+  padding: 3px;
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-control);
+}
+.session-views button {
+  flex: 1;
+  padding: 6px 3px;
+  gap: 6px;
+  border: 1px solid transparent;
+  font-size: calc(11px * var(--text-scale, 1));
+  color: var(--muted);
+  background: transparent;
+}
+.session-views button[aria-pressed='true'] {
+  background: var(--elevated);
+  border-color: var(--border);
+  color: var(--text);
+}
+.session-group-label {
+  padding: 10px 9px 4px;
+  color: var(--faint);
+  font-size: calc(10px * var(--text-scale, 1));
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.session-menu {
+  flex: 0 0 auto;
+}
+.rename-session[aria-expanded='true'] {
+  opacity: 1;
+}
+.session-item .session-select {
+  flex: 1;
+}
+.session-views + .session-filter {
+  margin-bottom: 5px;
+}
+.message-actions {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+}
+.message-actions .message-copy {
+  margin-left: 0;
+}
+.prompt-picker {
+  display: flex;
+}
+.prompt-picker > .icon-button {
+  width: 29px;
+  height: 29px;
+  padding: 5px;
+}
+.prompt-library {
+  position: fixed;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+  color: var(--text);
+  background: var(--elevated);
+  box-shadow: var(--shadow-float);
+  overflow: hidden;
+}
+.prompt-library:popover-open {
+  display: flex;
+  flex-direction: column;
+}
+.prompt-search {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 9px;
+  padding: 12px;
+  border-bottom: 1px solid var(--border-soft);
+  color: var(--muted);
+}
+.prompt-search input {
+  width: 100%;
+  min-width: 0;
+  height: 30px;
+}
+.prompt-results {
+  overflow: auto;
+  min-height: 0;
+  padding: 5px;
+}
+.prompt-results > button {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+  text-align: left;
+  background: transparent;
+  color: var(--muted);
+}
+.prompt-results > button.selected,
+.prompt-results > button:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+.prompt-results > button.selected {
+  border-color: var(--border-soft);
+}
+.prompt-results > button > span {
+  flex: 1;
+  min-width: 0;
+}
+.prompt-results strong {
+  display: block;
+  font-weight: 500;
+  font-size: calc(13px * var(--text-scale, 1));
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.prompt-results small {
+  display: block;
+  padding-top: 4px;
+  font-size: calc(11px * var(--text-scale, 1));
+  color: var(--muted);
+}
+.prompt-results > p {
+  text-align: center;
+  padding: 15px;
+  color: var(--muted);
+}
+.prompt-library-hint {
+  padding: 10px 14px;
+  flex-shrink: 0;
+  border-top: 1px solid var(--border-soft);
+  color: var(--muted);
+  line-height: 1.6;
+  font-size: calc(10px * var(--text-scale, 1));
+}
+@media (hover: none) {
+  .rename-session {
+    opacity: 1;
+  }
+}
+@media (forced-colors: active) {
+  .session-views button[aria-pressed='true'],
+  .prompt-results > button.selected {
+    border-color: Highlight;
+  }
+}

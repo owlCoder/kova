@@ -354,4 +354,47 @@ export const de: Readonly<Record<string, string>> = {
     'Beliebiger OpenAI-kompatibler Chat-Completions-Endpunkt',
   'Custom provider': 'Eigener Anbieter',
   'Terminal input': 'Terminaleingabe',
+  'Session view': 'Sitzungsansicht',
+  Recent: 'Zuletzt',
+  Archived: 'Archiviert',
+  Pinned: 'Angeheftet',
+  'Session actions': 'Sitzungsaktionen',
+  'Actions for {name}': 'Aktionen für {name}',
+  'Restore {name}': '{name} wiederherstellen',
+  'Pin session': 'Sitzung anheften',
+  'Unpin session': 'Sitzung lösen',
+  'Archive session': 'Sitzung archivieren',
+  'Restore session': 'Sitzung wiederherstellen',
+  'No archived sessions': 'Keine archivierten Sitzungen',
+  'Archived sessions can be restored at any time.':
+    'Archivierte Sitzungen können jederzeit wiederhergestellt werden.',
+  'Session restored.': 'Sitzung wiederhergestellt.',
+  'Prompt library': 'Prompt-Bibliothek',
+  'Search prompts': 'Prompts durchsuchen',
+  'Search templates and previous messages…': 'Vorlagen und frühere Nachrichten suchen…',
+  'Previous message': 'Frühere Nachricht',
+  'No matching prompts': 'Keine passenden Prompts',
+  'Insert, review, then send. Your selected mode stays the same.':
+    'Einfügen, prüfen, dann senden. Der gewählte Modus bleibt erhalten.',
+  'Reuse prompt': 'Prompt wiederverwenden',
+  'This prompt would exceed the 16,000 character draft limit.':
+    'Dieser Prompt würde die Entwurfsgrenze von 16.000 Zeichen überschreiten.',
+  'Strengthen tests': 'Tests verbessern',
+  'Cover behavior that matters': 'Wichtiges Verhalten abdecken',
+  'Find bottlenecks': 'Engpässe finden',
+  'Measure before making changes': 'Vor Änderungen messen',
+  'Improve documentation': 'Dokumentation verbessern',
+  'Make the next step easier to follow': 'Den nächsten Schritt verständlicher machen',
+  'Explore this project and explain its architecture. Read the relevant files before answering.':
+    'Untersuche dieses Projekt und erkläre seine Architektur. Lies die relevanten Dateien, bevor du antwortest.',
+  'Review the current Git diff for bugs, regressions and missing tests. Report concrete findings with file references.':
+    'Prüfe den aktuellen Git-Diff auf Fehler, Regressionen und fehlende Tests. Nenne konkrete Befunde mit Dateiverweisen.',
+  'Help me plan a change. Ask what I want to build, inspect the relevant code, then outline a practical implementation.':
+    'Hilf mir, eine Änderung zu planen. Frage nach meinem Vorhaben, prüfe den relevanten Code und skizziere eine umsetzbare Implementierung.',
+  'Inspect the existing tests and identify important behavior that is not covered. Propose focused regression tests and explain how to run them.':
+    'Prüfe die vorhandenen Tests und finde wichtiges, noch nicht abgedecktes Verhalten. Schlage gezielte Regressionstests vor und erkläre ihre Ausführung.',
+  'Inspect this project for performance bottlenecks. Explain the evidence, suggest a measurement plan, and prioritize improvements by likely impact.':
+    'Untersuche dieses Projekt auf Leistungsengpässe. Erläutere die Belege, schlage einen Messplan vor und priorisiere Verbesserungen nach ihrer erwarteten Wirkung.',
+  'Read the README and relevant code. Identify missing setup steps, outdated examples and unclear explanations, then propose concrete documentation improvements.':
+    'Lies die README und den relevanten Code. Finde fehlende Einrichtungsschritte, veraltete Beispiele und unklare Erklärungen und schlage konkrete Verbesserungen vor.',
 };

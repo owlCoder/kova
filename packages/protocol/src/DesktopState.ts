@@ -17,12 +17,8 @@ export interface DesktopState {
   readonly workspacePath: string | null;
   readonly workspaceName: string;
   readonly recentWorkspaces: readonly string[];
-  readonly sessions: readonly {
-    readonly id: string;
-    readonly title: string;
-    readonly updatedAt: string;
-    readonly workspaceId: string;
-  }[];
+  readonly sessions: readonly SessionSummary[];
+  readonly archivedSessions: readonly SessionSummary[];
   readonly provider: ProviderSettings;
   readonly theme: 'dark' | 'light' | 'system';
   readonly platform: string;
@@ -46,3 +42,4 @@ export interface FilePreview {
   readonly content: string;
   readonly language: string;
 }
+import type { SessionSummary } from './SessionSummary.js';

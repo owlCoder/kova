@@ -1,5 +1,6 @@
 import { useI18n } from '../i18n/I18n.js';
-import { memo, useState } from 'react';
+import { memo, useRef, useState } from 'react';
+import { SessionRow } from './SessionRow.js';
 import { BrandMark } from '../components/BrandMark.js';
 import type { DesktopState } from '../../../packages/protocol/src/DesktopState.js';
 import { send } from '../messaging/bridge.js';
@@ -20,20 +21,19 @@ export const Sidebar = memo(function Sidebar({
 }) {
   const { t } = useI18n();
   const [query, setQuery] = useState('');
-  const [renaming, setRenaming] = useState<string | null>(null);
-  const [title, setTitle] = useState('');
+  const [archived, setArchived] = useState(false);
+  const filter = useRef<HTMLInputElement>(null);
   const mod = desktop?.platform === 'darwin' ? '⌘' : t('Ctrl');
+  const source = archived ? desktop?.archivedSessions : desktop?.sessions;
   const sessions =
-    desktop?.sessions.filter(
+    source?.filter(
       (session) =>
-        session.workspaceId === (desktop.workspacePath ?? '') &&
-        session.title.toLowerCase().includes(query.toLowerCase()),
+        session.workspaceId === (desktop?.workspacePath ?? '') &&
+        session.title.toLocaleLowerCase().includes(query.toLocaleLowerCase()),
     ) ?? [];
-  const rename = () => {
-    if (renaming && title.trim())
-      send({ type: 'RenameConversation', conversationId: renaming, title });
-    setRenaming(null);
-  };
+  const pinned = sessions.filter((session) => !archived && session.pinned);
+  const recent = sessions.filter((session) => archived || !session.pinned);
+  const focusFilter = () => filter.current?.focus({ preventScroll: true });
   return (
     <aside className="sidebar-nav">
       <div className="sidebar-brand">
@@ -131,69 +131,69 @@ export const Sidebar = memo(function Sidebar({
       </div>
       <div className="nav-section-heading">
         <span>{t('SESSIONS')}</span>
-        <span>{sessions.length}</span>
+        <span>{source?.length ?? 0}</span>
+      </div>
+      <div className="session-views" role="group" aria-label={t('Session view')}>
+        <button aria-pressed={!archived} onClick={() => setArchived(false)}>
+          <Icon name="clock" size={13} />
+          {t('Recent')}
+        </button>
+        <button aria-pressed={archived} onClick={() => setArchived(true)}>
+          <Icon name="archive" size={13} />
+          {t('Archived')}
+        </button>
       </div>
       <label className="session-filter">
         <Icon name="search" size={12} />
         <input
+          ref={filter}
           aria-label={t('Filter sessions')}
+          maxLength={128}
           placeholder={t('Filter sessions…')}
           value={query}
           onChange={(event) => setQuery(event.target.value)}
         />
       </label>
       <div className="session-list">
-        {sessions.map((session) => (
-          <div
-            className={`session-item ${session.id === conversationId ? 'active' : ''}`}
+        {!!pinned.length && <div className="session-group-label">{t('Pinned')}</div>}
+        {pinned.map((session) => (
+          <SessionRow
             key={session.id}
-          >
-            {renaming === session.id ? (
-              <input
-                aria-label={t('Session title')}
-                autoFocus
-                value={title}
-                maxLength={72}
-                onChange={(event) => setTitle(event.target.value)}
-                onBlur={rename}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') rename();
-                  if (event.key === 'Escape') setRenaming(null);
-                }}
-              />
-            ) : (
-              <>
-                <button
-                  className="session-select"
-                  aria-current={session.id === conversationId ? 'page' : undefined}
-                  disabled={busy}
-                  title={session.title}
-                  onClick={() => send({ type: 'SelectConversation', conversationId: session.id })}
-                >
-                  <Icon name="chat" size={14} />
-                  <span>{session.title === 'New session' ? t('New session') : session.title}</span>
-                </button>
-                <button
-                  className="rename-session"
-                  title={t('Rename session')}
-                  aria-label={t('Rename {name}', { name: session.title })}
-                  disabled={busy}
-                  onClick={() => {
-                    setRenaming(session.id);
-                    setTitle(session.title);
-                  }}
-                >
-                  <Icon name="pencil" size={12} />
-                </button>
-              </>
-            )}
-          </div>
+            session={session}
+            archived={false}
+            active={session.id === conversationId}
+            busy={busy}
+            onRemoved={focusFilter}
+          />
+        ))}
+        {!!pinned.length && !!recent.length && (
+          <div className="session-group-label">{t('Recent')}</div>
+        )}
+        {recent.map((session) => (
+          <SessionRow
+            key={session.id}
+            session={session}
+            archived={archived}
+            active={session.id === conversationId}
+            busy={busy}
+            onRemoved={focusFilter}
+          />
         ))}
         {!sessions.length && (
           <div className="empty-sessions">
-            <Icon name="chat" size={22} />
-            <p>{query ? t('No matching sessions') : t('Your sessions will appear here')}</p>
-            <small>{t('Conversations stay on this device.')}</small>
+            <Icon name={archived ? 'archive' : 'chat'} size={22} />
+            <p>
+              {query
+                ? t('No matching sessions')
+                : t(archived ? 'No archived sessions' : 'Your sessions will appear here')}
+            </p>
+            <small>
+              {t(
+                archived
+                  ? 'Archived sessions can be restored at any time.'
+                  : 'Conversations stay on this device.',
+              )}
+            </small>
           </div>
         )}
       </div>

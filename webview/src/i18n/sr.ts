@@ -351,4 +351,47 @@ export const sr: Readonly<Record<string, string>> = {
     'Bilo koji OpenAI kompatibilan Chat Completions endpoint',
   'Custom provider': 'Prilagođeni provajder',
   'Terminal input': 'Unos terminala',
+  'Session view': 'Prikaz sesija',
+  Recent: 'Nedavne',
+  Archived: 'Arhiva',
+  Pinned: 'Zakačene',
+  'Session actions': 'Radnje sesije',
+  'Actions for {name}': 'Radnje za {name}',
+  'Restore {name}': 'Vrati {name}',
+  'Pin session': 'Zakači sesiju',
+  'Unpin session': 'Otkači sesiju',
+  'Archive session': 'Arhiviraj sesiju',
+  'Restore session': 'Vrati sesiju',
+  'No archived sessions': 'Nema arhiviranih sesija',
+  'Archived sessions can be restored at any time.':
+    'Arhivirane sesije možete vratiti u svakom trenutku.',
+  'Session restored.': 'Sesija je vraćena.',
+  'Prompt library': 'Biblioteka upita',
+  'Search prompts': 'Pretraži upite',
+  'Search templates and previous messages…': 'Pretraži šablone i ranije poruke…',
+  'Previous message': 'Ranija poruka',
+  'No matching prompts': 'Nema odgovarajućih upita',
+  'Insert, review, then send. Your selected mode stays the same.':
+    'Ubacite, pregledajte, pa pošaljite. Izabrani režim ostaje isti.',
+  'Reuse prompt': 'Ponovo upotrebi upit',
+  'This prompt would exceed the 16,000 character draft limit.':
+    'Ovaj upit bi prekoračio ograničenje nacrta od 16.000 znakova.',
+  'Strengthen tests': 'Unapredi testove',
+  'Cover behavior that matters': 'Pokrij važno ponašanje',
+  'Find bottlenecks': 'Pronađi uska grla',
+  'Measure before making changes': 'Izmeri pre izmena',
+  'Improve documentation': 'Unapredi dokumentaciju',
+  'Make the next step easier to follow': 'Olakšaj sledeći korak',
+  'Explore this project and explain its architecture. Read the relevant files before answering.':
+    'Istraži ovaj projekat i objasni njegovu arhitekturu. Pročitaj relevantne fajlove pre odgovora.',
+  'Review the current Git diff for bugs, regressions and missing tests. Report concrete findings with file references.':
+    'Pregledaj trenutni Git diff i potraži greške, regresije i testove koji nedostaju. Navedi konkretne nalaze sa putanjama fajlova.',
+  'Help me plan a change. Ask what I want to build, inspect the relevant code, then outline a practical implementation.':
+    'Pomozi mi da isplaniram izmenu. Pitaj šta želim da napravim, pregledaj relevantan kod, pa predloži praktičan plan implementacije.',
+  'Inspect the existing tests and identify important behavior that is not covered. Propose focused regression tests and explain how to run them.':
+    'Pregledaj postojeće testove i pronađi važno ponašanje koje nije pokriveno. Predloži ciljane regresione testove i objasni kako se pokreću.',
+  'Inspect this project for performance bottlenecks. Explain the evidence, suggest a measurement plan, and prioritize improvements by likely impact.':
+    'Istraži uska grla u performansama ovog projekta. Objasni dokaze, predloži plan merenja i poređaj unapređenja prema očekivanom uticaju.',
+  'Read the README and relevant code. Identify missing setup steps, outdated examples and unclear explanations, then propose concrete documentation improvements.':
+    'Pročitaj README i relevantan kod. Pronađi korake podešavanja koji nedostaju, zastarele primere i nejasna objašnjenja, pa predloži konkretna unapređenja dokumentacije.',
 };

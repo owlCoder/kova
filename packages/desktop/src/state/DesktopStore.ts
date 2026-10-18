@@ -2,6 +2,7 @@ import { readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { Conversation } from '../../../core/src/conversations/Conversation.js';
 import type { ConversationRepository } from '../../../core/src/conversations/ConversationRepository.js';
+import type { SessionSummary } from '../../../protocol/src/SessionSummary.js';
 import { BoundedTextFile } from '../../../runtime/src/adapters/BoundedTextFile.js';
 import { CancellationSource } from '../../../core/src/common/CancellationSource.js';
 import type { DesktopPreferences } from './DesktopPreferences.js';
@@ -16,6 +17,7 @@ type SessionInfo = {
   workspaceId: string;
   archived: boolean;
   partial: boolean;
+  pinned: boolean;
 };
 type SavedSession = {
   conversation: Conversation;
@@ -23,6 +25,7 @@ type SavedSession = {
   updatedAt: string;
   archived: boolean;
   partial: boolean;
+  pinned: boolean;
 };
 
 /** Small metadata index at startup; conversation bodies are loaded lazily with an eight-session LRU. */
@@ -30,6 +33,7 @@ export class DesktopStore implements ConversationRepository {
   preferences: DesktopPreferences = structuredClone(defaultPreferences);
   private readonly sessions = new Map<string, SessionInfo>();
   private readonly cache = new Map<string, Conversation>();
+  private summaries: readonly SessionInfo[] | null = null;
   private drafts: Record<string, string> = {};
   private queue = Promise.resolve();
   constructor(readonly directory: string) {}
@@ -58,7 +62,11 @@ export class DesktopStore implements ConversationRepository {
       if (!Array.isArray(index)) throw new Error('Invalid index');
       for (const item of index)
         if (this.validInfo(item))
-          this.sessions.set(item.id, { ...item, partial: Boolean(item.partial) });
+          this.sessions.set(item.id, {
+            ...item,
+            partial: Boolean(item.partial),
+            pinned: item.pinned === true,
+          });
     } catch {
       // Recover an older or interrupted index without deleting the underlying session files.
       const files = await readdir(join(this.directory, 'sessions')).catch(() => []);
@@ -114,6 +122,7 @@ export class DesktopStore implements ConversationRepository {
         updatedAt: new Date().toISOString(),
         archived: previous?.archived ?? false,
         partial: previous?.partial ?? false,
+        pinned: previous?.pinned ?? false,
       };
       await writeJson(join(this.directory, 'sessions', `${copy.id}.json`), record);
       this.sessions.set(copy.id, this.info(record));
@@ -152,16 +161,39 @@ export class DesktopStore implements ConversationRepository {
   async rename(id: string, title: string): Promise<void> {
     await this.updateSession(id, { title: title.trim().slice(0, 72) || 'Untitled session' });
   }
-  list() {
-    return [...this.sessions.values()]
-      .filter((record) => !record.archived)
-      .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
+  async restore(id: string): Promise<void> {
+    await this.updateSession(id, { archived: false });
+  }
+  async pin(id: string, pinned: boolean): Promise<void> {
+    await this.updateSession(id, { pinned });
+  }
+  contains(id: string, workspaceId?: string): boolean {
+    const session = this.sessions.get(id);
+    return Boolean(session && (workspaceId === undefined || session.workspaceId === workspaceId));
+  }
+  list(options: { workspaceId?: string; archived?: boolean } = {}): readonly SessionSummary[] {
+    this.summaries ??= [...this.sessions.values()].sort(
+      (left, right) =>
+        Number(right.pinned) - Number(left.pinned) || right.updatedAt.localeCompare(left.updatedAt),
+    );
+    return this.summaries
+      .filter(
+        (record) =>
+          record.archived === Boolean(options.archived) &&
+          (options.workspaceId === undefined || record.workspaceId === options.workspaceId),
+      )
       .slice(0, 200)
-      .map(({ id, title, updatedAt, workspaceId }) => ({ id, title, updatedAt, workspaceId }));
+      .map(({ id, title, updatedAt, workspaceId, pinned }) => ({
+        id,
+        title,
+        updatedAt,
+        workspaceId,
+        pinned,
+      }));
   }
   private async updateSession(
     id: string,
-    patch: Partial<Pick<SessionInfo, 'title' | 'archived' | 'partial'>>,
+    patch: Partial<Pick<SessionInfo, 'title' | 'archived' | 'partial' | 'pinned'>>,
   ): Promise<void> {
     await this.persist(async () => {
       const previous = this.sessions.get(id);
@@ -175,6 +207,7 @@ export class DesktopStore implements ConversationRepository {
         updatedAt: next.updatedAt,
         archived: next.archived,
         partial: next.partial,
+        pinned: next.pinned,
       });
       this.sessions.set(id, next);
       await this.writeIndex();
@@ -188,6 +221,7 @@ export class DesktopStore implements ConversationRepository {
       workspaceId: record.conversation.workspaceId,
       archived: Boolean(record.archived),
       partial: Boolean(record.partial),
+      pinned: record.pinned === true,
     };
   }
   private validInfo(value: unknown): value is SessionInfo {
@@ -216,6 +250,7 @@ export class DesktopStore implements ConversationRepository {
     return JSON.parse(content) as unknown;
   }
   private writeIndex(): Promise<void> {
+    this.summaries = null;
     return writeJson(join(this.directory, 'session-index.json'), [...this.sessions.values()]);
   }
   private persist(write: () => Promise<void>): Promise<void> {

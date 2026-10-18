@@ -7,14 +7,13 @@ import { Onboarding } from './components/Onboarding.js';
 import { Welcome } from './components/Welcome.js';
 import { Conversation } from './components/Conversation.js';
 import { CommandPalette } from './components/CommandPalette.js';
-import { Sidebar } from './desktop/Sidebar.js';
-import { Inspector } from './desktop/Inspector.js';
 
 import { isDesktop, send } from './messaging/bridge.js';
 import { WindowTitlebar } from './desktop/WindowTitlebar.js';
 import { I18nProvider, useI18n } from './i18n/I18n.js';
 import { subscribe } from './messaging/bridge.js';
 import { useChat } from './state/useChat.js';
+import { insertComposerText } from './state/insertComposerText.js';
 import { useHostResources } from './state/useHostResources.js';
 
 const ProviderPreferences = lazy(() =>
@@ -23,6 +22,12 @@ const ProviderPreferences = lazy(() =>
   })),
 );
 const TerminalPanel = lazy(() => import('./desktop/TerminalPanel.js'));
+const Sidebar = lazy(() =>
+  import('./desktop/Sidebar.js').then((module) => ({ default: module.Sidebar })),
+);
+const Inspector = lazy(() =>
+  import('./desktop/Inspector.js').then((module) => ({ default: module.Inspector })),
+);
 export function App() {
   const chat = useChat();
   return (
@@ -75,6 +80,24 @@ function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
   const [showLatest, setShowLatest] = useState(false);
   const scroller = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLTextAreaElement>(null);
+  const insertPrompt = useCallback(
+    (text: string) => {
+      const field = input.current;
+      if (!field || field.disabled) return;
+      const next = insertComposerText(field.value, text, field.selectionEnd);
+      if (!next) {
+        resources.setNotice('This prompt would exceed the 16,000 character draft limit.');
+        field.focus({ preventScroll: true });
+        return;
+      }
+      chat.setPrompt(next.text);
+      requestAnimationFrame(() => {
+        field.focus({ preventScroll: true });
+        field.setSelectionRange(next.caret, next.caret);
+      });
+    },
+    [chat.setPrompt, resources.setNotice],
+  );
   const nearBottom = useRef(true);
   const showSetup = Boolean(
     snapshot &&
@@ -220,13 +243,15 @@ function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
         inert={resources.preferences || paletteOpen ? true : undefined}
       >
         {isDesktop && sidebarOpen && (
-          <Sidebar
-            desktop={snapshot?.desktop}
-            conversationId={snapshot?.conversationId}
-            busy={busy}
-            onSearch={openPalette}
-            onPreferences={preferences}
-          />
+          <Suspense fallback={<aside className="sidebar-nav" aria-busy="true" />}>
+            <Sidebar
+              desktop={snapshot?.desktop}
+              conversationId={snapshot?.conversationId}
+              busy={busy}
+              onSearch={openPalette}
+              onPreferences={preferences}
+            />
+          </Suspense>
         )}
         <div className="workspace-main">
           <WorkspaceHeader
@@ -277,13 +302,7 @@ function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
                   onClose={closeSetup}
                 />
               ) : !snapshot?.messages.length ? (
-                <Welcome
-                  snapshot={snapshot}
-                  onChoose={(prompt) => {
-                    chat.setPrompt(prompt);
-                    input.current?.focus();
-                  }}
-                />
+                <Welcome snapshot={snapshot} onChoose={insertPrompt} />
               ) : null}
               {!showSetup && snapshot && (
                 <Conversation
@@ -291,6 +310,7 @@ function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
                   thinking={chat.thinking}
                   activities={chat.activities}
                   busy={busy}
+                  onReuse={insertPrompt}
                 />
               )}
             </div>
@@ -326,6 +346,7 @@ function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
               onSubmit={chat.submit}
               onModelChange={chat.setModel}
               onModeChange={chat.setMode}
+              onInsertPrompt={insertPrompt}
             />
           )}
           {isDesktop && terminalMounted && (
@@ -361,19 +382,21 @@ function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
           )}
         </div>
         {isDesktop && resources.inspectorOpen && (
-          <Inspector
-            key={snapshot?.desktop?.workspacePath ?? 'empty'}
-            files={resources.files}
-            search={resources.search}
-            busy={busy}
-            preview={resources.preview}
-            activities={chat.activities}
-            tab={resources.inspectorTab}
-            onTab={resources.setInspectorTab}
-            onClose={closeInspector}
-            onClosePreview={closePreview}
-            hasWorkspace={Boolean(snapshot?.desktop?.workspacePath)}
-          />
+          <Suspense fallback={<aside className="inspector" aria-busy="true" />}>
+            <Inspector
+              key={snapshot?.desktop?.workspacePath ?? 'empty'}
+              files={resources.files}
+              search={resources.search}
+              busy={busy}
+              preview={resources.preview}
+              activities={chat.activities}
+              tab={resources.inspectorTab}
+              onTab={resources.setInspectorTab}
+              onClose={closeInspector}
+              onClosePreview={closePreview}
+              hasWorkspace={Boolean(snapshot?.desktop?.workspacePath)}
+            />
+          </Suspense>
         )}
       </main>
       {resources.preferences && snapshot?.desktop && (

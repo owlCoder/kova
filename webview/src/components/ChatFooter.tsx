@@ -5,6 +5,7 @@ import type { SessionSnapshot } from '../../../packages/protocol/src/SessionSnap
 import { inHost, isDesktop, send } from '../messaging/bridge.js';
 import { Icon } from './Icon.js';
 import { ModelPicker } from './ModelPicker.js';
+import { PromptPicker } from './PromptPicker.js';
 
 type Props = {
   snapshot: SessionSnapshot | null;
@@ -19,6 +20,7 @@ type Props = {
   onSubmit(): void;
   onModelChange(value: string): void;
   onModeChange(value: AgentMode): void;
+  onInsertPrompt(value: string): void;
 };
 
 export function ChatFooter({
@@ -34,6 +36,7 @@ export function ChatFooter({
   onSubmit,
   onModelChange,
   onModeChange,
+  onInsertPrompt,
 }: Props) {
   const { t } = useI18n();
   const contextMenu = useRef<HTMLDetailsElement>(null);
@@ -104,7 +107,7 @@ export function ChatFooter({
           placeholder={t('Ask anything, or describe what you want to build…')}
           value={prompt}
           ref={inputRef}
-          disabled={!inHost || snapshot?.configuringProvider}
+          disabled={!inHost || !snapshot || snapshot.configuringProvider}
           maxLength={16000}
           rows={3}
           onChange={(event) => onPromptChange(event.target.value)}
@@ -138,6 +141,11 @@ export function ChatFooter({
                 </button>
               </div>
             </details>
+            <PromptPicker
+              messages={snapshot?.messages}
+              disabled={!inHost || !snapshot || Boolean(snapshot.configuringProvider)}
+              onChoose={onInsertPrompt}
+            />
             <label className="mode-control">
               <Icon name={mode === 'Plan' ? 'plan' : mode === 'Auto' ? 'zap' : 'code'} size={14} />
               <select

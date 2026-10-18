@@ -51,9 +51,10 @@ export class DesktopController {
     const session = this.session;
     switch (message.type) {
       case 'UpdateDraft':
+        // A final draft flush can arrive after archiving or switching projects.
         if (
           message.conversationId === session.conversationId ||
-          session.store.list().some((item) => item.id === message.conversationId)
+          session.store.contains(message.conversationId)
         )
           await session.store.updateDraft(message.conversationId, message.prompt);
         return;
@@ -128,13 +129,25 @@ export class DesktopController {
         return;
       case 'RenameConversation':
         session.requireIdle();
+        this.requireConversation(message.conversationId);
         await session.store.rename(message.conversationId, message.title);
         await session.snapshot(message.requestId);
         return;
       case 'ArchiveConversation':
+        this.requireConversation(message.conversationId);
+        await session.archiveConversation(message.conversationId);
+        return;
+      case 'RestoreConversation':
         session.requireIdle();
-        await session.store.remove(message.conversationId);
-        if (message.conversationId === session.conversationId) await session.newConversation();
+        this.requireConversation(message.conversationId);
+        await session.store.restore(message.conversationId);
+        await session.snapshot(message.requestId);
+        session.send({ type: 'Notice', message: 'Session restored.' });
+        return;
+      case 'PinConversation':
+        session.requireIdle();
+        this.requireConversation(message.conversationId);
+        await session.store.pin(message.conversationId, message.pinned);
         await session.snapshot(message.requestId);
         return;
       case 'OpenWorkspace': {
@@ -261,6 +274,10 @@ export class DesktopController {
   private root(): string {
     if (!this.session.root) throw new Error('Open a project first.');
     return this.session.root;
+  }
+  private requireConversation(id: string): void {
+    if (!this.session.store.contains(id, this.session.root ?? ''))
+      throw new Error('Choose a session from the current project.');
   }
   private async listFiles(path: string): Promise<void> {
     const root = this.root();

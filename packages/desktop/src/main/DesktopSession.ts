@@ -188,7 +188,8 @@ export class DesktopSession {
         workspacePath: this.root,
         workspaceName: this.root ? basename(this.root) : 'No project open',
         recentWorkspaces: settings.recentWorkspaces,
-        sessions: this.store.list(),
+        sessions: this.store.list({ workspaceId: this.root ?? '' }),
+        archivedSessions: this.store.list({ workspaceId: this.root ?? '', archived: true }),
         provider: { ...settings.provider, thinking: settings.thinking, hasApiKey },
         theme: settings.theme,
         platform: process.platform,
@@ -209,7 +210,7 @@ export class DesktopSession {
     this.changing = true;
     try {
       await this.setRoot(path);
-      const existing = this.store.list().find((session) => session.workspaceId === this.root);
+      const existing = this.store.list({ workspaceId: this.root! })[0];
       this.conversationId = existing?.id ?? randomUUID();
       this.reset();
       if (!existing)
@@ -246,19 +247,33 @@ export class DesktopSession {
     this.requireIdle();
     this.changing = true;
     try {
-      this.conversationId = randomUUID();
-      this.reset();
-      await this.store.save({
-        id: this.conversationId,
-        workspaceId: this.root ?? '',
-        entries: [],
-        summary: null,
-      });
-      await this.store.updatePreferences({ lastConversationId: this.conversationId });
+      await this.createConversation();
     } finally {
       this.changing = false;
       await this.snapshot('new-session');
     }
+  }
+  async archiveConversation(id: string): Promise<void> {
+    this.requireIdle();
+    this.changing = true;
+    try {
+      if (id === this.conversationId) await this.createConversation();
+      await this.store.remove(id);
+    } finally {
+      this.changing = false;
+      await this.snapshot('archived-session');
+    }
+  }
+  private async createConversation(): Promise<void> {
+    this.conversationId = randomUUID();
+    this.reset();
+    await this.store.save({
+      id: this.conversationId,
+      workspaceId: this.root ?? '',
+      entries: [],
+      summary: null,
+    });
+    await this.store.updatePreferences({ lastConversationId: this.conversationId });
   }
   async selectConversation(id: string): Promise<void> {
     this.requireIdle();
