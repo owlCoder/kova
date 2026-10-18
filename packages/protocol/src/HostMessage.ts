@@ -2,6 +2,7 @@ import type { PresentationEvent } from './PresentationEvent.js';
 import type { SessionSnapshot } from './SessionSnapshot.js';
 import type { FilePreview, WorkspaceEntry } from './DesktopState.js';
 import type { ModelInfo } from './ModelInfo.js';
+import type { ContextPreview } from './ContextAttachmentView.js';
 
 export type HostMessage = {
   readonly protocolVersion: 1;
@@ -41,6 +42,11 @@ export type HostMessage = {
       readonly entries: readonly WorkspaceEntry[];
     }
   | { readonly type: 'FilePreview'; readonly file: FilePreview }
+  | {
+      readonly type: 'ContextPreview';
+      readonly requestId: string;
+      readonly preview: ContextPreview;
+    }
   | {
       readonly type: 'DiffPreview';
       readonly title: string;

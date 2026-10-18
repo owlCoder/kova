@@ -90,3 +90,11 @@ The full [ERS walkthrough](../examples/ers/README.md) includes the review skill,
 Hooks are optional local programs configured in `.kova/hooks.json`. They can inspect tool execution. Every hook needs a timeout. A failing before-hook blocks the call; an after-hook failure is reported without reversing the result. Use the [ERS hook config](../examples/ers/.kova/hooks.json) with its [audit script](../examples/ers/scripts/kova-audit.mjs) as a complete example.
 
 Configured MCP programs and hooks run with your user privileges. Use trusted programs and inspect file/process approvals before accepting them.
+
+## Review attached context
+
+Click an attachment to preview its captured text, source and character count. The separate remove control detaches it; opening a preview does not. Previews display up to 50,000 characters and do not change the stored attachment. The model's context budget can shorten the content used for a task. Reattach the file to refresh its snapshot. Multi-file selection commits only after all chosen files pass validation. Starting a new conversation clears attached context.
+
+## Long conversations
+
+The interface initially renders the latest 40 saved messages. Load earlier messages in batches of 40 while keeping your reading position, or choose Show recent to return to the end. Find in conversation loads the saved messages in the current snapshot, including those initially outside the rendered window. Closing Find keeps those messages available until you choose Show recent or change conversations. Rendering limits do not change the agent's context-compaction policy.

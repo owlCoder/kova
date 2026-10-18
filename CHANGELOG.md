@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.8.0
+
+- Preview captured context in desktop and VS Code through an explicit, conversation-scoped request. Show source and character count, render plain text safely, and cap the preview at 50,000 characters without changing the attachment.
+- Separate attachment preview and removal controls, refresh reattached files in place, retain distinct selections and commit multi-file capture atomically. Refuse stale picker results and use bounded file reads in both hosts.
+- Clear attached context when starting a new extension conversation, matching desktop behavior. Keep previews available during generation while context removal stays locked.
+- Render the latest 40 messages when opening a long conversation, load 40 earlier messages at a time while retaining the reading position, and offer a return to recent messages. Find loads all saved messages in the current snapshot and preserves search results after closing.
+- Share bounded streaming-message projection between hosts, report the actual configured text-read limit, and preserve focus across preview/settings transitions.
+- Extend Kova branding into context review and About, with coherent dark/light surfaces, text scaling and English, Serbian Latin and German controls.
+- Add a release-preparation workflow that validates successful main-branch builds at an exact commit, transfers artifacts directly within GitHub, generates checksums and verifies uploaded digests. Publishing remains a separate action; published releases are never overwritten.
+- Expand regression coverage and installed-VSIX smoke checks, add a deterministic long-history desktop fixture, and document context review and release preparation.
+
 ## 0.7.0
 
 - Organize desktop conversations with persistent pins, accessible row menus, archive browsing and restore. Archiving preserves history, title, pin and retained draft.

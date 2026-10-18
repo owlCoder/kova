@@ -6,6 +6,7 @@ import './styles/workbench.css';
 import './styles/controls.css';
 import './styles/finish.css';
 import './styles/session-tools.css';
+import './styles/workspace-tools.css';
 
 const root = document.getElementById('root');
 if (root)

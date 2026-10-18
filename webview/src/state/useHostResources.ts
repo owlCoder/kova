@@ -29,7 +29,9 @@ export function useHostResources(snapshot: SessionSnapshot | null) {
     updatePreferences(open);
     if (!open)
       requestAnimationFrame(() => {
-        const element = preferenceFocus.current.element;
+        const element = preferenceFocus.current.element?.isConnected
+          ? preferenceFocus.current.element
+          : document.querySelector<HTMLTextAreaElement>('.composer textarea');
         if (element?.isConnected && !element.closest('[inert]'))
           element.focus({ preventScroll: true });
       });

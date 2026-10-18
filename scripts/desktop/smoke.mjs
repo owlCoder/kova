@@ -110,6 +110,27 @@ await new Promise((resolve, reject) => {
 });
 const port = server.address().port;
 const id = randomUUID();
+const history = process.argv.includes('--history');
+const entries = history
+  ? Array.from({ length: 120 }, (_, index) => ({
+      id: `history-${index}`,
+      turnId: `history-turn-${Math.floor(index / 2)}`,
+      stepId: null,
+      message: {
+        role: index % 2 ? 'assistant' : 'user',
+        content:
+          index === 0
+            ? 'Opening history marker: ARCHIVE_NEEDLE. This message starts outside the initial rendered window.'
+            : index % 2
+              ? `### History answer ${index}\n\nA saved explanation with **Markdown** and a short example.\n\n\`\`\`typescript\nexport const example${index} = true;\n\`\`\``
+              : `History prompt ${index}: explain this part of the example project.`,
+      },
+      toolResultOrigin: null,
+      omitted: false,
+    }))
+  : [];
+if (history)
+  await writeFile(join(project, 'large-context.txt'), 'Captured context sample.\n'.repeat(3000));
 await writeFile(
   join(temp, 'data/settings.json'),
   JSON.stringify({
@@ -130,8 +151,8 @@ await writeFile(
 await writeFile(
   join(temp, 'data/sessions', id + '.json'),
   JSON.stringify({
-    conversation: { id, workspaceId: project, entries: [], summary: null },
-    title: 'New session',
+    conversation: { id, workspaceId: project, entries, summary: null },
+    title: history ? 'Long conversation fixture' : 'New session',
     updatedAt: new Date().toISOString(),
     archived: false,
   }),

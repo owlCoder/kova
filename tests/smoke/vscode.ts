@@ -125,6 +125,21 @@ export async function run() {
   });
   const attachedSnapshot = messages.filter((message) => message.type === 'Snapshot').at(-1);
   assert.equal(attachedSnapshot?.snapshot.contextAttachments[0]?.label, 'attached.txt');
+  const attachment = attachedSnapshot!.snapshot.contextAttachments[0]!;
+  assert.equal(attachment.characters, 8);
+  assert.equal(attachment.source, 'Selection');
+  await api.session.handle({
+    protocolVersion: 1,
+    requestId: 'smoke-preview-context',
+    type: 'PreviewContext',
+    conversationId: attachedSnapshot!.snapshot.conversationId,
+    attachmentId: attachment.id,
+  });
+  const contextPreview = messages.filter((message) => message.type === 'ContextPreview').at(-1);
+  assert.equal(contextPreview?.preview.content, 'attached');
+  assert.equal(contextPreview?.preview.truncated, false);
+  assert.equal(attachedSnapshot!.snapshot.contextAttachments.length, 1);
+  console.log('PASS explicit context snapshot preview without removing the attachment.');
   await api.session.handle({
     protocolVersion: 1,
     requestId: 'smoke-remove',

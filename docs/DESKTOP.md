@@ -44,6 +44,10 @@ The sidebar lists projects and sessions. Reopening a project resumes a pinned se
 
 The composer’s Prompt library includes six translated templates and the 12 most recent distinct user messages in the current conversation. Insertion preserves existing text and the selected agent mode, and never sends automatically. User messages also have a Reuse prompt action.
 
+Attached context has separate preview and remove controls. Preview shows the captured snapshot, source and character count, with a 50,000-character display limit. Reattaching the same file refreshes it in place. Multi-file capture commits only after the full selection passes validation. Starting a new conversation clears attachments.
+
+Long conversations render their latest 40 messages first. Load older messages incrementally without losing your reading position, or use Show recent to return to the end. Find searches the saved messages in the current snapshot, including those initially outside the rendered window.
+
 Markdown supports lists, tables and fenced code. Code blocks and messages have copy controls. External images do not load automatically. HTTP(S) links open through the operating system.
 
 **Stop** cancels generation, an approval wait or a process. The partial response is saved, and applied edits remain. Desktop writes are atomic and check the previewed file version. Use Git to restore desktop edits; VS Code Undo is available in the extension.

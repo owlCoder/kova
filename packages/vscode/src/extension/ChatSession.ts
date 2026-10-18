@@ -27,6 +27,9 @@ import { WebviewApprovalPort } from '../webview/WebviewApprovalPort.js';
 import { approvalView, projectEvent } from '../../../runtime/src/presentation/projectEvent.js';
 import { ContextAttachmentManager } from './ContextAttachmentManager.js';
 import { projectConversationMessages } from '../../../runtime/src/presentation/projectConversationMessages.js';
+import { nextStreamingMessage } from '../../../runtime/src/presentation/nextStreamingMessage.js';
+import { previewContext } from '../../../runtime/src/presentation/previewContext.js';
+import { contextAttachmentViews } from '../../../runtime/src/presentation/contextAttachmentViews.js';
 import { StreamEventBuffer } from '../../../runtime/src/presentation/StreamEventBuffer.js';
 import { logAgentEvent } from './logAgentEvent.js';
 import { readRunSettings } from './readRunSettings.js';
@@ -81,7 +84,10 @@ export class ChatSession {
   ) {
     this.providers =
       providers ?? new ProviderManager(new ProviderApiKeyStore(this.context.secrets));
-    this.contextAttachments = new ContextAttachmentManager(root);
+    this.contextAttachments = new ContextAttachmentManager(
+      root,
+      () => !this.activeRun && !this.preparingRun && !this.configuring && !this.disposed,
+    );
     this.draft = new WorkspaceDraft(context.workspaceState);
   }
   connect(deliver: (message: HostMessage) => void): () => void {
@@ -120,20 +126,7 @@ export class ChatSession {
     }
     if (event.type === 'ContextUpdated') this.usage = event.usage;
     if (event.type === 'GenerationCancelled') this.partial = true;
-    if (event.type === 'ResponseStarted')
-      this.streamingResponse = {
-        id: event.messageId,
-        role: 'assistant',
-        content: '',
-        partial: true,
-      };
-    if (event.type === 'ResponseDelta' && this.streamingResponse?.id === event.messageId)
-      this.streamingResponse = {
-        ...this.streamingResponse,
-        content: (this.streamingResponse.content + event.text).slice(0, 65_536),
-      };
-    if (event.type === 'ResponseCompleted' && this.streamingResponse?.id === event.messageId)
-      this.streamingResponse = { ...this.streamingResponse, partial: false };
+    this.streamingResponse = nextStreamingMessage(this.streamingResponse, event);
     logAgentEvent(this.output, event);
     this.events.push(event);
   }
@@ -257,9 +250,7 @@ export class ChatSession {
       activeSkillId: this.skillId,
       usage: this.usage ? structuredClone(this.usage) : null,
       messages,
-      contextAttachments: this.contextAttachments
-        .list()
-        .map((item) => ({ id: item.id, label: item.label })),
+      contextAttachments: contextAttachmentViews(this.contextAttachments.list()),
       pendingApproval: this.approval.requestPending
         ? approvalView(this.approval.requestPending)
         : null,
@@ -287,6 +278,14 @@ export class ChatSession {
     )
       return;
     switch (message.type) {
+      case 'PreviewContext':
+        this.deliver({
+          ...this.envelope(),
+          type: 'ContextPreview',
+          requestId: message.requestId,
+          preview: previewContext(this.conversationId, this.contextAttachments.list(), message),
+        });
+        return;
       case 'UpdateDraft':
         if (message.conversationId === this.conversationId) {
           await this.draft.set(message.prompt);
@@ -472,6 +471,7 @@ export class ChatSession {
     await this.repository.remove(previousConversationId);
     this.providers.forgetConversation(previousConversationId);
     this.conversationId = randomUUID();
+    this.contextAttachments.clear();
     await this.draft.set('');
     this.state = 'Idle';
     this.usage = null;

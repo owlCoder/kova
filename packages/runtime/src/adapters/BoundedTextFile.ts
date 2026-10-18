@@ -15,7 +15,7 @@ export class BoundedTextFile {
       const information = await file.stat();
       if (!information.isFile() || information.size > maxBytes)
         throw new Error(
-          'File exceeds the 2 MiB text read limit or is not a regular file; use a smaller file',
+          `File exceeds the ${maxBytes === 2 * 1024 * 1024 ? '2 MiB' : `${maxBytes} byte`} text read limit or is not a regular file; use a smaller file`,
         );
       const buffer = Buffer.alloc(Math.min(maxBytes + 1, information.size + 1));
       let length = 0;

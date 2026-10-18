@@ -29,6 +29,11 @@ export function AboutKova({ desktop }: { desktop: DesktopState }) {
       </div>
       <div className="about-capabilities">
         <article>
+          <Icon name="paperclip" />
+          <h3>{t('Your context')}</h3>
+          <p>{t('Inspect captured attachments before sending. Keep every request deliberate.')}</p>
+        </article>
+        <article>
           <Icon name="sparkles" />
           <h3>{t('Your models')}</h3>
           <p>

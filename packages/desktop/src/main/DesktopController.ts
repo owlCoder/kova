@@ -16,6 +16,9 @@ import type { ProviderConfiguration } from '../../../runtime/src/providers/Provi
 import { DesktopSession } from './DesktopSession.js';
 import { validateDesktopMessage } from './validateDesktopMessage.js';
 import { exportTranscript } from './exportTranscript.js';
+import { previewContext } from '../../../runtime/src/presentation/previewContext.js';
+import { mergeContextAttachments } from '../../../runtime/src/presentation/mergeContextAttachments.js';
+import type { ContextAttachment } from '../../../core/src/context/ContextAttachment.js';
 
 export class DesktopController {
   readonly terminal = new DesktopTerminal((message) => this.session.send(message));
@@ -50,6 +53,13 @@ export class DesktopController {
   private async route(message: WebviewMessage): Promise<void> {
     const session = this.session;
     switch (message.type) {
+      case 'PreviewContext':
+        session.send({
+          type: 'ContextPreview',
+          requestId: message.requestId,
+          preview: previewContext(session.conversationId, session.attachments, message),
+        });
+        return;
       case 'UpdateDraft':
         // A final draft flush can arrive after archiving or switching projects.
         if (
@@ -321,6 +331,9 @@ export class DesktopController {
     this.session.requireIdle();
     const root = this.root();
     let paths: string[];
+    const conversationId = this.session.conversationId;
+    const previous = this.session.attachments;
+    const captured: ContextAttachment[] = [];
     if (source === 'PickFiles') {
       const result = await dialog.showOpenDialog(this.window, {
         title: 'Attach project files',
@@ -332,8 +345,9 @@ export class DesktopController {
       if (!this.previewPath) throw new Error('Preview a project file first, or use Choose files.');
       paths = [this.previewPath];
     }
+    if (!paths.length) return;
+    if (paths.length > 10) throw new Error('Choose up to 10 files at a time.');
     for (const path of paths) {
-      if (this.session.attachments.length >= 10) throw new Error('Attach up to 10 files.');
       const cancellation = new CancellationSource();
       const resolved = await new NodeWorkspacePathGuard(root).resolve(
         root,
@@ -346,14 +360,21 @@ export class DesktopController {
         cancellation,
         100_000,
       );
-      if (!this.session.attachments.some((item) => item.label === resolved.relativePath))
-        this.session.attachments.push({
-          id: randomUUID(),
-          label: resolved.relativePath,
-          source: 'ExplicitFile',
-          content,
-        });
+      captured.push({
+        id: randomUUID(),
+        label: resolved.relativePath,
+        source: 'ExplicitFile',
+        content,
+      });
     }
+    this.session.requireIdle();
+    if (
+      this.session.root !== root ||
+      this.session.conversationId !== conversationId ||
+      this.session.attachments !== previous
+    )
+      throw new Error('Context changed while choosing files. Attach them again.');
+    this.session.attachments = mergeContextAttachments(previous, captured);
   }
   private config(draft: ProviderDraft): ProviderConfiguration {
     return {

@@ -394,4 +394,27 @@ export const sr: Readonly<Record<string, string>> = {
     'Istraži uska grla u performansama ovog projekta. Objasni dokaze, predloži plan merenja i poređaj unapređenja prema očekivanom uticaju.',
   'Read the README and relevant code. Identify missing setup steps, outdated examples and unclear explanations, then propose concrete documentation improvements.':
     'Pročitaj README i relevantan kod. Pronađi korake podešavanja koji nedostaju, zastarele primere i nejasna objašnjenja, pa predloži konkretna unapređenja dokumentacije.',
+  'Attached context': 'Priloženi kontekst',
+  Context: 'Kontekst',
+  '{count} characters': '{count} znakova',
+  'Preview {name}': 'Pregledaj {name}',
+  'CONTEXT FOR KOVA': 'KONTEKST ZA KOVU',
+  'File snapshot': 'Snimak fajla',
+  'Captured locally': 'Sačuvano lokalno',
+  'This is an attachment snapshot. Reattach the file to refresh it. Model context limits may shorten it when sent.':
+    'Ovo je sačuvan sadržaj priloga. Ponovo dodajte fajl da ga osvežite. Ograničenje konteksta modela može skratiti sadržaj pri slanju.',
+  'Preview shows the first 50,000 characters. The attachment itself is unchanged.':
+    'Pregled prikazuje prvih 50.000 znakova. Sam prilog ostaje neizmenjen.',
+  'Attachment content': 'Sadržaj priloga',
+  'Remove attachment': 'Ukloni prilog',
+  'Copy preview': 'Kopiraj pregled',
+  Done: 'Gotovo',
+  'Conversation history': 'Istorija razgovora',
+  'Load earlier messages': 'Učitaj starije poruke',
+  'All messages loaded': 'Sve poruke su učitane',
+  '{visible} of {total} messages': '{visible} od {total} poruka',
+  'Show recent': 'Prikaži najnovije',
+  'Your context': 'Vaš kontekst',
+  'Inspect captured attachments before sending. Keep every request deliberate.':
+    'Pregledajte sačuvane priloge pre slanja. Vi odlučujete šta ulazi u svaki zahtev.',
 };

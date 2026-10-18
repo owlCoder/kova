@@ -1,30 +1,40 @@
-# GitHub releases
+# Releasing Kova
 
-Kova publishes native desktop installers and a VS Code VSIX through [GitHub Releases](https://github.com/owlCoder/kova/releases). Marketplace publication is a separate, manual process described in [MARKETPLACE.md](MARKETPLACE.md). There is no automatic updater or release-publishing workflow.
+A release uses successful main-branch CI runs at one exact source commit. The **Prepare release** workflow transfers the installers directly from Actions artifacts to a GitHub draft, generates checksums and verifies every uploaded digest. It does not publish the release or upload to the VS Code Marketplace; see [MARKETPLACE.md](MARKETPLACE.md) for that separate process.
 
-## Prepare a version
+## Prepare the source
 
-1. Update the root package, desktop package and extension manifest versions together. Regenerate the lockfile with npm 11 if the package metadata changes.
-2. Update `CHANGELOG.md`, README asset names and versioned installation examples. Keep package architecture, signing status and verification limits accurate.
-3. Run `npm ci` and `npm run check`. Build and verify both hosts. Perform the applicable native smoke checks in [TESTING.md](TESTING.md); do not describe an installer build as manual UI verification.
-4. Commit and push the exact source to release. Confirm the **Kova checks** workflow succeeds for that commit and produces `kova-vsix`.
-5. Confirm **Desktop builds** succeeds for the same commit on all three runners. If only documentation changed and the path filter did not start it, dispatch `desktop.yml` manually against the intended ref.
+1. Finish implementation and the applicable native UI checks in [TESTING.md](TESTING.md), then choose a stable version.
+2. Update the root and desktop `package.json`, `packages/vscode/extension.package.json`, the root/desktop versions in `package-lock.json`, and current download examples in the documentation.
+3. Add that version's section to `CHANGELOG.md`. Keep the changes concrete and include meaningful limitations.
+4. Run `npm ci` and `npm run check`, package/verify the VSIX and desktop, and exercise the installed interfaces with a local fixture provider. `node scripts/desktop/smoke.mjs --history` seeds a long conversation for history/search checks.
+5. Commit and push to `main`. Wait for **Kova checks** and every **Desktop builds** job to succeed at that commit. If a path filter did not start the desktop workflow, dispatch `desktop.yml` manually against `main` and confirm its source SHA matches.
 
-## Collect artifacts
+Current targets are ARM64 macOS, x64 Windows and x64 Linux. Desktop packages remain unsigned and not notarized; updates are manual. New native target architectures must be added explicitly to the asset plan.
 
-Download artifacts from the verified workflow runs using `gh run download <run-id>`. The artifact names are `kova-vsix`, `kova-desktop-macOS`, `kova-desktop-Windows` and `kova-desktop-Linux`. Check the run's `headSha` against the intended release commit.
+## Assemble the draft
 
-Include only the intended version's DMG, ZIP, EXE, AppImage, DEB and VSIX. The current runner matrix produces macOS arm64, Windows x64 and Linux x64. Put the six files in one clean release directory and generate `SHA256SUMS` over their exact bytes, using bare asset filenames. On macOS, for example:
+Use **Actions → Prepare release → Run workflow**, select `main`, and supply the full source SHA and the two successful run IDs. With GitHub CLI, replace the uppercase values:
 
 ```sh
-shasum -a 256 Kova-* kova-local-*.vsix > SHA256SUMS
-shasum -a 256 -c SHA256SUMS
+gh workflow run release.yml --ref main \
+  -f commit=FULL_COMMIT_SHA \
+  -f checks_run=CHECKS_RUN_ID \
+  -f desktop_run=DESKTOP_RUN_ID
 ```
 
-Do not reuse a checksum file or package from another build. Keep native dependency notices in the packaged distributions. Desktop packages currently have no signing/notarization credentials; disclose this in the release notes.
+The workflow runs trusted code from the dispatched main ref. It checks source ancestry, workflow identities, source SHA, repository identity, trusted event, main branch and successful completion before downloading packages. It never checks out or executes code from an input commit or an artifact. Inputs are passed through environment variables and validated before CLI use. Only the draft job receives repository-content write permission; no personal access token is required. These choices follow [GitHub's workflow security guidance](https://docs.github.com/en/actions/reference/security/secure-use).
 
-## Publish and verify
+The root, desktop and extension manifest versions must match. The workflow normalizes Linux filenames, rejects unexpected files and checks the packaged VSIX version. It creates `SHA256SUMS`, uploads six packages plus the checksum file, and compares uploaded sizes and SHA-256 digests with the local build artifacts.
 
-Write release notes describing the shipped behavior, installation choices, checks performed and material limitations. Create a draft release with `gh release create`, targeting the verified commit and using `--notes-file` for the body. Upload all six packages and `SHA256SUMS`.
+A rerun can finish an incomplete draft when its commit and existing assets match exactly. It refuses to overwrite a published release, a draft from another commit, unexpected assets or a conflicting uploaded file. It accepts main-branch pushes and explicit desktop rebuilds dispatched on main. It refuses artifacts from PRs, forks, failed runs or another workflow. Concurrency serializes preparation for each source commit.
 
-Before publishing, verify the tag target, asset names, sizes and hashes. Then publish the draft and mark it as latest. Check that the public release is not a draft or prerelease, its downloads are available, and the README's latest-release link resolves correctly. Avoid moving a published tag or replacing assets silently; publish a new version for subsequent code changes.
+## Review and publish
+
+Review the workflow summary and draft on GitHub. Check that the release notes describe the final behavior and include relevant native UI verification. Confirm all seven assets are present, the tag target is the tested commit, and the draft job verified their hashes. Download/install a platform package when a packaging change needs a native regression check.
+
+Publish through GitHub's draft UI, or with `gh release edit vVERSION --draft=false --latest` after replacing `VERSION`. This is a separate action from draft preparation. Then confirm the public download links, latest-release pointer and tag target. Do not move an existing published tag; release fixes under a new version.
+
+## Integrity and boundaries
+
+`SHA256SUMS` verifies file integrity. It does not replace publisher signing or macOS notarization. The release job assembles artifacts; it does not certify paid AI providers or replace manual interactive testing on each operating system. Packages include dependency license notices. Marketplace publication and automatic app updates remain separate work.

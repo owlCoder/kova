@@ -21,6 +21,7 @@ export function validateMessage(raw: unknown): WebviewMessage {
     SelectSkill: ['skillId'],
     AddContext: ['source'],
     RemoveContext: ['attachmentId'],
+    PreviewContext: ['conversationId', 'attachmentId'],
     ResolveApproval: ['runId', 'approvalId', 'preparationKey', 'decision'],
     OpenDiffPreview: ['approvalId'],
     RetryProvider: [],

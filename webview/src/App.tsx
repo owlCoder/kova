@@ -15,6 +15,8 @@ import { subscribe } from './messaging/bridge.js';
 import { useChat } from './state/useChat.js';
 import { insertComposerText } from './state/insertComposerText.js';
 import { useHostResources } from './state/useHostResources.js';
+import { useContextPreview } from './state/useContextPreview.js';
+import { ContextPreviewDialog } from './components/ContextPreviewDialog.js';
 
 const ProviderPreferences = lazy(() =>
   import('./desktop/ProviderPreferences.js').then((module) => ({
@@ -67,6 +69,7 @@ function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
   const [setupOpen, setSetupOpen] = useState(false);
   const [setupDismissed, setSetupDismissed] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const context = useContextPreview(snapshot, resources.preferences || paletteOpen);
   const [findOpen, setFindOpen] = useState(false);
   const openFind = useCallback(() => {
     setSetupOpen(false);
@@ -153,7 +156,7 @@ function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
   useEffect(() => {
     const keyboard = (event: KeyboardEvent) => {
       if (!(event.metaKey || event.ctrlKey)) return;
-      if (resources.preferences) return;
+      if (resources.preferences || context.preview) return;
       if (paletteOpen) {
         if (event.key.toLowerCase() === 'k') {
           event.preventDefault();
@@ -215,6 +218,7 @@ function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
   }, [
     preferences,
     resources.preferences,
+    context.preview,
     paletteOpen,
     resources.setInspectorOpen,
     resources.setInspectorTab,
@@ -233,14 +237,14 @@ function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
         <WindowTitlebar
           desktop={snapshot?.desktop}
           terminalOpen={terminalOpen}
-          inert={resources.preferences || paletteOpen}
+          inert={resources.preferences || paletteOpen || Boolean(context.preview)}
           onTerminal={toggleTerminal}
           onCommands={openPalette}
         />
       )}
       <main
         className={`workspace ${isDesktop ? 'desktop-workspace' : 'extension-workspace'}`}
-        inert={resources.preferences || paletteOpen ? true : undefined}
+        inert={resources.preferences || paletteOpen || context.preview ? true : undefined}
       >
         {isDesktop && sidebarOpen && (
           <Suspense fallback={<aside className="sidebar-nav" aria-busy="true" />}>
@@ -306,11 +310,15 @@ function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
               ) : null}
               {!showSetup && snapshot && (
                 <Conversation
+                  key={snapshot.conversationId}
                   snapshot={snapshot}
                   thinking={chat.thinking}
                   activities={chat.activities}
                   busy={busy}
                   onReuse={insertPrompt}
+                  scroller={scroller}
+                  searching={findOpen}
+                  followLatest={!showLatest}
                 />
               )}
             </div>
@@ -347,6 +355,7 @@ function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
               onModelChange={chat.setModel}
               onModeChange={chat.setMode}
               onInsertPrompt={insertPrompt}
+              onPreviewContext={context.open}
             />
           )}
           {isDesktop && terminalMounted && (
@@ -399,6 +408,9 @@ function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
           </Suspense>
         )}
       </main>
+      {context.preview && !resources.preferences && !paletteOpen && (
+        <ContextPreviewDialog preview={context.preview} busy={busy} onClose={context.close} />
+      )}
       {resources.preferences && snapshot?.desktop && (
         <Suspense
           fallback={

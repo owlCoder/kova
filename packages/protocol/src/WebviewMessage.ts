@@ -28,6 +28,11 @@ export type WebviewMessage = {
   | { readonly type: 'AddContext'; readonly source: 'Selection' | 'CurrentFile' | 'PickFiles' }
   | { readonly type: 'RemoveContext'; readonly attachmentId: string }
   | {
+      readonly type: 'PreviewContext';
+      readonly conversationId: string;
+      readonly attachmentId: string;
+    }
+  | {
       readonly type: 'ResolveApproval';
       readonly runId: string;
       readonly approvalId: string;

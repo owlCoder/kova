@@ -397,4 +397,27 @@ export const de: Readonly<Record<string, string>> = {
     'Untersuche dieses Projekt auf Leistungsengpässe. Erläutere die Belege, schlage einen Messplan vor und priorisiere Verbesserungen nach ihrer erwarteten Wirkung.',
   'Read the README and relevant code. Identify missing setup steps, outdated examples and unclear explanations, then propose concrete documentation improvements.':
     'Lies die README und den relevanten Code. Finde fehlende Einrichtungsschritte, veraltete Beispiele und unklare Erklärungen und schlage konkrete Verbesserungen vor.',
+  'Attached context': 'Angehängter Kontext',
+  Context: 'Kontext',
+  '{count} characters': '{count} Zeichen',
+  'Preview {name}': '{name} ansehen',
+  'CONTEXT FOR KOVA': 'KONTEXT FÜR KOVA',
+  'File snapshot': 'Dateiaufnahme',
+  'Captured locally': 'Lokal erfasst',
+  'This is an attachment snapshot. Reattach the file to refresh it. Model context limits may shorten it when sent.':
+    'Dies ist eine Aufnahme des Anhangs. Hänge die Datei erneut an, um sie zu aktualisieren. Das Kontextlimit des Modells kann den gesendeten Inhalt kürzen.',
+  'Preview shows the first 50,000 characters. The attachment itself is unchanged.':
+    'Die Vorschau zeigt die ersten 50.000 Zeichen. Der Anhang selbst bleibt unverändert.',
+  'Attachment content': 'Inhalt des Anhangs',
+  'Remove attachment': 'Anhang entfernen',
+  'Copy preview': 'Vorschau kopieren',
+  Done: 'Fertig',
+  'Conversation history': 'Gesprächsverlauf',
+  'Load earlier messages': 'Ältere Nachrichten laden',
+  'All messages loaded': 'Alle Nachrichten geladen',
+  '{visible} of {total} messages': '{visible} von {total} Nachrichten',
+  'Show recent': 'Neueste anzeigen',
+  'Your context': 'Dein Kontext',
+  'Inspect captured attachments before sending. Keep every request deliberate.':
+    'Prüfe erfasste Anhänge vor dem Senden. Du entscheidest über den Kontext jeder Anfrage.',
 };

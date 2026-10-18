@@ -20,6 +20,8 @@ import { WorkspaceProjectInstructions } from '../../../runtime/src/adapters/Work
 import { StreamEventBuffer } from '../../../runtime/src/presentation/StreamEventBuffer.js';
 import { projectEvent, approvalView } from '../../../runtime/src/presentation/projectEvent.js';
 import { projectConversationMessages } from '../../../runtime/src/presentation/projectConversationMessages.js';
+import { nextStreamingMessage } from '../../../runtime/src/presentation/nextStreamingMessage.js';
+import { contextAttachmentViews } from '../../../runtime/src/presentation/contextAttachmentViews.js';
 import { conversationMarkdown } from '../../../runtime/src/presentation/conversationMarkdown.js';
 import type { DesktopStore } from '../state/DesktopStore.js';
 import type { DesktopKeyStore } from '../state/DesktopKeyStore.js';
@@ -176,7 +178,7 @@ export class DesktopSession {
         this.activeRun,
         this.streaming,
       ),
-      contextAttachments: this.attachments.map(({ id, label }) => ({ id, label })),
+      contextAttachments: contextAttachmentViews(this.attachments),
       pendingApproval: this.approval.requestPending
         ? approvalView(this.approval.requestPending)
         : null,
@@ -410,15 +412,7 @@ export class DesktopSession {
       this.partial = Boolean(this.streaming?.partial && this.streaming.content);
     if (event.type === 'StateChanged') this.state = event.state;
     if (event.type === 'ContextUpdated') this.usage = event.usage;
-    if (event.type === 'ResponseStarted')
-      this.streaming = { id: event.messageId, role: 'assistant', content: '', partial: true };
-    if (event.type === 'ResponseDelta' && this.streaming?.id === event.messageId)
-      this.streaming = {
-        ...this.streaming,
-        content: (this.streaming.content + event.text).slice(0, 65_536),
-      };
-    if (event.type === 'ResponseCompleted' && this.streaming?.id === event.messageId)
-      this.streaming = { ...this.streaming, partial: false };
+    this.streaming = nextStreamingMessage(this.streaming, event);
     this.events.push(event);
   }
   private async setRoot(path: string | null): Promise<void> {

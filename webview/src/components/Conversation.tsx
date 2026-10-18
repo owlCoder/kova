@@ -3,6 +3,8 @@ import type { SessionSnapshot } from '../../../packages/protocol/src/SessionSnap
 import { send } from '../messaging/bridge.js';
 import { Icon } from './Icon.js';
 import { ConversationMessage } from './ConversationMessage.js';
+import { useRef, type RefObject } from 'react';
+import { useHistoryWindow } from '../state/useHistoryWindow.js';
 
 type Activity = { id: number; text: string; error: boolean };
 export function Conversation({
@@ -11,18 +13,52 @@ export function Conversation({
   activities,
   busy,
   onReuse,
+  scroller,
+  searching,
+  followLatest,
 }: {
   snapshot: SessionSnapshot;
   thinking: Record<string, string>;
   activities: readonly Activity[];
   busy: boolean;
   onReuse(text: string): void;
+  scroller: RefObject<HTMLDivElement | null>;
+  searching: boolean;
+  followLatest: boolean;
 }) {
   const { t } = useI18n();
   const approval = snapshot.pendingApproval;
+  const thread = useRef<HTMLDivElement>(null);
+  const history = useHistoryWindow(
+    snapshot.messages.length,
+    searching,
+    followLatest,
+    scroller,
+    thread,
+  );
   return (
-    <div className="thread">
-      {snapshot.messages.map((message) => (
+    <div className="thread" ref={thread}>
+      {snapshot.messages.length > 40 && (
+        <nav className="history-controls" aria-label={t('Conversation history')}>
+          <button aria-disabled={!history.start} onClick={history.earlier}>
+            <Icon name="up" size={14} />
+            {t(history.start ? 'Load earlier messages' : 'All messages loaded')}
+          </button>
+          <span role="status">
+            {t('{visible} of {total} messages', {
+              visible: snapshot.messages.length - history.start,
+              total: snapshot.messages.length,
+            })}
+          </span>
+          {history.showRecent && (
+            <button disabled={searching} onClick={history.latest}>
+              <Icon name="down" size={14} />
+              {t('Show recent')}
+            </button>
+          )}
+        </nav>
+      )}
+      {snapshot.messages.slice(history.start).map((message) => (
         <ConversationMessage
           key={message.id}
           role={message.role}

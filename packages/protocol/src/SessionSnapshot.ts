@@ -5,6 +5,7 @@ import type { ModelInfo } from './ModelInfo.js';
 import type { SkillMetadata } from './SkillMetadata.js';
 import type { ApprovalView } from './ApprovalView.js';
 import type { DesktopState } from './DesktopState.js';
+import type { ContextAttachmentView } from './ContextAttachmentView.js';
 
 /** Presentation history is bounded and excludes model thinking. */
 export interface SessionSnapshot {
@@ -32,7 +33,7 @@ export interface SessionSnapshot {
     readonly content: string;
     readonly partial: boolean;
   }[];
-  readonly contextAttachments: readonly { readonly id: string; readonly label: string }[];
+  readonly contextAttachments: readonly ContextAttachmentView[];
   readonly pendingApproval: ApprovalView | null;
   readonly thinkingEnabled: boolean;
   readonly contextMaxTokens: number;

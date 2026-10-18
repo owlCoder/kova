@@ -6,6 +6,7 @@ import { inHost, isDesktop, send } from '../messaging/bridge.js';
 import { Icon } from './Icon.js';
 import { ModelPicker } from './ModelPicker.js';
 import { PromptPicker } from './PromptPicker.js';
+import { ContextAttachments } from './ContextAttachments.js';
 
 type Props = {
   snapshot: SessionSnapshot | null;
@@ -21,6 +22,7 @@ type Props = {
   onModelChange(value: string): void;
   onModeChange(value: AgentMode): void;
   onInsertPrompt(value: string): void;
+  onPreviewContext(id: string): void;
 };
 
 export function ChatFooter({
@@ -37,6 +39,7 @@ export function ChatFooter({
   onModelChange,
   onModeChange,
   onInsertPrompt,
+  onPreviewContext,
 }: Props) {
   const { t } = useI18n();
   const contextMenu = useRef<HTMLDetailsElement>(null);
@@ -86,22 +89,11 @@ export function ChatFooter({
         </div>
       )}
       <div className={`composer ${busy ? 'busy' : ''}`}>
-        {!!snapshot?.contextAttachments.length && (
-          <div className="attachments">
-            {snapshot.contextAttachments.map((item) => (
-              <button
-                key={item.id}
-                title={t('Remove {name}', { name: item.label })}
-                disabled={busy}
-                onClick={() => send({ type: 'RemoveContext', attachmentId: item.id })}
-              >
-                <Icon name="file" size={13} />
-                <span>{item.label}</span>
-                <Icon name="close" size={12} />
-              </button>
-            ))}
-          </div>
-        )}
+        <ContextAttachments
+          items={snapshot?.contextAttachments ?? []}
+          busy={busy}
+          onPreview={onPreviewContext}
+        />
         <textarea
           aria-label={t('Ask Kova')}
           placeholder={t('Ask anything, or describe what you want to build…')}

@@ -25,6 +25,7 @@ Kova is an open-source, local-first AI coding workspace for **macOS, Windows, Li
 - **Stay in your editor.** The VS Code sidebar and movable chat tab share a conversation, use editor selections as context and support Undo for file edits.
 - **Make it comfortable.** Dark, light and system themes; three text sizes; English, Serbian Latin and German; keyboard navigation and reduced-motion support.
 - **Keep sessions organized.** Pin important desktop conversations, archive finished work and restore it later. Browse sessions within each project.
+- **Review your context.** Preview captured attachments, inspect their size and source, and remove them independently before sending. Reattaching a file refreshes its snapshot.
 - **Start with a useful prompt.** Six localized templates and recent messages from the current conversation are available in both hosts. Reuse a prompt without overwriting your draft.
 - **Extend the workflow.** Add project `AGENTS.md` rules, selected skills, local stdio MCP servers and command hooks.
 
@@ -36,21 +37,21 @@ Get the installers and extension from the [latest GitHub release](https://github
 
 | Platform                | Release asset                        | Install                                                           |
 | ----------------------- | ------------------------------------ | ----------------------------------------------------------------- |
-| macOS · Apple Silicon   | `Kova-0.7.0-mac-arm64.dmg` or `.zip` | Open the DMG and drag Kova into Applications, or extract the ZIP. |
-| Windows · x64           | `Kova-0.7.0-win-x64.exe`             | Run the installer and choose an installation directory.           |
-| Linux · x64             | `Kova-0.7.0-linux-x64.AppImage`      | Make it executable, then launch it.                               |
-| Debian / Ubuntu · amd64 | `Kova-0.7.0-linux-x64.deb`           | Install with your package manager.                                |
-| VS Code · 1.100+        | `kova-local-0.7.0.vsix`              | Run **Extensions: Install from VSIX…**, then select the file.     |
+| macOS · Apple Silicon   | `Kova-0.8.0-mac-arm64.dmg` or `.zip` | Open the DMG and drag Kova into Applications, or extract the ZIP. |
+| Windows · x64           | `Kova-0.8.0-win-x64.exe`             | Run the installer and choose an installation directory.           |
+| Linux · x64             | `Kova-0.8.0-linux-x64.AppImage`      | Make it executable, then launch it.                               |
+| Debian / Ubuntu · amd64 | `Kova-0.8.0-linux-x64.deb`           | Install with your package manager.                                |
+| VS Code · 1.100+        | `kova-local-0.8.0.vsix`              | Run **Extensions: Install from VSIX…**, then select the file.     |
 
 Desktop packages are currently **unsigned and not notarized**; your OS may show a publisher warning or require explicit approval. Download only from this repository's releases. `SHA256SUMS` accompanies each release so you can check file integrity. Updates are manual. An Intel macOS installer is not included in this release; source builds use the host architecture.
 
 For Linux, from the directory containing the downloaded file:
 
 ```sh
-chmod +x Kova-0.7.0-linux-x64.AppImage
-./Kova-0.7.0-linux-x64.AppImage
+chmod +x Kova-0.8.0-linux-x64.AppImage
+./Kova-0.8.0-linux-x64.AppImage
 # Or, on Debian / Ubuntu:
-sudo apt install ./Kova-0.7.0-linux-x64.deb
+sudo apt install ./Kova-0.8.0-linux-x64.deb
 ```
 
 AppImage support depends on your distribution's FUSE setup. The DEB is an alternative on Debian-based systems. Node.js and npm are needed to develop Kova, not to run a desktop installer.
@@ -113,6 +114,12 @@ Desktop sessions persist locally, load on demand and can be renamed or archived.
 The composer’s **Prompt library** offers editable starting points for exploring code, reviewing changes, planning, testing, performance and documentation. Search it to reuse a previous user message from the current conversation, or choose **Reuse prompt** on a message. Inserting text preserves the existing draft and selected mode; review it before sending.
 
 Desktop session row actions let you **Pin**, **Rename** or **Archive** a conversation. Switch to **Archived** to restore it. Archiving preserves its messages, title, pin and retained draft. Each view shows up to 200 sessions for the current project; drafts retain the most recent 20 edited desktop sessions.
+
+Long conversations initially render the latest 40 messages. **Load earlier messages** reveals older history while preserving your reading position; **Show recent** returns to the latest messages. Conversation search loads the saved messages in the current snapshot and keeps them available after search closes. This changes rendering, not the agent’s context-compaction policy.
+
+Click an attachment to inspect its captured text. Removal has a separate control. The preview displays up to 50,000 characters; it does not modify the attachment. Text is captured locally, and the model’s context budget may shorten what is sent. Reattach a file to refresh its snapshot. Starting a new conversation clears attached context in both hosts.
+
+![Context snapshot preview in Serbian Latin with large text and light appearance](https://raw.githubusercontent.com/owlCoder/kova/main/docs/images/context-preview-sr.jpg)
 
 ## Privacy and trust
 

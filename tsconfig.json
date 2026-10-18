@@ -17,6 +17,7 @@
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
     "noEmit": true,
+    "allowImportingTsExtensions": true,
     "types": ["node"]
   },
   "include": [
@@ -24,6 +25,7 @@
     "webview/**/*.ts",
     "webview/**/*.tsx",
     "tests/**/*.ts",
+    "scripts/**/*.ts",
     "vitest.config.ts"
   ],
   "exclude": ["node_modules", "dist"]
