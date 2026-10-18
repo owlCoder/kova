@@ -4,10 +4,11 @@ Initial implementation verified on 2026-09-30. The original pasted specification
 
 ## 0.9.0 verification · 2026-10-18
 
-- `npm run check`: 257 tests in 34 files, strict type checks, lint, formatting and architecture limits pass. Full `npm audit` reports zero vulnerabilities.
+- `npm run check`: 258 tests in 34 files, strict type checks, lint, formatting and architecture limits pass. Full `npm audit` reports zero vulnerabilities.
 - `npm run package` / `verify:package` and `desktop:build` / `desktop:verify`: the VSIX and staged desktop runtime pass manifest, asset, CSP, native terminal and dependency-notice checks.
 - Native macOS review of the packaged ASAR app: create/adapt/edit prompt, exact saved text, search prompt content, remove/undo, insert without sending, clipboard acknowledgment, and retained library after quit/restart.
 - Installed-VSIX smoke: personal prompt create/edit/remove, clipboard acknowledgment, draft/export/context, shared views, streaming, editor Undo/stale-write refusal and cancellation pass against a synthetic local provider.
+- Native two-view regression in an offline workspace: dirty sidebar/editor copies of the same prompt retain their opening revision; saving one disables stale save/removal in the other, and Save a copy retains both texts without overwriting either.
 - Native VS Code 0.9.0 sidebar: Serbian Latin, light theme, largest text, library module/styles under CSP, responsive tabs, persisted prompt after reopening, Escape opener focus and insertion preserving an existing draft/mode verified in an isolated profile.
 
 Windows/Linux interactive review and live paid-provider checks remain unverified locally; native CI builds do not replace those checks. Desktop packages remain unsigned and not notarized. Earlier acceptance evidence below is historical.

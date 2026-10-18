@@ -5,6 +5,8 @@ import type {
   SavedPrompt,
 } from '../../../packages/protocol/src/PromptLibrary.js';
 import { send, subscribe } from '../messaging/bridge.js';
+import type { PromptEdit } from './PromptEdit.js';
+import { savePromptIntent } from './savePromptIntent.js';
 
 /** Mounted only while the library is open; saved text never enters streaming snapshots. */
 export function usePromptLibrary() {
@@ -64,13 +66,18 @@ export function usePromptLibrary() {
     pending,
     error,
     reload: () => request({ type: 'GetPromptLibrary' }),
-    save: (prompt: { id: string | null; title: string; text: string }) =>
+    save: (prompt: PromptEdit) => {
+      if (!value.current) return Promise.resolve(false);
+      try {
+        return request(savePromptIntent(value.current, prompt));
+      } catch (error) {
+        setError(error instanceof Error ? error.message : 'Request failed.');
+        return Promise.resolve(false);
+      }
+    },
+    remove: (prompt: SavedPrompt, revision: string) =>
       value.current
-        ? request({ type: 'SavePrompt', revision: value.current.revision, ...prompt })
-        : Promise.resolve(false),
-    remove: (prompt: SavedPrompt) =>
-      value.current
-        ? request({ type: 'DeletePrompt', revision: value.current.revision, id: prompt.id })
+        ? request({ type: 'DeletePrompt', revision, id: prompt.id })
         : Promise.resolve(false),
   };
 }

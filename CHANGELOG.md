@@ -4,7 +4,7 @@
 
 - Add a personal prompt library in desktop and VS Code with searchable Saved, Templates and Recent collections. Create and edit reusable prompts, save drafts or user messages, adapt templates, and undo the latest removal while the library is open.
 - Retain up to 40 prompts with exact text, bounded titles/content and host-owned persistence. Desktop libraries span local projects; extension libraries remain scoped to a workspace and shared by its sidebar and chat tab.
-- Serialize library writes, reject stale revisions from another view, keep failed writes out of memory, and preserve damaged storage. Saved library text stays outside routine snapshots and model context until explicitly inserted and submitted.
+- Serialize library writes, retain the editor’s opening revision across updates from other views, offer saving conflicted drafts as new copies, reject stale revisions, keep failed writes out of memory, and preserve damaged storage. Saved library text stays outside routine snapshots and model context until explicitly inserted and submitted.
 - Load library code, styles and recent-message indexing only when opened. Cache normalized search text and defer filtering so typing remains responsive. Remove the old always-mounted prompt list.
 - Add host-confirmed clipboard feedback for messages, code, context previews and diagnostics, plus a clear selection-copy hint for oversized content. Clipboard listeners exist only while a copy is pending.
 - Extend Kova's visual language into the library, with compact icon navigation, themed surfaces, large-text support, keyboard focus and English, Serbian Latin and German copy.

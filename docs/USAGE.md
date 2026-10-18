@@ -106,7 +106,7 @@ Open **Prompt library** from the composer or command palette. **Saved** contains
 - Choose **New prompt**, **Save draft**, or **Save prompt** on a user message. You can also save an editable copy of a template or recent message.
 - Keep up to 40 prompts, each with a title up to 80 characters and text up to 16,000 characters. Editing preserves code whitespace and line breaks.
 - Click a prompt to insert it at the composer caret. Existing text and the selected mode remain; nothing is sent automatically.
-- Edit or remove a saved prompt. **Undo removal** restores the latest removed prompt while the library remains open. Closing it ends that undo opportunity.
+- Edit or remove a saved prompt. If another view changes the library while you edit, reopen the saved prompt or choose **Save a copy** to retain your draft without overwriting that view’s changes. **Undo removal** restores the latest removed prompt while the library remains open. Closing it ends that undo opportunity.
 
 Desktop libraries belong to the local app profile and remain available across projects. VS Code libraries use local workspace storage and are shared by that workspace's sidebar and chat tab. Starting a new conversation keeps saved prompts. No library text enters routine conversation snapshots or model requests automatically. Local prompt storage is ordinary application data, separate from credentials; libraries are not synchronized between desktop and VS Code.
 

@@ -51,4 +51,6 @@ export const promptLibraryDE: Readonly<Record<string, string>> = {
   Copied: 'Kopiert',
   'Select and copy a smaller section (60,000 character limit).':
     'Wähle einen kleineren Abschnitt zum Kopieren aus (maximal 60.000 Zeichen).',
+  'This library changed in another view. Reopen the prompt or save your draft as a copy.':
+    'Diese Bibliothek wurde in einer anderen Ansicht geändert. Öffne den Prompt erneut oder speichere deinen Entwurf als Kopie.',
 };

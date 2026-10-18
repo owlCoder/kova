@@ -1,3 +1,4 @@
+import { savePromptIntent } from '../../webview/src/state/savePromptIntent.js';
 import { describe, expect, it } from 'vitest';
 import { insertComposerText } from '../../webview/src/state/insertComposerText.js';
 import { recentPrompts } from '../../webview/src/state/recentPrompts.js';
@@ -51,5 +52,31 @@ describe('composer prompt tools', () => {
         expect(translate(language, template.title)).not.toBe(template.title);
       }
     }
+  });
+  it('retains an editor opening revision across library broadcasts and preserves a conflicting draft as a new copy', () => {
+    const edit = {
+      id: 'saved-prompt',
+      revision: 'revision-at-open',
+      title: 'My draft',
+      text: 'Unsaved local edits.\n  <code>\n',
+    };
+    const latest = {
+      version: 1 as const,
+      revision: 'new-revision-from-another-view',
+      prompts: [{ id: 'saved-prompt', title: 'Other view', text: 'Committed by the other view' }],
+    };
+    expect(() => savePromptIntent(latest, edit)).toThrow('changed in another view');
+    expect(() => savePromptIntent(latest, { ...edit, revision: null })).toThrow(
+      'changed in another view',
+    );
+    expect(savePromptIntent(latest, { ...edit, id: null, revision: null })).toEqual({
+      type: 'SavePrompt',
+      revision: latest.revision,
+      id: null,
+      title: edit.title,
+      text: edit.text,
+    });
+    expect(latest.prompts[0]?.text).toBe('Committed by the other view');
+    expect(savePromptIntent({ ...latest, revision: edit.revision }, edit).id).toBe(edit.id);
   });
 });

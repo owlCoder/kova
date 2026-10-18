@@ -5,6 +5,7 @@ import { useI18n } from '../i18n/I18n.js';
 import { isDesktop } from '../messaging/bridge.js';
 import { recentPrompts } from '../state/recentPrompts.js';
 import { usePromptLibrary } from '../state/usePromptLibrary.js';
+import type { PromptEdit } from '../state/PromptEdit.js';
 import { BrandMark } from './BrandMark.js';
 import { Icon } from './Icon.js';
 import { PromptEditor } from './PromptEditor.js';
@@ -12,9 +13,10 @@ import { promptTemplates } from './promptTemplates.js';
 import { useDialogFocus } from './useDialogFocus.js';
 import '../styles/prompt-library.css';
 
-type Editable = { id: string | null; title: string; text: string };
+type Editable = PromptEdit;
 const draftPrompt = (text: string): Editable => ({
   id: null,
+  revision: null,
   title: text.replace(/\s+/g, ' ').trim().slice(0, 80),
   text,
 });
@@ -79,8 +81,11 @@ export function PromptLibraryDialog({
   }, [tab, store.library, recent, language]);
   const needle = deferredQuery.trim().toLocaleLowerCase(language);
   const options = choices.filter((item) => item.search.includes(needle));
+  const conflict = Boolean(
+    editor?.id && store.library && editor.revision !== store.library.revision,
+  );
   const edit = (prompt: Editable) => {
-    setEditor(prompt);
+    setEditor({ ...prompt, revision: prompt.id ? (store.library?.revision ?? null) : null });
     setStatus('');
   };
   const back = () => {
@@ -142,9 +147,15 @@ export function PromptLibraryDialog({
             key={editor.id ?? editor.text}
             initial={editor}
             pending={store.pending}
-            full={Boolean(store.library && store.library.prompts.length >= 40 && !editor.id)}
+            conflict={conflict}
+            canCreate={Boolean(store.library && store.library.prompts.length < 40)}
+            full={Boolean(
+              store.library && store.library.prompts.length >= 40 && (!editor.id || conflict),
+            )}
             canSave={
-              Boolean(store.library) && (Boolean(editor.id) || store.library!.prompts.length < 40)
+              Boolean(store.library) &&
+              !conflict &&
+              (Boolean(editor.id) || store.library!.prompts.length < 40)
             }
             onCancel={back}
             onSave={async (prompt) => {
@@ -158,7 +169,7 @@ export function PromptLibraryDialog({
             onRemove={async () => {
               if (!editor.id) return;
               const prompt = { ...editor, id: editor.id };
-              if (await store.remove(prompt)) {
+              if (editor.revision && (await store.remove(prompt, editor.revision))) {
                 setRemoved(prompt);
                 setStatus('Prompt removed.');
                 back();
@@ -248,6 +259,7 @@ export function PromptLibraryDialog({
                     onClick={() =>
                       edit({
                         id: tab === 'saved' ? item.id : null,
+                        revision: store.library?.revision ?? null,
                         title: item.title,
                         text: item.text,
                       })
@@ -295,7 +307,7 @@ export function PromptLibraryDialog({
               <button
                 disabled={store.pending}
                 onClick={async () => {
-                  if (await store.save({ ...removed, id: null })) {
+                  if (await store.save({ ...removed, id: null, revision: null })) {
                     setRemoved(null);
                     setStatus('Prompt restored.');
                   }

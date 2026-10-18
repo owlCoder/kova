@@ -50,4 +50,6 @@ export const promptLibrarySR: Readonly<Record<string, string>> = {
   Copied: 'Kopirano',
   'Select and copy a smaller section (60,000 character limit).':
     'Izaberite i kopirajte manji deo (ograničenje je 60.000 znakova).',
+  'This library changed in another view. Reopen the prompt or save your draft as a copy.':
+    'Biblioteka je promenjena u drugom prikazu. Ponovo otvorite upit ili sačuvajte svoj nacrt kao kopiju.',
 };
