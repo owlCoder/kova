@@ -3,6 +3,7 @@ import type { SessionSnapshot } from './SessionSnapshot.js';
 import type { FilePreview, WorkspaceEntry } from './DesktopState.js';
 import type { ModelInfo } from './ModelInfo.js';
 import type { ContextPreview } from './ContextAttachmentView.js';
+import type { PromptLibrary } from './PromptLibrary.js';
 
 export type HostMessage = {
   readonly protocolVersion: 1;
@@ -17,6 +18,8 @@ export type HostMessage = {
       readonly focused: boolean;
     }
   | { readonly type: 'ToggleTerminal' }
+  | { readonly type: 'PromptLibrary'; readonly requestId: string; readonly library: PromptLibrary }
+  | { readonly type: 'ClipboardCopied'; readonly requestId: string }
   | {
       readonly type: 'TerminalOpened';
       readonly terminalId: string;

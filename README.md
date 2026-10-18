@@ -26,7 +26,7 @@ Kova is an open-source, local-first AI coding workspace for **macOS, Windows, Li
 - **Make it comfortable.** Dark, light and system themes; three text sizes; English, Serbian Latin and German; keyboard navigation and reduced-motion support.
 - **Keep sessions organized.** Pin important desktop conversations, archive finished work and restore it later. Browse sessions within each project.
 - **Review your context.** Preview captured attachments, inspect their size and source, and remove them independently before sending. Reattaching a file refreshes its snapshot.
-- **Start with a useful prompt.** Six localized templates and recent messages from the current conversation are available in both hosts. Reuse a prompt without overwriting your draft.
+- **Build your prompt library.** Save and edit your own reusable prompts, adapt six localized templates and reuse recent messages in either host. Insertion preserves your existing draft and never sends automatically.
 - **Extend the workflow.** Add project `AGENTS.md` rules, selected skills, local stdio MCP servers and command hooks.
 
 The Electron app and VS Code extension share one agent runtime and React interface. Kova has no required Kova account or subscription. Local models run offline once downloaded; hosted providers apply their own authentication, pricing and data policies.
@@ -37,21 +37,21 @@ Get the installers and extension from the [latest GitHub release](https://github
 
 | Platform                | Release asset                        | Install                                                           |
 | ----------------------- | ------------------------------------ | ----------------------------------------------------------------- |
-| macOS · Apple Silicon   | `Kova-0.8.0-mac-arm64.dmg` or `.zip` | Open the DMG and drag Kova into Applications, or extract the ZIP. |
-| Windows · x64           | `Kova-0.8.0-win-x64.exe`             | Run the installer and choose an installation directory.           |
-| Linux · x64             | `Kova-0.8.0-linux-x64.AppImage`      | Make it executable, then launch it.                               |
-| Debian / Ubuntu · amd64 | `Kova-0.8.0-linux-x64.deb`           | Install with your package manager.                                |
-| VS Code · 1.100+        | `kova-local-0.8.0.vsix`              | Run **Extensions: Install from VSIX…**, then select the file.     |
+| macOS · Apple Silicon   | `Kova-0.9.0-mac-arm64.dmg` or `.zip` | Open the DMG and drag Kova into Applications, or extract the ZIP. |
+| Windows · x64           | `Kova-0.9.0-win-x64.exe`             | Run the installer and choose an installation directory.           |
+| Linux · x64             | `Kova-0.9.0-linux-x64.AppImage`      | Make it executable, then launch it.                               |
+| Debian / Ubuntu · amd64 | `Kova-0.9.0-linux-x64.deb`           | Install with your package manager.                                |
+| VS Code · 1.100+        | `kova-local-0.9.0.vsix`              | Run **Extensions: Install from VSIX…**, then select the file.     |
 
 Desktop packages are currently **unsigned and not notarized**; your OS may show a publisher warning or require explicit approval. Download only from this repository's releases. `SHA256SUMS` accompanies each release so you can check file integrity. Updates are manual. An Intel macOS installer is not included in this release; source builds use the host architecture.
 
 For Linux, from the directory containing the downloaded file:
 
 ```sh
-chmod +x Kova-0.8.0-linux-x64.AppImage
-./Kova-0.8.0-linux-x64.AppImage
+chmod +x Kova-0.9.0-linux-x64.AppImage
+./Kova-0.9.0-linux-x64.AppImage
 # Or, on Debian / Ubuntu:
-sudo apt install ./Kova-0.8.0-linux-x64.deb
+sudo apt install ./Kova-0.9.0-linux-x64.deb
 ```
 
 AppImage support depends on your distribution's FUSE setup. The DEB is an alternative on Debian-based systems. Node.js and npm are needed to develop Kova, not to run a desktop installer.
@@ -111,7 +111,11 @@ Choose language, text size and theme in **Settings → Appearance**. Code, termi
 
 Desktop sessions persist locally, load on demand and can be renamed or archived. Unsent drafts are stored per desktop session (up to 20 recent drafts) or in VS Code workspace storage; starting a new extension conversation clears its draft. Draft text is local application data, separate from API-key secure storage. Extension history lasts for the current extension session. The desktop terminal is user-operated: hiding it keeps the shell running, closing it terminates the shell, and changing projects closes the old process. Its output is not automatically sent to a model.
 
-The composer’s **Prompt library** offers editable starting points for exploring code, reviewing changes, planning, testing, performance and documentation. Search it to reuse a previous user message from the current conversation, or choose **Reuse prompt** on a message. Inserting text preserves the existing draft and selected mode; review it before sending.
+The composer’s **Prompt library**, also available from the command palette, has **Saved**, **Templates** and **Recent** collections. Save a draft or a useful user message, create a new prompt, or adapt a template. Search titles and text, edit saved prompts, and undo the latest removal while the library is open. Inserting text preserves the existing draft and selected mode; review it before sending.
+
+Each library holds up to 40 prompts, with an 80-character title and up to 16,000 characters of text. Desktop saves one library for the local app profile; VS Code saves it per workspace and shares it between the sidebar and chat tab. New conversations keep saved prompts. Libraries are ordinary local application data, separate from API-key secure storage; saved text is only sent to a model when you insert and submit it.
+
+![Personal prompt library in Serbian Latin with saved prompts and the dark theme](https://raw.githubusercontent.com/owlCoder/kova/main/docs/images/prompt-library-sr.jpg)
 
 Desktop session row actions let you **Pin**, **Rename** or **Archive** a conversation. Switch to **Archived** to restore it. Archiving preserves its messages, title, pin and retained draft. Each view shows up to 200 sessions for the current project; drafts retain the most recent 20 edited desktop sessions.
 

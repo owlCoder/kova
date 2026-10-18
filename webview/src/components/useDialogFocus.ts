@@ -24,7 +24,10 @@ export function useDialogFocus(
           !element.matches(':disabled,[inert]') &&
           element.getClientRects().length,
       );
-    const frame = requestAnimationFrame(() => controls()[0]?.focus());
+    const frame = requestAnimationFrame(() => {
+      const preferred = container?.querySelector<HTMLElement>('[data-dialog-focus]');
+      (preferred && !preferred.matches(':disabled') ? preferred : controls()[0])?.focus();
+    });
     const trap = (event: KeyboardEvent) => {
       if (event.defaultPrevented || event.isComposing) return;
       if (event.key === 'Escape' && !locked.current && close.current) {

@@ -13,6 +13,7 @@ export function Conversation({
   activities,
   busy,
   onReuse,
+  onSavePrompt,
   scroller,
   searching,
   followLatest,
@@ -22,6 +23,7 @@ export function Conversation({
   activities: readonly Activity[];
   busy: boolean;
   onReuse(text: string): void;
+  onSavePrompt(text: string): void;
   scroller: RefObject<HTMLDivElement | null>;
   searching: boolean;
   followLatest: boolean;
@@ -67,6 +69,7 @@ export function Conversation({
           working={message.partial && busy}
           reasoning={thinking[message.id] ?? ''}
           onReuse={onReuse}
+          onSavePrompt={onSavePrompt}
         />
       ))}
       {!!activities.length && (

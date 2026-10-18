@@ -182,3 +182,7 @@
     display: none;
   }
 }
+
+button[data-copied='true'] {
+  color: var(--green);
+}

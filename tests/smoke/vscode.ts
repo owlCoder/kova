@@ -78,6 +78,64 @@ export async function run() {
   const firstSetup = messages.filter((message) => message.type === 'Snapshot').at(-1);
   assert.equal(firstSetup?.snapshot.providerLabel, 'Ollama');
   assert.equal(firstSetup?.snapshot.setupCompleted, false);
+  await api.session.handle({
+    protocolVersion: 1,
+    requestId: 'smoke-library-read',
+    type: 'GetPromptLibrary',
+  });
+  const library = messages.filter((message) => message.type === 'PromptLibrary').at(-1)!.library;
+  assert.equal(library.prompts.length, 0);
+  await api.session.handle({
+    protocolVersion: 1,
+    requestId: 'smoke-library-save',
+    type: 'SavePrompt',
+    revision: library.revision,
+    id: null,
+    title: 'Smoke prompt',
+    text: 'Keep this exact text.\n  <code>\n',
+  });
+  const savedLibrary = messages
+    .filter((message) => message.type === 'PromptLibrary')
+    .at(-1)!.library;
+  assert.equal(savedLibrary.prompts[0]?.text, 'Keep this exact text.\n  <code>\n');
+  assert.equal(savedLibrary.prompts.length, 1);
+  await api.session.handle({
+    protocolVersion: 1,
+    requestId: 'smoke-library-edit',
+    type: 'SavePrompt',
+    revision: savedLibrary.revision,
+    id: savedLibrary.prompts[0]!.id,
+    title: 'Renamed smoke prompt',
+    text: 'Updated prompt',
+  });
+  const editedLibrary = messages
+    .filter((message) => message.type === 'PromptLibrary')
+    .at(-1)!.library;
+  assert.equal(editedLibrary.prompts[0]?.id, savedLibrary.prompts[0]?.id);
+  assert.equal(editedLibrary.prompts[0]?.title, 'Renamed smoke prompt');
+  await api.session.handle({
+    protocolVersion: 1,
+    requestId: 'smoke-library-delete',
+    type: 'DeletePrompt',
+    revision: editedLibrary.revision,
+    id: editedLibrary.prompts[0]!.id,
+  });
+  assert.equal(
+    messages.filter((message) => message.type === 'PromptLibrary').at(-1)!.library.prompts.length,
+    0,
+  );
+  await api.session.handle({
+    protocolVersion: 1,
+    requestId: 'smoke-copy-ack',
+    type: 'CopyText',
+    text: 'KOVA_CLIPBOARD_SMOKE',
+  });
+  assert(
+    messages.some(
+      (message) => message.type === 'ClipboardCopied' && message.requestId === 'smoke-copy-ack',
+    ),
+  );
+  console.log('PASS personal prompt create/edit/remove and host-confirmed clipboard copy.');
   const draftConversation = firstSetup!.snapshot.conversationId;
   await api.session.handle({
     protocolVersion: 1,

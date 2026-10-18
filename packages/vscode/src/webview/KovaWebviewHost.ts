@@ -41,7 +41,7 @@ export class KovaWebviewHost implements vscode.Disposable {
     const css = webview.asWebviewUri(
       vscode.Uri.joinPath(context.extensionUri, 'webview/assets/index.css'),
     );
-    webview.html = `<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource}; script-src 'nonce-${nonce}'; img-src ${webview.cspSource} data:; font-src ${webview.cspSource};"><link rel="stylesheet" href="${css}"><title>Kova</title></head><body class="${presentation === 'Editor' ? 'editor' : 'sidebar'}"><div id="root"></div><script nonce="${nonce}" type="module" src="${script}"></script></body></html>`;
+    webview.html = `<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource}; script-src 'nonce-${nonce}'; img-src ${webview.cspSource} data:; font-src ${webview.cspSource};"><meta property="csp-nonce" nonce="${nonce}"><link rel="stylesheet" href="${css}"><title>Kova</title></head><body class="${presentation === 'Editor' ? 'editor' : 'sidebar'}"><div id="root"></div><script nonce="${nonce}" type="module" src="${script}"></script></body></html>`;
   }
   async initialize(): Promise<void> {
     await this.session

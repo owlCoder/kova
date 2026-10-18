@@ -16,11 +16,17 @@ import { useChat } from './state/useChat.js';
 import { insertComposerText } from './state/insertComposerText.js';
 import { useHostResources } from './state/useHostResources.js';
 import { useContextPreview } from './state/useContextPreview.js';
+import { usePromptWorkbench } from './state/usePromptWorkbench.js';
 import { ContextPreviewDialog } from './components/ContextPreviewDialog.js';
 
 const ProviderPreferences = lazy(() =>
   import('./desktop/ProviderPreferences.js').then((module) => ({
     default: module.ProviderPreferences,
+  })),
+);
+const PromptLibraryDialog = lazy(() =>
+  import('./components/PromptLibraryDialog.js').then((module) => ({
+    default: module.PromptLibraryDialog,
   })),
 );
 const TerminalPanel = lazy(() => import('./desktop/TerminalPanel.js'));
@@ -69,7 +75,15 @@ function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
   const [setupOpen, setSetupOpen] = useState(false);
   const [setupDismissed, setSetupDismissed] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
-  const context = useContextPreview(snapshot, resources.preferences || paletteOpen);
+  const {
+    library,
+    open: openLibrary,
+    close: closeLibrary,
+  } = usePromptWorkbench(resources.preferences || paletteOpen);
+  const context = useContextPreview(
+    snapshot,
+    resources.preferences || paletteOpen || Boolean(library),
+  );
   const [findOpen, setFindOpen] = useState(false);
   const openFind = useCallback(() => {
     setSetupOpen(false);
@@ -156,7 +170,7 @@ function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
   useEffect(() => {
     const keyboard = (event: KeyboardEvent) => {
       if (!(event.metaKey || event.ctrlKey)) return;
-      if (resources.preferences || context.preview) return;
+      if (resources.preferences || context.preview || library) return;
       if (paletteOpen) {
         if (event.key.toLowerCase() === 'k') {
           event.preventDefault();
@@ -219,6 +233,7 @@ function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
     preferences,
     resources.preferences,
     context.preview,
+    library,
     paletteOpen,
     resources.setInspectorOpen,
     resources.setInspectorTab,
@@ -237,14 +252,18 @@ function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
         <WindowTitlebar
           desktop={snapshot?.desktop}
           terminalOpen={terminalOpen}
-          inert={resources.preferences || paletteOpen || Boolean(context.preview)}
+          inert={
+            resources.preferences || paletteOpen || Boolean(context.preview) || Boolean(library)
+          }
           onTerminal={toggleTerminal}
           onCommands={openPalette}
         />
       )}
       <main
         className={`workspace ${isDesktop ? 'desktop-workspace' : 'extension-workspace'}`}
-        inert={resources.preferences || paletteOpen || context.preview ? true : undefined}
+        inert={
+          resources.preferences || paletteOpen || context.preview || library ? true : undefined
+        }
       >
         {isDesktop && sidebarOpen && (
           <Suspense fallback={<aside className="sidebar-nav" aria-busy="true" />}>
@@ -316,6 +335,7 @@ function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
                   activities={chat.activities}
                   busy={busy}
                   onReuse={insertPrompt}
+                  onSavePrompt={openLibrary}
                   scroller={scroller}
                   searching={findOpen}
                   followLatest={!showLatest}
@@ -354,7 +374,7 @@ function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
               onSubmit={chat.submit}
               onModelChange={chat.setModel}
               onModeChange={chat.setMode}
-              onInsertPrompt={insertPrompt}
+              onOpenLibrary={() => openLibrary()}
               onPreviewContext={context.open}
             />
           )}
@@ -408,7 +428,27 @@ function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
           </Suspense>
         )}
       </main>
-      {context.preview && !resources.preferences && !paletteOpen && (
+      {library && !resources.preferences && !paletteOpen && (
+        <Suspense
+          fallback={
+            <div className="settings-loading" role="status">
+              {t('Loading your library…')}
+            </div>
+          }
+        >
+          <PromptLibraryDialog
+            messages={snapshot?.messages}
+            seed={library.seed}
+            draft={chat.prompt}
+            onClose={closeLibrary}
+            onChoose={(text) => {
+              closeLibrary();
+              insertPrompt(text);
+            }}
+          />
+        </Suspense>
+      )}
+      {context.preview && !library && !resources.preferences && !paletteOpen && (
         <ContextPreviewDialog preview={context.preview} busy={busy} onClose={context.close} />
       )}
       {resources.preferences && snapshot?.desktop && (
@@ -434,6 +474,7 @@ function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
           onClose={() => setPaletteOpen(false)}
           onPreferences={preferences}
           onFind={openFind}
+          onLibrary={() => openLibrary()}
           onToggleTerminal={toggleTerminal}
           onTogglePanel={() => resources.setInspectorOpen((open) => !open)}
         />

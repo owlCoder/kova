@@ -12,14 +12,16 @@ const fixture = vi.hoisted(() => ({
   chatBodies: [] as Record<string, unknown>[],
   logs: [] as string[],
   onboarding: new Map<string, boolean>(),
-  drafts: new Map<string, string>(),
+  drafts: new Map<string, unknown>(),
   clipboard: [] as string[],
+  clipboardWrite: null as Promise<void> | null,
 }));
 
 vi.mock('vscode', () => ({
   env: {
     clipboard: {
       writeText: async (text: string) => {
+        await fixture.clipboardWrite;
         fixture.clipboard.push(text);
       },
     },
@@ -69,6 +71,7 @@ beforeEach(() => {
   fixture.onboarding.clear();
   fixture.drafts.clear();
   fixture.clipboard = [];
+  fixture.clipboardWrite = null;
   vi.stubGlobal(
     'fetch',
     vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
@@ -332,5 +335,81 @@ describe('shared chat session synchronization', () => {
     });
     expect(fixture.logs).toContain('[ErrorOccurred] AgentFailed');
     expect(fixture.logs.join('\n')).not.toContain('Interrupted answer');
+  });
+
+  it('shares a workspace prompt library across views, keeps it across new chats and out of model context', async () => {
+    const secondView: HostMessage[] = [];
+    const disconnect = session.connect((message) => secondView.push(message));
+    await session.handle({
+      protocolVersion: 1,
+      requestId: 'library-read',
+      type: 'GetPromptLibrary',
+    });
+    const empty = messages.filter((message) => message.type === 'PromptLibrary').at(-1)!.library;
+    await session.handle({
+      protocolVersion: 1,
+      requestId: 'library-save',
+      type: 'SavePrompt',
+      revision: empty.revision,
+      id: null,
+      title: 'Private saved prompt',
+      text: 'UNSENT_LIBRARY_TEXT',
+    });
+    const saved = messages.filter((message) => message.type === 'PromptLibrary').at(-1)!.library;
+    expect(saved.prompts[0]?.text).toBe('UNSENT_LIBRARY_TEXT');
+    expect(
+      secondView.filter((message) => message.type === 'PromptLibrary').at(-1)?.library,
+    ).toEqual(saved);
+    expect(fixture.drafts.get('kova.promptLibrary')).toEqual(saved);
+    await session.newConversation();
+    await session.handle({
+      protocolVersion: 1,
+      requestId: 'library-after-new',
+      type: 'GetPromptLibrary',
+    });
+    expect(messages.filter((message) => message.type === 'PromptLibrary').at(-1)!.library).toEqual(
+      saved,
+    );
+    await session.initialize();
+    await beginStream();
+    expect(JSON.stringify(fixture.chatBodies)).not.toContain('UNSENT_LIBRARY_TEXT');
+    expect(JSON.stringify(messages.filter((message) => message.type === 'Snapshot'))).not.toContain(
+      'UNSENT_LIBRARY_TEXT',
+    );
+    await finish();
+    disconnect();
+  });
+
+  it('acknowledges only completed clipboard writes and never reports success for a failed write', async () => {
+    let finishWrite!: () => void;
+    fixture.clipboardWrite = new Promise<void>((resolve) => {
+      finishWrite = resolve;
+    });
+    const copying = session.handle({
+      protocolVersion: 1,
+      requestId: 'copy-ack',
+      type: 'CopyText',
+      text: 'Copied text',
+    });
+    expect(messages.some((message) => message.type === 'ClipboardCopied')).toBe(false);
+    finishWrite();
+    await copying;
+    expect(fixture.clipboard).toEqual(['Copied text']);
+    expect(
+      messages
+        .filter((message) => message.type === 'ClipboardCopied')
+        .map((message) => message.requestId),
+    ).toEqual(['copy-ack']);
+    fixture.clipboardWrite = Promise.reject(new Error('Clipboard unavailable'));
+    await expect(
+      session.handle({
+        protocolVersion: 1,
+        requestId: 'copy-failed',
+        type: 'CopyText',
+        text: 'Not copied',
+      }),
+    ).rejects.toThrow('Clipboard unavailable');
+    expect(fixture.clipboard).toEqual(['Copied text']);
+    expect(messages.filter((message) => message.type === 'ClipboardCopied')).toHaveLength(1);
   });
 });

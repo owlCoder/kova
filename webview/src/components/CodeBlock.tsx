@@ -1,10 +1,7 @@
-import { useI18n } from '../i18n/I18n.js';
 import { Children, isValidElement, type ReactNode } from 'react';
-import { send } from '../messaging/bridge.js';
-import { Icon } from './Icon.js';
+import { CopyButton } from './CopyButton.js';
 
 export function CodeBlock({ children }: { children?: ReactNode }) {
-  const { t } = useI18n();
   const child = Children.toArray(children)[0];
   const props = isValidElement<{ className?: string; children?: ReactNode }>(child)
     ? child.props
@@ -15,14 +12,7 @@ export function CodeBlock({ children }: { children?: ReactNode }) {
     <div className="code-block">
       <div className="code-toolbar">
         <span>{language}</span>
-        <button
-          title={t('Copy code')}
-          aria-label={t('Copy code')}
-          onClick={() => send({ type: 'CopyText', text })}
-        >
-          <Icon name="copy" size={13} />
-          {t('Copy')}
-        </button>
+        <CopyButton label="Copy code" caption="Copy" text={text} />
       </div>
       <pre>{children}</pre>
     </div>

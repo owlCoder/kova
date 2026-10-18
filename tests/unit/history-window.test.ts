@@ -38,6 +38,7 @@ const render = (searching: boolean) =>
       activities: [],
       busy: false,
       onReuse: () => {},
+      onSavePrompt: () => {},
       scroller: { current: null },
       searching,
       followLatest: true,

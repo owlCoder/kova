@@ -98,3 +98,16 @@ Click an attachment to preview its captured text, source and character count. Th
 ## Long conversations
 
 The interface initially renders the latest 40 saved messages. Load earlier messages in batches of 40 while keeping your reading position, or choose Show recent to return to the end. Find in conversation loads the saved messages in the current snapshot, including those initially outside the rendered window. Closing Find keeps those messages available until you choose Show recent or change conversations. Rendering limits do not change the agent's context-compaction policy.
+
+## Personal prompt library
+
+Open **Prompt library** from the composer or command palette. **Saved** contains your own reusable prompts; **Templates** has six translated starting points; **Recent** shows up to 12 distinct user messages from the current conversation. Search the selected collection by title or content.
+
+- Choose **New prompt**, **Save draft**, or **Save prompt** on a user message. You can also save an editable copy of a template or recent message.
+- Keep up to 40 prompts, each with a title up to 80 characters and text up to 16,000 characters. Editing preserves code whitespace and line breaks.
+- Click a prompt to insert it at the composer caret. Existing text and the selected mode remain; nothing is sent automatically.
+- Edit or remove a saved prompt. **Undo removal** restores the latest removed prompt while the library remains open. Closing it ends that undo opportunity.
+
+Desktop libraries belong to the local app profile and remain available across projects. VS Code libraries use local workspace storage and are shared by that workspace's sidebar and chat tab. Starting a new conversation keeps saved prompts. No library text enters routine conversation snapshots or model requests automatically. Local prompt storage is ordinary application data, separate from credentials; libraries are not synchronized between desktop and VS Code.
+
+Clipboard controls show **Copied** only after the host confirms a successful write. Messages/code over the 60,000-character clipboard limit have a selection-copy hint; select a smaller portion for native copy.

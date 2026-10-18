@@ -14,6 +14,7 @@ export function CommandPalette({
   onTogglePanel,
   onToggleTerminal,
   onFind,
+  onLibrary,
 }: {
   snapshot: SessionSnapshot | null;
   busy: boolean;
@@ -22,6 +23,7 @@ export function CommandPalette({
   onTogglePanel(): void;
   onToggleTerminal(): void;
   onFind(): void;
+  onLibrary(): void;
 }) {
   const { t } = useI18n();
   const [query, setQuery] = useState('');
@@ -31,6 +33,14 @@ export function CommandPalette({
   useDialogFocus(dialog, onClose);
   const mod = modifierKey(snapshot?.desktop?.platform);
   const commands = [
+    {
+      id: 'prompt-library',
+      label: t('Prompt library'),
+      icon: 'library' as const,
+      shortcut: '',
+      disabled: !snapshot || Boolean(snapshot.configuringProvider),
+      run: onLibrary,
+    },
     {
       id: 'find-conversation',
       label: t('Find in conversation'),

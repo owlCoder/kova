@@ -5,6 +5,7 @@ import { send } from '../messaging/bridge.js';
 import { Icon } from './Icon.js';
 import { BrandMark } from './BrandMark.js';
 import { useDialogFocus } from './useDialogFocus.js';
+import { CopyButton } from './CopyButton.js';
 
 export function ContextPreviewDialog({
   preview,
@@ -87,10 +88,12 @@ export function ContextPreviewDialog({
             {t('Remove attachment')}
           </button>
           <span />
-          <button onClick={() => send({ type: 'CopyText', text: preview.content })}>
-            <Icon name="copy" size={14} />
-            {t('Copy preview')}
-          </button>
+          <CopyButton
+            label="Copy preview"
+            caption="Copy preview"
+            text={preview.content}
+            size={14}
+          />
           <button className="primary" onClick={onClose}>
             {t('Done')}
           </button>

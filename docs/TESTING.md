@@ -78,3 +78,9 @@ Terminal regression tests start a real PTY on the native runner, verify project 
 Search tests cover literal regex characters, Unicode/emoji offsets and bounded result sets. Native UI checks verify matches in prose and code, forward/backward keyboard navigation, Escape focus return and both themes. Export checks verify native Markdown save/clipboard behavior and exclude tool/system/repair entries; active or stale-session exports are rejected.
 
 Draft tests cover persistence across new store/extension instances, isolation, bounds, clearing the consumed prompt and preserving a newer draft during submission. Native VSIX smoke checks include workspace draft storage and Markdown export. Set `KOVA_SMOKE_PROVIDER_URL` to a synthetic local Ollama endpoint to run the native extension checks without downloading a real model; omit it for the default local Ollama installation.
+
+## Personal prompt resources
+
+`prompt-library.test.ts` checks exact persisted text and restart, edit identity, bounded capacity, stale concurrent edits, failed writes, corruption preservation and strict validation in both hosts. Chat-session tests verify that connected views receive authoritative updates, new conversations retain saved prompts, and saved library text stays out of routine snapshots and model requests. Installed-VSIX smoke checks exercise create/edit/remove and clipboard acknowledgments.
+
+Native review: save a draft and a message, adapt a template, search saved text, edit, remove/undo, insert into an existing draft without sending, close/reopen and restart the app. Check keyboard focus in browse/edit modes, Escape restoration, all three languages, both themes and the largest text setting in a narrow VS Code sidebar. Confirm that the lazy library module and stylesheet load under the installed extension's CSP. Copy code and verify success feedback after the native clipboard write.

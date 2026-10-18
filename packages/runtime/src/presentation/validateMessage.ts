@@ -13,6 +13,9 @@ export function validateMessage(raw: unknown): WebviewMessage {
     throw new Error('Unsupported protocol or invalid request ID.');
   const fields: Record<string, readonly string[]> = {
     Ready: [],
+    GetPromptLibrary: [],
+    SavePrompt: ['revision', 'id', 'title', 'text'],
+    DeletePrompt: ['revision', 'id'],
     SubmitPrompt: ['prompt', 'modelId', 'mode', 'skillId', 'attachmentIds'],
     CancelRun: ['runId'],
     NewConversation: [],
@@ -41,6 +44,26 @@ export function validateMessage(raw: unknown): WebviewMessage {
     allowed.some((key) => !(key in value))
   )
     throw new Error('Unknown message type or fields.');
+  if (
+    ['SavePrompt', 'DeletePrompt'].includes(value.type) &&
+    (typeof value.revision !== 'string' ||
+      !/^[a-f0-9-]{36}$/.test(value.revision) ||
+      (value.id !== null && (typeof value.id !== 'string' || !/^[a-f0-9-]{36}$/.test(value.id))) ||
+      (value.type === 'DeletePrompt' && value.id === null))
+  )
+    throw new Error('Invalid saved prompt reference.');
+  if (
+    value.type === 'SavePrompt' &&
+    (typeof value.title !== 'string' ||
+      !value.title.trim() ||
+      value.title.length > 80 ||
+      typeof value.text !== 'string' ||
+      !value.text.trim() ||
+      value.text.length > 16_000 ||
+      value.title.includes('\0') ||
+      value.text.includes('\0'))
+  )
+    throw new Error('Enter a title up to 80 characters and a prompt up to 16,000 characters.');
   for (const key of ['runId', 'approvalId', 'preparationKey', 'attachmentId', 'modelId'])
     if (key in value && (typeof value[key] !== 'string' || (value[key] as string).length > 256))
       throw new Error(`Invalid ${key}.`);

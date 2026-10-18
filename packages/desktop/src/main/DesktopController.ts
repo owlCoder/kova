@@ -19,9 +19,11 @@ import { exportTranscript } from './exportTranscript.js';
 import { previewContext } from '../../../runtime/src/presentation/previewContext.js';
 import { mergeContextAttachments } from '../../../runtime/src/presentation/mergeContextAttachments.js';
 import type { ContextAttachment } from '../../../core/src/context/ContextAttachment.js';
+import { createPromptLibrary } from '../state/createPromptLibrary.js';
 
 export class DesktopController {
   readonly terminal = new DesktopTerminal((message) => this.session.send(message));
+  readonly library;
   private readonly requests = new Set<string>();
   private previewPath: string | null = null;
   private search: CancellationSource | null = null;
@@ -29,7 +31,9 @@ export class DesktopController {
     readonly session: DesktopSession,
     private readonly window: BrowserWindow,
     private readonly preferencesChanged: () => void = () => {},
-  ) {}
+  ) {
+    this.library = createPromptLibrary(session.store.directory);
+  }
   async handle(raw: unknown): Promise<void> {
     let requestId = 'invalid';
     try {
@@ -53,6 +57,15 @@ export class DesktopController {
   private async route(message: WebviewMessage): Promise<void> {
     const session = this.session;
     switch (message.type) {
+      case 'GetPromptLibrary':
+      case 'SavePrompt':
+      case 'DeletePrompt':
+        session.send({
+          type: 'PromptLibrary',
+          requestId: message.requestId,
+          library: await this.library.handle(message),
+        });
+        return;
       case 'PreviewContext':
         session.send({
           type: 'ContextPreview',
@@ -277,7 +290,7 @@ export class DesktopController {
         return;
       case 'CopyText':
         clipboard.writeText(message.text);
-        session.send({ type: 'Notice', message: 'Copied to clipboard.' });
+        session.send({ type: 'ClipboardCopied', requestId: message.requestId });
         return;
     }
   }

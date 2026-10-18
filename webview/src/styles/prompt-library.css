@@ -1,0 +1,390 @@
+.library-backdrop {
+  padding: 16px;
+}
+.prompt-library-dialog {
+  width: min(760px, calc(100vw - 32px));
+  max-height: min(820px, calc(100dvh - 56px));
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-dialog);
+  background: var(--panel);
+  box-shadow: var(--shadow-dialog);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.library-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 24px 24px 0;
+  flex-shrink: 0;
+}
+.library-heading > div {
+  flex: 1;
+  min-width: 0;
+}
+.library-heading .eyebrow {
+  font-size: calc(10px * var(--text-scale, 1));
+}
+.library-heading h2 {
+  font-size: calc(22px * var(--text-scale, 1));
+  letter-spacing: -0.025em;
+  margin: 6px 0 0;
+  overflow-wrap: anywhere;
+}
+.library-intro {
+  color: var(--muted);
+  margin: 12px 24px 20px;
+  font-size: calc(12px * var(--text-scale, 1));
+  line-height: 1.6;
+}
+.library-tools {
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.library-tools nav {
+  display: flex;
+  gap: 3px;
+  padding: 3px;
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-control);
+}
+.library-tools nav button {
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  padding: 6px 9px;
+  gap: 6px;
+  font-size: calc(12px * var(--text-scale, 1));
+}
+.library-tools nav button[aria-pressed='true'] {
+  border-color: var(--border);
+  color: var(--text);
+  background: var(--elevated);
+}
+.library-tools nav .library-tab-count {
+  font-size: calc(10px * var(--text-scale, 1));
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.library-create {
+  display: flex;
+  gap: 6px;
+}
+.library-create button {
+  padding: 7px 9px;
+  gap: 6px;
+  font-size: calc(12px * var(--text-scale, 1));
+}
+.library-search {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  margin: 16px 24px 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  color: var(--muted);
+  background: var(--bg);
+}
+.library-search:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.library-search input {
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  padding: 0;
+  min-width: 0;
+  flex: 1;
+  outline: none;
+  font-size: calc(13px * var(--text-scale, 1));
+}
+.library-entries {
+  min-height: 180px;
+  overflow: auto;
+  padding: 0 18px 14px;
+}
+.library-entry {
+  display: flex;
+  align-items: center;
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+}
+.library-entry:hover,
+.library-entry:focus-within {
+  border-color: var(--border-soft);
+  background: var(--surface);
+}
+.library-insert {
+  display: flex;
+  flex: 1;
+  align-items: flex-start;
+  gap: 13px;
+  padding: 14px 10px;
+  min-width: 0;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  border-radius: var(--radius-control);
+}
+.library-insert:hover {
+  background: transparent;
+}
+.library-insert > .icon {
+  color: var(--accent);
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+.library-insert > .icon:last-child {
+  color: var(--faint);
+}
+.library-insert > span {
+  flex: 1;
+  min-width: 0;
+}
+.library-insert strong {
+  display: block;
+  color: var(--text);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: calc(13px * var(--text-scale, 1));
+  font-weight: 500;
+}
+.library-insert small {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  color: var(--muted);
+  margin-top: 5px;
+  font-size: calc(12px * var(--text-scale, 1));
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+.library-edit {
+  margin: 0 8px 0 0;
+  flex-shrink: 0;
+}
+.library-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-align: center;
+  padding: 32px 16px;
+  color: var(--muted);
+}
+.library-empty > .icon {
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+.library-empty h3 {
+  color: var(--text);
+  font-size: calc(15px * var(--text-scale, 1));
+  font-weight: 500;
+  margin: 0;
+}
+.library-empty p {
+  max-width: 340px;
+  font-size: calc(12px * var(--text-scale, 1));
+  line-height: 1.7;
+  margin: 0;
+}
+.library-footer {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 24px;
+  border-top: 1px solid var(--border-soft);
+  color: var(--muted);
+  flex-shrink: 0;
+}
+.library-footer small {
+  font-size: calc(11px * var(--text-scale, 1));
+  line-height: 1.6;
+}
+.library-footer > span {
+  margin-left: auto;
+  white-space: nowrap;
+  color: var(--faint);
+  font-size: calc(11px * var(--text-scale, 1));
+  font-variant-numeric: tabular-nums;
+}
+.prompt-editor {
+  display: flex;
+  flex-direction: column;
+  padding: 0 24px;
+}
+.prompt-editor > label {
+  margin: 0 0 8px;
+  font-size: calc(12px * var(--text-scale, 1));
+  font-weight: 500;
+}
+.prompt-editor > input,
+.prompt-editor > textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  color: var(--text);
+  background: var(--bg);
+  font-size: calc(13px * var(--text-scale, 1));
+}
+.prompt-editor > input {
+  margin-bottom: 18px;
+}
+.prompt-editor > textarea {
+  height: 220px;
+  min-height: 100px;
+  resize: vertical;
+  max-height: 40dvh;
+  line-height: 1.75;
+  font-family: inherit;
+}
+.prompt-editor-count {
+  margin: 8px 0 18px;
+  text-align: right;
+  color: var(--faint);
+  font-size: calc(11px * var(--text-scale, 1));
+  font-variant-numeric: tabular-nums;
+}
+.prompt-editor > p {
+  color: var(--muted);
+  line-height: 1.6;
+  font-size: calc(12px * var(--text-scale, 1));
+}
+.prompt-editor footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0 -24px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--border-soft);
+}
+.prompt-editor footer > span {
+  flex: 1;
+}
+.prompt-editor footer button {
+  font-size: calc(12px * var(--text-scale, 1));
+  gap: 6px;
+}
+.library-error,
+.library-status {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 24px;
+  font-size: calc(12px * var(--text-scale, 1));
+  line-height: 1.6;
+}
+.library-error {
+  color: var(--red);
+  background: var(--surface);
+  border-block: 1px solid var(--border-soft);
+  margin-bottom: 16px;
+}
+.library-status {
+  color: var(--green);
+  border-top: 1px solid var(--border-soft);
+}
+.library-status > span,
+.library-error > span {
+  flex: 1;
+  min-width: 100px;
+}
+.library-status button,
+.library-error button {
+  font-size: inherit;
+  padding: 5px 8px;
+}
+@media (max-width: 520px) {
+  .library-heading {
+    padding: 18px 16px 0;
+    gap: 9px;
+  }
+  .library-heading .eyebrow {
+    font-size: calc(9px * var(--text-scale, 1));
+    letter-spacing: 0.06em;
+  }
+  .library-heading h2 {
+    font-size: calc(19px * var(--text-scale, 1));
+  }
+  .library-intro {
+    margin: 12px 16px 16px;
+  }
+  .library-tools {
+    padding: 0 16px;
+  }
+  .library-tools nav {
+    width: 100%;
+  }
+  .library-tools nav button {
+    flex: 1;
+    min-width: 0;
+    flex-direction: column;
+    padding: 7px 3px;
+    gap: 5px;
+    font-size: calc(11px * var(--text-scale, 1));
+  }
+  .library-tools nav .library-tab-count {
+    display: none;
+  }
+  .library-tab-title {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .library-create {
+    width: 100%;
+    justify-content: flex-end;
+  }
+  .library-search {
+    margin: 14px 16px 8px;
+  }
+  .library-entries {
+    padding: 0 10px 10px;
+  }
+  .library-insert {
+    gap: 8px;
+  }
+  .library-insert > .icon:last-child {
+    display: none;
+  }
+  .library-footer,
+  .library-error,
+  .library-status {
+    padding: 12px 16px;
+  }
+  .prompt-editor {
+    padding: 0 16px;
+  }
+  .prompt-editor footer {
+    margin: 0 -16px;
+    padding: 12px 16px;
+  }
+  .prompt-editor footer > span {
+    display: none;
+  }
+  .prompt-editor footer button {
+    flex: 1;
+  }
+}
+@media (forced-colors: active) {
+  .library-tools nav button[aria-pressed='true'],
+  .library-entry:focus-within {
+    border-color: Highlight;
+  }
+}

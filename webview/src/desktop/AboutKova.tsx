@@ -2,6 +2,7 @@ import { BrandMark } from '../components/BrandMark.js';
 import type { DesktopState } from '../../../packages/protocol/src/DesktopState.js';
 import { send } from '../messaging/bridge.js';
 import { Icon } from '../components/Icon.js';
+import { CopyButton } from '../components/CopyButton.js';
 import { useI18n } from '../i18n/I18n.js';
 
 export function AboutKova({ desktop }: { desktop: DesktopState }) {
@@ -129,10 +130,12 @@ export function AboutKova({ desktop }: { desktop: DesktopState }) {
           <dt>{t('License')}</dt>
           <dd>MIT · Kova contributors</dd>
         </dl>
-        <button onClick={() => send({ type: 'CopyText', text: diagnostics })}>
-          <Icon name="copy" size={14} />
-          {t('Copy diagnostics')}
-        </button>
+        <CopyButton
+          label="Copy diagnostics"
+          caption="Copy diagnostics"
+          text={diagnostics}
+          size={14}
+        />
         <small>
           {t(
             'Contains version and environment information. No keys, conversations or project paths.',

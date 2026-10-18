@@ -42,13 +42,13 @@ The sidebar lists projects and sessions. Reopening a project resumes a pinned se
 - **Changes:** actual proposed before/after content during approval, or the working-tree Git diff.
 - **Activity:** tool calls, project rules, permissions and results.
 
-The composer’s Prompt library includes six translated templates and the 12 most recent distinct user messages in the current conversation. Insertion preserves existing text and the selected agent mode, and never sends automatically. User messages also have a Reuse prompt action.
+The composer’s Prompt library has Saved, Templates and Recent collections. Create a reusable prompt, save the current draft or a user message, or adapt one of six translated templates. Recent shows up to 12 distinct user messages from the current conversation. Search titles and text, edit saved prompts, remove them and undo the latest removal before closing the library. Insertion preserves existing text and the selected agent mode, and never sends automatically. The command palette also opens the library. User messages retain the separate Reuse prompt action.
 
 Attached context has separate preview and remove controls. Preview shows the captured snapshot, source and character count, with a 50,000-character display limit. Reattaching the same file refreshes it in place. Multi-file capture commits only after the full selection passes validation. Starting a new conversation clears attachments.
 
 Long conversations render their latest 40 messages first. Load older messages incrementally without losing your reading position, or use Show recent to return to the end. Find searches the saved messages in the current snapshot, including those initially outside the rendered window.
 
-Markdown supports lists, tables and fenced code. Code blocks and messages have copy controls. External images do not load automatically. HTTP(S) links open through the operating system.
+Markdown supports lists, tables and fenced code. Code blocks and messages have copy controls that show success after the host confirms the clipboard write. Oversized content has a clear selection-copy hint. External images do not load automatically. HTTP(S) links open through the operating system.
 
 **Stop** cancels generation, an approval wait or a process. The partial response is saved, and applied edits remain. Desktop writes are atomic and check the previewed file version. Use Git to restore desktop edits; VS Code Undo is available in the extension.
 
@@ -87,7 +87,7 @@ Project `AGENTS.md`, `.kova/skills`, `.kova/mcp.json` and `.kova/hooks.json` wor
 
 ## Local data and keys
 
-Data lives in the platform's Electron user-data directory for `kova-desktop` (typically `~/Library/Application Support/kova-desktop` on macOS, `%APPDATA%/kova-desktop` on Windows and `~/.config/kova-desktop` on Linux). `drafts.json` contains the bounded unsent drafts, `settings.json` contains preferences, `session-index.json` contains metadata, and `sessions/<uuid>.json` contains history. Sessions load lazily; archiving hides a row and keeps its file. Back up this directory to retain history.
+Data lives in the platform's Electron user-data directory for `kova-desktop` (typically `~/Library/Application Support/kova-desktop` on macOS, `%APPDATA%/kova-desktop` on Windows and `~/.config/kova-desktop` on Linux). `prompt-library.json` contains up to 40 reusable prompts shared across desktop projects, `drafts.json` contains the bounded unsent drafts, `settings.json` contains preferences, `session-index.json` contains metadata, and `sessions/<uuid>.json` contains history. Sessions load lazily; archiving hides a row and keeps its file. Back up this directory to retain history and saved prompts. Library titles are bounded to 80 characters and prompt text to 16,000 characters. Library writes are serialized and atomic; stale edits from another open view are rejected. Damaged library files are preserved and reported rather than silently replaced. Saved prompts are ordinary local data, outside API-key secure storage, and are absent from model context until inserted and submitted.
 
 `credentials.json` contains encrypted API keys scoped to provider type and endpoint. Electron safeStorage uses the OS credential system. If encryption is unavailable, including Linux `basic_text`, Kova keeps the key only in memory and displays a notice. No plaintext key is saved in ordinary settings or sent to the renderer. Removing a key removes it for that endpoint.
 

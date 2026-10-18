@@ -146,7 +146,8 @@ else {
     closing = true;
     event.preventDefault();
     desktopController?.terminal.close();
-    void agent?.dispose().finally(() => app.quit());
-    if (!agent) app.quit();
+    void Promise.allSettled([agent?.dispose(), desktopController?.library.flush()]).finally(() =>
+      app.quit(),
+    );
   });
 }

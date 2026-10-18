@@ -57,99 +57,13 @@
   height: 29px;
   padding: 5px;
 }
-.prompt-library {
-  position: fixed;
-  margin: 0;
-  padding: 0;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-panel);
-  color: var(--text);
-  background: var(--elevated);
-  box-shadow: var(--shadow-float);
-  overflow: hidden;
-}
-.prompt-library:popover-open {
-  display: flex;
-  flex-direction: column;
-}
-.prompt-search {
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
-  gap: 9px;
-  padding: 12px;
-  border-bottom: 1px solid var(--border-soft);
-  color: var(--muted);
-}
-.prompt-search input {
-  width: 100%;
-  min-width: 0;
-  height: 30px;
-}
-.prompt-results {
-  overflow: auto;
-  min-height: 0;
-  padding: 5px;
-}
-.prompt-results > button {
-  display: flex;
-  width: 100%;
-  align-items: center;
-  gap: 12px;
-  padding: 10px;
-  border: 1px solid transparent;
-  border-radius: var(--radius-control);
-  text-align: left;
-  background: transparent;
-  color: var(--muted);
-}
-.prompt-results > button.selected,
-.prompt-results > button:hover {
-  background: var(--hover);
-  color: var(--text);
-}
-.prompt-results > button.selected {
-  border-color: var(--border-soft);
-}
-.prompt-results > button > span {
-  flex: 1;
-  min-width: 0;
-}
-.prompt-results strong {
-  display: block;
-  font-weight: 500;
-  font-size: calc(13px * var(--text-scale, 1));
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-.prompt-results small {
-  display: block;
-  padding-top: 4px;
-  font-size: calc(11px * var(--text-scale, 1));
-  color: var(--muted);
-}
-.prompt-results > p {
-  text-align: center;
-  padding: 15px;
-  color: var(--muted);
-}
-.prompt-library-hint {
-  padding: 10px 14px;
-  flex-shrink: 0;
-  border-top: 1px solid var(--border-soft);
-  color: var(--muted);
-  line-height: 1.6;
-  font-size: calc(10px * var(--text-scale, 1));
-}
 @media (hover: none) {
   .rename-session {
     opacity: 1;
   }
 }
 @media (forced-colors: active) {
-  .session-views button[aria-pressed='true'],
-  .prompt-results > button.selected {
+  .session-views button[aria-pressed='true'] {
     border-color: Highlight;
   }
 }

@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { useI18n } from '../i18n/I18n.js';
-import { send } from '../messaging/bridge.js';
+import { CopyButton } from './CopyButton.js';
 import { Icon } from './Icon.js';
 import { BrandMark } from './BrandMark.js';
 import { MessageContent } from './MessageContent.js';
@@ -13,6 +13,7 @@ export const ConversationMessage = memo(function ConversationMessage({
   working,
   reasoning,
   onReuse,
+  onSavePrompt,
 }: {
   role: 'user' | 'assistant';
   content: string;
@@ -20,6 +21,7 @@ export const ConversationMessage = memo(function ConversationMessage({
   working: boolean;
   reasoning: string;
   onReuse(text: string): void;
+  onSavePrompt(text: string): void;
 }) {
   const { t } = useI18n();
   return (
@@ -44,14 +46,17 @@ export const ConversationMessage = memo(function ConversationMessage({
                 <Icon name="upLeft" size={13} />
               </button>
             )}
-            <button
-              className="message-copy"
-              title={t('Copy message')}
-              aria-label={t('Copy message')}
-              onClick={() => send({ type: 'CopyText', text: content })}
-            >
-              <Icon name="copy" size={13} />
-            </button>
+            {role === 'user' && content.length <= 16_000 && (
+              <button
+                className="message-copy"
+                title={t('Save prompt')}
+                aria-label={t('Save prompt')}
+                onClick={() => onSavePrompt(content)}
+              >
+                <Icon name="pin" size={13} />
+              </button>
+            )}
+            <CopyButton className="message-copy" label="Copy message" text={content} />
           </div>
         )}
       </div>

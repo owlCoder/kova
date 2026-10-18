@@ -1,5 +1,5 @@
 import type { ActiveChatRun } from './ActiveChatRun.js';
-import { WorkspaceDraft } from './WorkspaceDraft.js';
+import { ChatResources } from './ChatResources.js';
 import { handlePresentationAction, presentationActions } from './handlePresentationAction.js';
 import { readUiPreferences } from './readUiPreferences.js';
 import { randomUUID } from 'node:crypto';
@@ -28,7 +28,6 @@ import { approvalView, projectEvent } from '../../../runtime/src/presentation/pr
 import { ContextAttachmentManager } from './ContextAttachmentManager.js';
 import { projectConversationMessages } from '../../../runtime/src/presentation/projectConversationMessages.js';
 import { nextStreamingMessage } from '../../../runtime/src/presentation/nextStreamingMessage.js';
-import { previewContext } from '../../../runtime/src/presentation/previewContext.js';
 import { contextAttachmentViews } from '../../../runtime/src/presentation/contextAttachmentViews.js';
 import { StreamEventBuffer } from '../../../runtime/src/presentation/StreamEventBuffer.js';
 import { logAgentEvent } from './logAgentEvent.js';
@@ -38,7 +37,7 @@ export class ChatSession {
   readonly hostSessionId = randomUUID();
   readonly approval = new WebviewApprovalPort();
   private sequence = 0;
-  private readonly draft: WorkspaceDraft;
+  private readonly resources: ChatResources;
   private configuring = false;
   private providerRefreshPending = false;
   private readonly events = new StreamEventBuffer((event) =>
@@ -88,7 +87,11 @@ export class ChatSession {
       root,
       () => !this.activeRun && !this.preparingRun && !this.configuring && !this.disposed,
     );
-    this.draft = new WorkspaceDraft(context.workspaceState);
+    this.resources = new ChatResources(
+      context,
+      () => ({ conversationId: this.conversationId, attachments: this.contextAttachments.list() }),
+      (payload) => this.deliver({ ...this.envelope(), ...payload } as HostMessage),
+    );
   }
   connect(deliver: (message: HostMessage) => void): () => void {
     this.listeners.add(deliver);
@@ -235,7 +238,7 @@ export class ChatSession {
     const snapshot: SessionSnapshot = {
       ...readUiPreferences(),
       conversationId: this.conversationId,
-      draft: this.draft.text,
+      draft: this.resources.draft.text,
       activeRunId: activeRun?.id ?? null,
       state: this.state,
       mode: this.mode,
@@ -264,6 +267,10 @@ export class ChatSession {
     if (this.requests.has(message.requestId)) throw new Error('Duplicate request ID.');
     this.requests.add(message.requestId);
     if (this.requests.size > 200) this.requests.delete(this.requests.values().next().value!);
+    if (this.resources.handles(message.type)) {
+      await this.resources.handle(message);
+      return;
+    }
     if (
       presentationActions.has(message.type) &&
       (await handlePresentationAction(message, this.context, {
@@ -274,23 +281,12 @@ export class ChatSession {
         provider: this.providers.label(),
         model: this.selectedModel,
         notify: (message) => this.deliver({ ...this.envelope(), type: 'Notice', message }),
+        copied: (requestId) =>
+          this.deliver({ ...this.envelope(), type: 'ClipboardCopied', requestId }),
       }))
     )
       return;
     switch (message.type) {
-      case 'PreviewContext':
-        this.deliver({
-          ...this.envelope(),
-          type: 'ContextPreview',
-          requestId: message.requestId,
-          preview: previewContext(this.conversationId, this.contextAttachments.list(), message),
-        });
-        return;
-      case 'UpdateDraft':
-        if (message.conversationId === this.conversationId) {
-          await this.draft.set(message.prompt);
-        }
-        return;
       case 'Ready':
         await this.snapshot(message.requestId);
         return;
@@ -422,7 +418,7 @@ export class ChatSession {
         this.projectInstructions,
       );
       cancellation.throwIfCancellationRequested();
-      await this.draft.consume(message.prompt);
+      await this.resources.draft.consume(message.prompt);
       this.state = 'BuildingContext';
       this.activeRun = {
         id: runId,
@@ -472,7 +468,7 @@ export class ChatSession {
     this.providers.forgetConversation(previousConversationId);
     this.conversationId = randomUUID();
     this.contextAttachments.clear();
-    await this.draft.set('');
+    await this.resources.draft.set('');
     this.state = 'Idle';
     this.usage = null;
     this.partial = false;
@@ -488,6 +484,7 @@ export class ChatSession {
     await this.initialization?.catch(() => {});
     this.approval.dispose();
     await this.runtime?.dispose();
+    await this.resources.flush();
     this.providers.clear();
     this.contextAttachments.dispose();
     this.listeners.clear();

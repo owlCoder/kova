@@ -21,7 +21,7 @@ type Props = {
   onSubmit(): void;
   onModelChange(value: string): void;
   onModeChange(value: AgentMode): void;
-  onInsertPrompt(value: string): void;
+  onOpenLibrary(): void;
   onPreviewContext(id: string): void;
 };
 
@@ -38,7 +38,7 @@ export function ChatFooter({
   onSubmit,
   onModelChange,
   onModeChange,
-  onInsertPrompt,
+  onOpenLibrary,
   onPreviewContext,
 }: Props) {
   const { t } = useI18n();
@@ -134,9 +134,8 @@ export function ChatFooter({
               </div>
             </details>
             <PromptPicker
-              messages={snapshot?.messages}
               disabled={!inHost || !snapshot || Boolean(snapshot.configuringProvider)}
-              onChoose={onInsertPrompt}
+              onOpen={onOpenLibrary}
             />
             <label className="mode-control">
               <Icon name={mode === 'Plan' ? 'plan' : mode === 'Auto' ? 'zap' : 'code'} size={14} />

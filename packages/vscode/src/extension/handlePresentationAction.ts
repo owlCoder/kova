@@ -24,6 +24,7 @@ export async function handlePresentationAction(
     provider: string;
     model: string;
     notify(message: string): void;
+    copied(requestId: string): void;
   },
 ): Promise<boolean> {
   switch (message.type) {
@@ -61,6 +62,7 @@ export async function handlePresentationAction(
     }
     case 'CopyText':
       await vscode.env.clipboard.writeText(message.text);
+      transcript.copied(message.requestId);
       return true;
     case 'OpenExternal':
       await vscode.env.openExternal(vscode.Uri.parse(message.url));
