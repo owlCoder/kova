@@ -324,6 +324,7 @@ export class DesktopSession {
         this.runtime,
         this.skillsRepository ? new SkillLoader(this.skillsRepository) : null,
         this.instructions,
+        this.runtime?.index ?? null,
       );
       this.selectedModel = model.id;
       this.mode = message.mode;

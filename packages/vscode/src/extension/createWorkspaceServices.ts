@@ -28,8 +28,11 @@ export async function createWorkspaceServices(
         ),
       ]
     : [];
+  const indexingEnabled = vscode.workspace
+    .getConfiguration('kova')
+    .get<boolean>('indexing.enabled', false);
   return {
-    runtime: new WorkspaceRuntime(root, approval, sink, guards),
+    runtime: new WorkspaceRuntime(root, approval, sink, guards, indexingEnabled),
     skills: new WorkspaceSkillRepository(root, (message) =>
       sink.emit({
         type: 'ErrorOccurred',

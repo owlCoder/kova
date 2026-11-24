@@ -416,6 +416,7 @@ export class ChatSession {
         this.runtime,
         this.skillsRepository ? new SkillLoader(this.skillsRepository) : null,
         this.projectInstructions,
+        this.runtime?.index ?? null,
       );
       cancellation.throwIfCancellationRequested();
       await this.resources.draft.consume(message.prompt);
