@@ -10,7 +10,7 @@ Run **Kova: Open Settings** to open Kova's own settings dialog in the chat: `kov
 | -------------------------------------- | ------------------------------------- |
 | `kova.provider`                        | `ollama`                              |
 | `kova.ollama.baseUrl`                  | `http://127.0.0.1:11434`              |
-| `kova.ollama.model`                    | `qwen3:4b`                            |
+| `kova.ollama.model`                    | empty until setup or chat picks one   |
 | `kova.ollama.think`                    | `false`                               |
 | `kova.ollama.keepAliveSeconds`         | `300`                                 |
 | `kova.deepseek.baseUrl`                | `https://api.deepseek.com`            |

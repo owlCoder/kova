@@ -46,11 +46,11 @@ Download `kova-local-<version>.vsix` from the [latest release](https://github.co
 
 ### Provider compatibility
 
-| Provider mode     | Connection                                                                | Credentials             |
-| ----------------- | ------------------------------------------------------------------------- | ----------------------- |
-| Ollama            | Native Ollama API; defaults to `http://127.0.0.1:11434` and `qwen3:4b`    | None                    |
-| DeepSeek          | Chat Completions with DeepSeek thinking/tool continuation support         | API key                 |
-| OpenAI-compatible | Streaming Chat Completions; optional model discovery and function calling | Optional bearer API key |
+| Provider mode     | Connection                                                                     | Credentials             |
+| ----------------- | ------------------------------------------------------------------------------ | ----------------------- |
+| Ollama            | Native Ollama API; defaults to `http://127.0.0.1:11434`, model chosen in setup | None                    |
+| DeepSeek          | Chat Completions with DeepSeek thinking/tool continuation support              | API key                 |
+| OpenAI-compatible | Streaming Chat Completions; optional model discovery and function calling      | Optional bearer API key |
 
 Presets configure endpoints; they do not guarantee that every model supports tools. Native Anthropic Messages and Azure-specific authentication require a compatible gateway. See [provider details](docs/PROVIDERS.md).
 

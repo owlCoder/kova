@@ -1,7 +1,6 @@
 import { send } from '../messaging/bridge.js';
 import { useI18n } from '../i18n/I18n.js';
 import { Icon } from './Icon.js';
-import { BrandMark } from './BrandMark.js';
 import { ConversationTools } from './ConversationTools.js';
 
 /** Compact view toolbar, matching VS Code's own view title bars. */
@@ -28,7 +27,6 @@ export function WorkspaceHeader({
   return (
     <header className="workspace-header">
       <div className="workspace-breadcrumb">
-        <BrandMark />
         {title && (
           <span className="header-title" title={title}>
             {title}

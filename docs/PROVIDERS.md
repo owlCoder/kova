@@ -14,7 +14,7 @@ Kova supports three provider modes:
 - **DeepSeek** discovers models through the OpenAI-compatible `/models` endpoint and streams `/chat/completions` SSE with DeepSeek's thinking extension. Credentials live in VS Code `SecretStorage`.
 - **OpenAI-compatible** uses `/chat/completions` SSE and optional `/models` discovery, and accepts an optional bearer token from `SecretStorage`.
 
-Ollama remains the local-first default (`qwen3:4b`). Selecting an API provider is explicit; Kova never silently sends workspace context to a cloud endpoint.
+Ollama remains the local-first default; the model is chosen during setup, not preselected. Selecting an API provider is explicit; Kova never silently sends workspace context to a cloud endpoint.
 
 ## Core normalization
 

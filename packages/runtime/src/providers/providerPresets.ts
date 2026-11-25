@@ -5,7 +5,7 @@ export const providerPresets: readonly (ProviderConfiguration & { description: s
     kind: 'ollama',
     label: 'Ollama',
     baseUrl: 'http://127.0.0.1:11434',
-    model: 'qwen3:4b',
+    model: '',
     supportsTools: true,
     discoverModels: true,
     description: 'Local · install and start Ollama first',

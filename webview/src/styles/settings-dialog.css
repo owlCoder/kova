@@ -3,12 +3,12 @@
   padding: 16px;
 }
 .settings-dialog {
-  width: min(560px, calc(100vw - 32px));
+  width: min(640px, calc(100vw - 32px));
   max-height: min(760px, calc(100dvh - 56px));
   display: flex;
   flex-direction: column;
   border: 1px solid var(--border);
-  border-radius: var(--radius-dialog);
+  border-radius: 6px;
   background: var(--panel);
   box-shadow: var(--shadow-dialog);
   overflow: auto;
@@ -115,6 +115,7 @@
   order: 2;
 }
 .settings-field.field-checkbox .settings-hint {
+  order: 3;
   grid-column: 1 / -1;
 }
 .settings-actions {

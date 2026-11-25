@@ -13,6 +13,8 @@
 - Hide the header title until the first prompt names the conversation; only the Kova mark shows in the empty state.
 - Make every composer menu a native auto popover: clicking empty space or pressing Esc closes it, and opening one closes the others, so at most one menu is open at a time.
 - Add a Kova-styled settings dialog (header gear, Cmd/Ctrl+,, command palette, launcher action) covering interface language, text size, chat placement, context budget, Ollama options and the Auto-mode command allowlist, instead of the generic VS Code settings editor. Values are validated against a host-side allowlist before they are written to the global configuration.
+- Remove the Kova mark from the chat header (the editor tab and view already carry the icon) and center a larger mark on the empty page.
+- Do not preselect a default Ollama model: `kova.ollama.model` starts empty and is filled when you choose a model in setup or the chat; the model picker shows "Choose model" until then.
 
 ## 0.10.0
 

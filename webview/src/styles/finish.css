@@ -119,10 +119,6 @@
   .workspace-breadcrumb {
     gap: 5px;
   }
-  .workspace-breadcrumb > .kova-mark {
-    width: 24px;
-    height: 24px;
-  }
   .conversation-search {
     padding-inline: 10px;
     gap: 3px;

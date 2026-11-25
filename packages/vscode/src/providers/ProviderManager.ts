@@ -64,7 +64,8 @@ export class ProviderManager {
       case 'openaiCompatible':
         return config.get('openaiCompatible.model', '');
       default:
-        return config.get('ollama.model', 'qwen3:4b');
+        // No default model: the user picks one during provider setup or in the chat.
+        return config.get('ollama.model', '');
     }
   }
 

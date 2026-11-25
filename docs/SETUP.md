@@ -18,7 +18,7 @@ Choose a permission mode in the guide, then **Start chatting**. **Set up later**
 
 ### Ollama
 
-`ollama` remains the default. The default endpoint is `http://127.0.0.1:11434` and the default model is `qwen3:4b`. Installed models are discovered from Ollama. Models without confirmed tool support run chat only.
+`ollama` remains the default. The default endpoint is `http://127.0.0.1:11434`; no model is preselected — you choose one during setup (for example `qwen3:4b`) or later in the chat. Installed models are discovered from Ollama. Models without confirmed tool support run chat only.
 
 ### DeepSeek
 

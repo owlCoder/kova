@@ -112,7 +112,8 @@
         },
         "kova.ollama.model": {
           "type": "string",
-          "default": "qwen3:4b"
+          "default": "",
+          "description": "Default Ollama model. Stays empty until you choose a model in Kova setup or the chat."
         },
         "kova.ollama.think": {
           "type": "boolean",
