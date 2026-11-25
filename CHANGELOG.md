@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.10.0
+
+- Kova is now a VS Code extension only. Remove the Electron desktop app, its installers, integrated terminal, session browser, file inspector, desktop preferences, protocol messages, scripts and workflow. Releases contain the VSIX and checksums.
+- Redesign the panel as an agent transcript that follows VS Code's theme, fonts and colors. Tool calls appear inline at the point where Kova acted, one line each with a status dot, arguments and a folded result; rules, hooks, MCP, guardrails, interruptions and errors appear as short notes.
+- Ask for permission inline: open the diff or read the exact command, then press 1 to allow once, 2 or Esc to reject.
+- Show an animated working line with elapsed time while a task runs; Esc interrupts it from anywhere in the panel.
+- Replace the composer with one rounded input: permission mode toggle (Shift+Tab cycles Ask before changes, Accept edits, Auto mode and Plan mode), context attachments, prompt library, model picker, context ring and send/stop.
+- Use the first prompt as the conversation title in a compact view toolbar.
+- Remove about 35 KB of unused desktop styles and the Electron, electron-builder and xterm dependencies.
+
 ## 0.9.0
 
 - Add a personal prompt library in desktop and VS Code with searchable Saved, Templates and Recent collections. Create and edit reusable prompts, save drafts or user messages, adapt templates, and undo the latest removal while the library is open.

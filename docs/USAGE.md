@@ -108,6 +108,6 @@ Open **Prompt library** from the composer or command palette. **Saved** contains
 - Click a prompt to insert it at the composer caret. Existing text and the selected mode remain; nothing is sent automatically.
 - Edit or remove a saved prompt. If another view changes the library while you edit, reopen the saved prompt or choose **Save a copy** to retain your draft without overwriting that view’s changes. **Undo removal** restores the latest removed prompt while the library remains open. Closing it ends that undo opportunity.
 
-Desktop libraries belong to the local app profile and remain available across projects. VS Code libraries use local workspace storage and are shared by that workspace's sidebar and chat tab. Starting a new conversation keeps saved prompts. No library text enters routine conversation snapshots or model requests automatically. Local prompt storage is ordinary application data, separate from credentials; libraries are not synchronized between desktop and VS Code.
+Prompt libraries use local workspace storage and are shared by that workspace's sidebar and chat tab. Starting a new conversation keeps saved prompts. No library text enters routine conversation snapshots or model requests automatically. Local prompt storage is ordinary application data, separate from credentials.
 
 Clipboard controls show **Copied** only after the host confirms a successful write. Messages/code over the 60,000-character clipboard limit have a selection-copy hint; select a smaller portion for native copy.

@@ -2,7 +2,6 @@ import { memo } from 'react';
 import { useI18n } from '../i18n/I18n.js';
 import { CopyButton } from './CopyButton.js';
 import { Icon } from './Icon.js';
-import { BrandMark } from './BrandMark.js';
 import { MessageContent } from './MessageContent.js';
 
 /** Scalar props keep completed messages out of streaming and tool-activity renders. */
@@ -25,15 +24,10 @@ export const ConversationMessage = memo(function ConversationMessage({
 }) {
   const { t } = useI18n();
   return (
-    <article className={`message ${role}`}>
+    <article className={`message ${role}`} aria-label={role === 'user' ? t('You') : 'Kova'}>
+      {/* Hover actions; also the scroll anchor used when older messages load. */}
       <div className="message-label">
-        <span className={`avatar ${role}`}>
-          {role === 'user' ? <Icon name="chat" size={14} /> : <BrandMark />}
-        </span>
-        <strong>{role === 'user' ? t('You') : 'Kova'}</strong>
-        {partial && (
-          <span className="muted">{working ? t('Working…') : t('Partial response')}</span>
-        )}
+        {partial && !working && <span className="muted">{t('Partial response')}</span>}
         {!!content && (
           <div className="message-actions">
             {role === 'user' && content.length <= 16_000 && (
@@ -69,14 +63,10 @@ export const ConversationMessage = memo(function ConversationMessage({
           <pre>{reasoning}</pre>
         </details>
       )}
-      <MessageContent text={content} />
-      {partial && working && !content && !reasoning && (
-        <div className="generating">
-          <span />
-          <span />
-          <span />
-          <small>{t('Thinking through your request')}</small>
-        </div>
+      {role === 'user' ? (
+        <div className="user-text">{content}</div>
+      ) : (
+        <MessageContent text={content} />
       )}
     </article>
   );

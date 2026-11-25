@@ -35,7 +35,8 @@ const render = (searching: boolean) =>
     createElement(Conversation, {
       snapshot,
       thinking: {},
-      activities: [],
+      timeline: [],
+      runStartedAt: null,
       busy: false,
       onReuse: () => {},
       onSavePrompt: () => {},

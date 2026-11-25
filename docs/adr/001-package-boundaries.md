@@ -18,4 +18,4 @@ Architecture tests inspect static imports, re-exports, import types, dynamic imp
 
 TypeScript 6.0.3 is selected for this project because the chosen typescript-eslint release supports versions below 6.1; using the newer TypeScript release would exceed that tool's declared compatibility. Revisit compiler/tool versions together.
 
-The desktop extension to these boundaries is recorded in [ADR 010](010-desktop-runtime.md): portable Node adapters move to `@kova/runtime`, with independent VS Code and Electron composition roots.
+Portable Node adapters were extracted in [ADR 010](010-desktop-runtime.md); the desktop host itself was removed in [ADR 011](011-remove-desktop-host.md): portable Node adapters move to `@kova/runtime`, with independent VS Code and Electron composition roots.

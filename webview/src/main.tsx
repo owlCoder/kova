@@ -7,6 +7,7 @@ import './styles/controls.css';
 import './styles/finish.css';
 import './styles/session-tools.css';
 import './styles/workspace-tools.css';
+import './styles/transcript.css';
 
 const root = document.getElementById('root');
 if (root)

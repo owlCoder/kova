@@ -11,26 +11,9 @@
   height: 100%;
   object-fit: contain;
 }
-.sidebar-brand > .kova-mark {
-  width: 32px;
-  height: 32px;
-}
 .welcome-mark > .kova-mark {
   width: 46px;
   height: 46px;
-}
-.about-hero > .kova-mark {
-  width: 72px;
-  height: 72px;
-  margin-bottom: 14px;
-}
-.avatar.assistant {
-  border-color: var(--border-soft);
-  background: var(--surface);
-}
-.avatar .kova-mark {
-  width: 23px;
-  height: 23px;
 }
 .conversation-tools {
   display: flex;
@@ -123,22 +106,10 @@
   background: var(--backdrop);
   color: var(--text);
 }
-.footer-note > span:last-child {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-}
 @container chat (max-width: 480px) {
   .workspace-header {
     padding-inline: 10px;
     gap: 6px;
-  }
-  .extension-caption {
-    display: none;
-  }
-  .header-actions .setup-toggle {
-    font-size: calc(11px * var(--text-scale, 1));
-    padding-inline: 4px;
   }
   .header-actions .icon-button {
     width: 27px;
@@ -172,15 +143,7 @@
     color: MarkText;
   }
 }
-.setup-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-}
 @container chat (max-width: 380px) {
-  .setup-toggle > span {
-    display: none;
-  }
 }
 
 button[data-copied='true'] {

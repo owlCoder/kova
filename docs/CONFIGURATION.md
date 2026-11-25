@@ -1,6 +1,6 @@
 # Configuration reference
 
-Desktop preferences are available in **Settings → Provider** and **Settings → Appearance**. The `kova.*` keys below are VS Code settings, not desktop configuration keys. See [Desktop local data](DESKTOP.md#local-data-and-keys) for desktop storage and credentials.
+The `kova.*` keys below are VS Code settings. API keys are stored separately in VS Code `SecretStorage`.
 
 The default context budget is 32,768 tokens, with 4,096 reserved for output and a 10% safety margin. The context indicator shows estimated input before generation and measured input/output afterwards. Tool-definition cost remains an estimate. Larger local contexts require more memory; explicit VS Code settings override these defaults.
 

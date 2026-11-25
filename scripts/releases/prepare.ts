@@ -2,7 +2,7 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { createHash } from 'node:crypto';
 import { createReadStream } from 'node:fs';
-import { appendFile, mkdtemp, readdir, rename, stat, writeFile } from 'node:fs/promises';
+import { appendFile, mkdtemp, readdir, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
@@ -25,8 +25,7 @@ const execute = promisify(execFile);
 const repository = process.env.GITHUB_REPOSITORY ?? '';
 const commit = process.env.KOVA_RELEASE_COMMIT ?? '';
 const checks = process.env.KOVA_CHECKS_RUN ?? '';
-const desktop = process.env.KOVA_DESKTOP_RUN ?? '';
-assertReleaseInput(repository, commit, [checks, desktop]);
+assertReleaseInput(repository, commit, [checks]);
 if (process.env.GITHUB_REF !== 'refs/heads/main')
   throw new Error('Dispatch this workflow from main.');
 
@@ -37,15 +36,11 @@ const api = async <T>(path: string): Promise<T> =>
 const source = async (path: string) => (await execute('git', ['show', `${commit}:${path}`])).stdout;
 // Run only this checked-out workflow's trusted code; never execute code from an input commit.
 await execute('git', ['merge-base', '--is-ancestor', commit, 'origin/main']);
-const [checkRun, desktopRun] = await Promise.all([
-  api<ReleaseRun>(`actions/runs/${checks}`),
-  api<ReleaseRun>(`actions/runs/${desktop}`),
-]);
+const checkRun = await api<ReleaseRun>(`actions/runs/${checks}`);
 assertTrustedRun(checkRun, repository, commit, 'ci');
-assertTrustedRun(desktopRun, repository, commit, 'desktop');
 const manifests = await Promise.all(
-  ['package.json', 'packages/desktop/package.json', 'packages/vscode/extension.package.json'].map(
-    async (path) => JSON.parse(await source(path)),
+  ['package.json', 'packages/vscode/extension.package.json'].map(async (path) =>
+    JSON.parse(await source(path)),
   ),
 );
 const version = String(manifests[0].version);
@@ -78,25 +73,7 @@ if (
 const directory = await mkdtemp(join(tmpdir(), 'kova-release-'));
 const notesPath = join(directory, 'release-notes.md');
 const packages = join(directory, 'packages');
-await Promise.all(
-  [
-    [checks, 'kova-vsix'],
-    [desktop, 'kova-desktop-macOS'],
-    [desktop, 'kova-desktop-Windows'],
-    [desktop, 'kova-desktop-Linux'],
-  ].map(([run, name]) =>
-    gh('run', 'download', run!, '--repo', repository, '-n', name!, '-D', packages),
-  ),
-);
-for (const [original, name] of [
-  [`Kova-${version}-linux-x86_64.AppImage`, `Kova-${version}-linux-x64.AppImage`],
-  [`Kova-${version}-linux-amd64.deb`, `Kova-${version}-linux-x64.deb`],
-]) {
-  const names = await readdir(packages);
-  if (names.includes(original!) && names.includes(name!))
-    throw new Error('Conflicting Linux release filenames.');
-  if (names.includes(original!)) await rename(join(packages, original!), join(packages, name!));
-}
+await gh('run', 'download', checks, '--repo', repository, '-n', 'kova-vsix', '-D', packages);
 const actual = (await readdir(packages)).sort();
 if (JSON.stringify(actual) !== JSON.stringify([...expected].sort()))
   throw new Error('Unexpected or missing release files.');
@@ -124,7 +101,7 @@ await writeFile(
 digests.set('SHA256SUMS', await hash(join(packages, 'SHA256SUMS')));
 await writeFile(
   notesPath,
-  releaseNotes(version, await source('CHANGELOG.md'), repository, commit, checks, desktop),
+  releaseNotes(version, await source('CHANGELOG.md'), repository, commit, checks),
 );
 if (!existingRelease) {
   await gh(
@@ -193,6 +170,6 @@ for (const [name, digest] of digests) {
 if (process.env.GITHUB_STEP_SUMMARY)
   await appendFile(
     process.env.GITHUB_STEP_SUMMARY,
-    `## Kova ${version} draft ready\n\nSeven assets verified against source commit \`${commit}\`.\n\n[Review the draft](https://github.com/${repository}/releases). Publish after the native UI review.\n`,
+    `## Kova ${version} draft ready\n\nRelease assets verified against source commit \`${commit}\`.\n\n[Review the draft](https://github.com/${repository}/releases). Publish after the native UI review.\n`,
   );
 console.log(`Draft ${tag} is ready. Publishing is a separate action.`);

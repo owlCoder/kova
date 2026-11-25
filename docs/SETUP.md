@@ -8,10 +8,6 @@ ollama pull qwen3:4b
 
 Install Kova from its VSIX with **Extensions: Install from VSIX**. Run **Kova: Open Chat** or select Kova in the Activity Bar to open the sidebar. Use **Kova: Open Chat in Editor** for a movable editor tab. Both views share the session conversation. **Stop** cancels the active run and **New conversation** clears the current chat.
 
-## Desktop app
-
-For the standalone Electron app, follow [DESKTOP.md](DESKTOP.md). It shares the agent, tools, provider presets and chat UI with the extension. Desktop **Settings → Provider** replaces VS Code configuration commands. Choose a project, save a connection, and select a permission mode in Setup. Desktop history is persistent; extension history remains scoped to the extension session.
-
 ## Providers
 
 The first-run guide appears in the chat. Select **Configure provider**, or run **Kova: Set Up AI Provider** at any time. Choose a preset, confirm its endpoint, enter the API key in the native password field, and choose a model. The wizard only saves after the final review. It updates user settings unless existing workspace overrides require workspace settings. API keys are stored separately for each provider endpoint.
@@ -52,7 +48,7 @@ Selecting DeepSeek or an OpenAI-compatible endpoint sends the prompt and context
 
 ## Working with Kova
 
-Use **Cmd/Ctrl+F** to search the current conversation. The header actions menu exports or copies Markdown without internal tool logs or reasoning. VS Code preserves the unsent composer draft in workspace storage, even though conversation history still lasts only for the current extension session. A new conversation clears the extension draft. Desktop saves drafts separately for up to 20 recent sessions. Exporting requires the active run to be stopped.
+Use **Cmd/Ctrl+F** to search the current conversation. The header actions menu exports or copies Markdown without internal tool logs or reasoning. VS Code preserves the unsent composer draft in workspace storage, even though conversation history still lasts only for the current extension session. A new conversation clears the draft. Exporting requires the active run to be stopped.
 
 Use **Kova: Open Settings** to change provider/model settings, context budget and the exact Auto command allowlist. Context shows estimated input before generation and measured input/output after the final chunk.
 

@@ -3,8 +3,6 @@ export const promptLibrarySR: Readonly<Record<string, string>> = {
   'New prompt': 'Novi upit',
   'Edit prompt': 'Izmeni upit',
   'Close library': 'Zatvori biblioteku',
-  'Saved on this device, across your desktop projects.':
-    'Sačuvano na ovom uređaju, dostupno u svim desktop projektima.',
   'Saved locally in this VS Code workspace.': 'Sačuvano lokalno u ovom VS Code radnom prostoru.',
   'Prompt collections': 'Zbirke upita',
   Saved: 'Sačuvano',

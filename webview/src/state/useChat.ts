@@ -4,7 +4,8 @@ import type { HostMessage } from '../../../packages/protocol/src/HostMessage.js'
 import type { SessionSnapshot } from '../../../packages/protocol/src/SessionSnapshot.js';
 import { send, subscribe } from '../messaging/bridge.js';
 import { useComposerDraft } from './useComposerDraft.js';
-import { activityText, applyEvent } from './presentation.js';
+import { applyEvent } from './presentation.js';
+import { applyTimelineEvent, type TimelineEntry } from './timeline.js';
 
 export function useChat() {
   const [snapshot, setSnapshot] = useState<SessionSnapshot | null>(null);
@@ -15,7 +16,10 @@ export function useChat() {
   const pendingSubmit = useRef<{ id: string; text: string; conversationId: string } | null>(null);
   const [model, setModel] = useState('qwen3:4b');
   const [mode, setMode] = useState<AgentMode>('Manual');
-  const [activities, setActivities] = useState<{ id: number; text: string; error: boolean }[]>([]);
+  const [timeline, setTimeline] = useState<readonly TimelineEntry[]>([]);
+  // Messages already shown, tracked synchronously so tool rows anchor where the agent acted.
+  const messageCount = useRef(0);
+  const [runStartedAt, setRunStartedAt] = useState<number | null>(null);
   const [thinking, setThinking] = useState<Record<string, string>>({});
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -46,19 +50,21 @@ export function useChat() {
       }
       serial.current.sequence = data.sequence;
       if (data.type === 'Snapshot') {
+        // Reset per-conversation presentation state here, not inside a state updater:
+        // updaters run later and would erase events that arrived after this snapshot.
+        if (currentConversation.current !== data.snapshot.conversationId) {
+          setTimeline([]);
+          setThinking({});
+        }
         currentConversation.current = data.snapshot.conversationId;
+        messageCount.current = data.snapshot.messages.length;
+        setRunStartedAt((started) => (data.snapshot.activeRunId ? (started ?? Date.now()) : null));
         if (active.current && active.current !== data.snapshot.activeRunId)
           retired.current.add(active.current);
         if (retired.current.size > 200)
           retired.current.delete(retired.current.values().next().value!);
         active.current = data.snapshot.activeRunId;
-        setSnapshot((previous) => {
-          if (previous?.conversationId !== data.snapshot.conversationId) {
-            setActivities([]);
-            setThinking({});
-          }
-          return data.snapshot;
-        });
+        setSnapshot(data.snapshot);
         if (
           !hostSelection.current ||
           data.snapshot.activeRunId ||
@@ -108,6 +114,15 @@ export function useChat() {
         )
           return;
         if (data.runId) active.current = data.runId;
+        if (data.event.type === 'ResponseStarted') messageCount.current++;
+        if (data.event.type === 'StateChanged')
+          setRunStartedAt((started) =>
+            ['Completed', 'Cancelled', 'Stopped', 'Failed', 'Idle'].includes(
+              (data.event as { state: string }).state,
+            )
+              ? null
+              : (started ?? Date.now()),
+          );
         setSnapshot((previous) => {
           if (
             !previous ||
@@ -123,26 +138,10 @@ export function useChat() {
             [event.messageId]: ((previous[event.messageId] ?? '') + event.text).slice(-16_000),
           }));
         }
-        const text = activityText(data.event);
-        if (text)
-          setActivities((previous) => {
-            const next = [
-              ...previous,
-              {
-                id: data.sequence,
-                text: text.slice(0, 30_000),
-                error: ['ErrorOccurred', 'ToolBlocked', 'AgentLoopStopped'].includes(
-                  data.event.type,
-                ),
-              },
-            ].slice(-200);
-            let total = next.reduce((sum, item) => sum + item.text.length, 0);
-            while (total > 256_000 && next.length > 1) {
-              total -= next.shift()!.text.length;
-            }
-            return next;
-          });
-        if (data.event.type === 'ErrorOccurred') setError(data.event.message);
+        const event = data.event;
+        const anchor = messageCount.current;
+        const sequence = data.sequence;
+        setTimeline((previous) => applyTimelineEvent(previous, event, anchor, sequence));
       }
     };
     const unsubscribe = subscribe(listener);
@@ -158,6 +157,8 @@ export function useChat() {
     setError('');
     setThinking({});
     setSubmitting(true);
+    setRunStartedAt(Date.now());
+    messageCount.current++;
     setSnapshot({
       ...snapshot,
       messages: [
@@ -184,7 +185,8 @@ export function useChat() {
     setModel,
     mode,
     setMode,
-    activities,
+    timeline,
+    runStartedAt,
     thinking,
     error,
     dismissError: () => setError(''),

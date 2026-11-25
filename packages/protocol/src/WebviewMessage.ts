@@ -1,5 +1,4 @@
 import type { AgentMode } from './AgentMode.js';
-import type { DesktopMessage } from './DesktopMessage.js';
 import type { PromptLibraryMessage } from './PromptLibrary.js';
 
 /** Untrusted UI intents; host validates shape, limits, IDs and current workspace/run. */
@@ -7,7 +6,6 @@ export type WebviewMessage = {
   readonly protocolVersion: 1;
   readonly requestId: string;
 } & (
-  | DesktopMessage
   | PromptLibraryMessage
   | { readonly type: 'Ready' }
   | {

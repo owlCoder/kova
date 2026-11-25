@@ -4,12 +4,10 @@ import type { ContextUsage } from './ContextUsage.js';
 import type { ModelInfo } from './ModelInfo.js';
 import type { SkillMetadata } from './SkillMetadata.js';
 import type { ApprovalView } from './ApprovalView.js';
-import type { DesktopState } from './DesktopState.js';
 import type { ContextAttachmentView } from './ContextAttachmentView.js';
 
 /** Presentation history is bounded and excludes model thinking. */
 export interface SessionSnapshot {
-  readonly desktop?: DesktopState;
   readonly language?: 'en' | 'sr' | 'de';
   readonly textSize?: 'standard' | 'large' | 'larger';
   readonly conversationId: string;

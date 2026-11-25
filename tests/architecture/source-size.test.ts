@@ -11,7 +11,6 @@ const sourceRoots = [
   'packages/protocol/src',
   'packages/vscode/src',
   'packages/runtime/src',
-  'packages/desktop/src',
   'webview/src',
 ];
 

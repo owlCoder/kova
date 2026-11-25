@@ -10,10 +10,6 @@ on:
         description: Successful Kova checks run ID for this commit
         required: true
         type: string
-      desktop_run:
-        description: Successful Desktop builds run ID for this commit
-        required: true
-        type: string
 permissions:
   contents: read
 concurrency:
@@ -41,4 +37,3 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           KOVA_RELEASE_COMMIT: ${{ inputs.commit }}
           KOVA_CHECKS_RUN: ${{ inputs.checks_run }}
-          KOVA_DESKTOP_RUN: ${{ inputs.desktop_run }}

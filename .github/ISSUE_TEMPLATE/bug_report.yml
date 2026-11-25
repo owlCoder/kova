@@ -1,5 +1,5 @@
 name: Bug report
-description: Report a reproducible problem in desktop or VS Code.
+description: Report a reproducible problem in the Kova VS Code extension.
 labels: []
 body:
   - type: markdown
@@ -10,17 +10,8 @@ body:
     id: version
     attributes:
       label: Kova version
-      description: Desktop Settings → About Kova, or the VS Code extension version.
+      description: The Kova extension version from the Extensions view.
       placeholder: 0.6.0
-    validations:
-      required: true
-  - type: dropdown
-    id: host
-    attributes:
-      label: Host
-      options:
-        - Desktop
-        - VS Code
     validations:
       required: true
   - type: input

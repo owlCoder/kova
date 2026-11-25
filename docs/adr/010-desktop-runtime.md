@@ -1,6 +1,6 @@
 # ADR 010: Shared runtime and Electron desktop host
 
-Status: accepted, 2026-10-16.
+Status: accepted, 2026-10-16. Superseded by [ADR 011](011-remove-desktop-host.md) on 2026-11-25: the desktop host was removed; `@kova/runtime` remains.
 
 The standalone desktop app needs the extension's agent, providers, tools, project rules, hooks and approval semantics. Keeping those adapters under the VS Code package would couple Electron to editor APIs and duplicate behavior.
 

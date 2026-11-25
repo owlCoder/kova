@@ -2,6 +2,14 @@
 
 Initial implementation verified on 2026-09-30. The original pasted specification remains unchanged. The approved changes were applied to docs/ADRs in commit `1de4254` before runtime implementation.
 
+## 0.10.0 verification · 2026-11-25
+
+- The Electron desktop host, its scripts, workflow, installers, protocol messages and UI were removed; Kova is a VS Code extension only ([ADR 011](adr/011-remove-desktop-host.md)).
+- `npm run check`: strict type checks, lint, formatting, architecture limits and 237 tests in 31 files pass.
+- The redesigned panel (inline tool rows, inline permission prompt, working indicator, VS Code-native composer) was reviewed in a scripted browser fixture with VS Code Dark Modern variables at sidebar width: approval, streaming, empty and command-palette states.
+
+Native installed-VSIX review of the new panel, light/high-contrast themes and live providers remain to be repeated for this version. Earlier evidence below is historical and includes the removed desktop host.
+
 ## 0.9.0 verification · 2026-10-18
 
 - `npm run check`: 258 tests in 34 files, strict type checks, lint, formatting and architecture limits pass. Full `npm audit` reports zero vulnerabilities.

@@ -5,16 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { inspectSource } from './inspectSource.js';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
-const packages = [
-  'core',
-  'ollama',
-  'mcp',
-  'runtime',
-  'vscode',
-  'desktop',
-  'protocol',
-  'webview',
-] as const;
+const packages = ['core', 'ollama', 'mcp', 'runtime', 'vscode', 'protocol', 'webview'] as const;
 type Package = (typeof packages)[number];
 const directory = (name: Package) =>
   resolve(root, name === 'webview' ? 'webview' : `packages/${name}`);
@@ -24,7 +15,6 @@ const allowed: Record<Package, readonly Package[]> = {
   mcp: ['core'],
   runtime: ['core', 'ollama', 'mcp', 'protocol'],
   vscode: ['core', 'runtime', 'protocol'],
-  desktop: ['core', 'runtime', 'protocol'],
   protocol: [],
   webview: ['protocol'],
 };
@@ -48,7 +38,7 @@ function owner(path: string): Package | undefined {
 }
 
 describe('runtime package boundaries', () => {
-  it('has eight unique package identities and a zero-dependency Core', () => {
+  it('has seven unique package identities and a zero-dependency Core', () => {
     const names = packages.map((name) => {
       const manifest = JSON.parse(readFileSync(resolve(directory(name), 'package.json'), 'utf8'));
       if (name === 'core') {

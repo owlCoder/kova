@@ -1,16 +1,28 @@
+import { Fragment, useRef, type RefObject } from 'react';
 import { useI18n } from '../i18n/I18n.js';
 import type { SessionSnapshot } from '../../../packages/protocol/src/SessionSnapshot.js';
-import { send } from '../messaging/bridge.js';
+import type { TimelineEntry } from '../state/timeline.js';
 import { Icon } from './Icon.js';
 import { ConversationMessage } from './ConversationMessage.js';
-import { useRef, type RefObject } from 'react';
+import { ToolCallRow } from './ToolCallRow.js';
+import { TimelineNote } from './TimelineNote.js';
+import { ApprovalPrompt } from './ApprovalPrompt.js';
+import { WorkingIndicator } from './WorkingIndicator.js';
 import { useHistoryWindow } from '../state/useHistoryWindow.js';
 
-type Activity = { id: number; text: string; error: boolean };
+function Entry({ entry }: { entry: TimelineEntry }) {
+  return entry.kind === 'tool' ? <ToolCallRow entry={entry} /> : <TimelineNote entry={entry} />;
+}
+
+/**
+ * The transcript: messages with tool calls and lifecycle notes interleaved at
+ * the point where the agent acted, then the pending approval and run status.
+ */
 export function Conversation({
   snapshot,
   thinking,
-  activities,
+  timeline,
+  runStartedAt,
   busy,
   onReuse,
   onSavePrompt,
@@ -20,7 +32,8 @@ export function Conversation({
 }: {
   snapshot: SessionSnapshot;
   thinking: Record<string, string>;
-  activities: readonly Activity[];
+  timeline: readonly TimelineEntry[];
+  runStartedAt: number | null;
   busy: boolean;
   onReuse(text: string): void;
   onSavePrompt(text: string): void;
@@ -38,6 +51,12 @@ export function Conversation({
     scroller,
     thread,
   );
+  const byAnchor = new Map<number, TimelineEntry[]>();
+  for (const entry of timeline) {
+    const anchor = Math.min(entry.anchor, snapshot.messages.length);
+    byAnchor.set(anchor, [...(byAnchor.get(anchor) ?? []), entry]);
+  }
+  const streaming = snapshot.messages.at(-1)?.partial && Boolean(snapshot.messages.at(-1)?.content);
   return (
     <div className="thread" ref={thread}>
       {snapshot.messages.length > 40 && (
@@ -60,91 +79,27 @@ export function Conversation({
           )}
         </nav>
       )}
-      {snapshot.messages.slice(history.start).map((message) => (
-        <ConversationMessage
-          key={message.id}
-          role={message.role}
-          content={message.content}
-          partial={message.partial}
-          working={message.partial && busy}
-          reasoning={thinking[message.id] ?? ''}
-          onReuse={onReuse}
-          onSavePrompt={onSavePrompt}
-        />
+      {history.start === 0 &&
+        (byAnchor.get(0) ?? []).map((entry) => <Entry key={entry.id} entry={entry} />)}
+      {snapshot.messages.slice(history.start).map((message, index) => (
+        <Fragment key={message.id}>
+          <ConversationMessage
+            role={message.role}
+            content={message.content}
+            partial={message.partial}
+            working={message.partial && busy}
+            reasoning={thinking[message.id] ?? ''}
+            onReuse={onReuse}
+            onSavePrompt={onSavePrompt}
+          />
+          {(byAnchor.get(history.start + index + 1) ?? []).map((entry) => (
+            <Entry key={entry.id} entry={entry} />
+          ))}
+        </Fragment>
       ))}
-      {!!activities.length && (
-        <details className="activity" open={Boolean(approval) || busy}>
-          <summary>
-            <Icon name="terminal" size={14} />
-            <span>{t('Agent activity')}</span>
-            <span className="count-badge">{activities.length}</span>
-            <Icon name="down" size={13} />
-          </summary>
-          <div className="activity-items">
-            {activities.map((item) => (
-              <details key={item.id} className={`activity-row ${item.error ? 'error' : ''}`}>
-                <summary>
-                  <span className="activity-dot" />
-                  {item.text.split('\n')[0]}
-                </summary>
-                {item.text.includes('\n') && (
-                  <pre>{item.text.slice(item.text.indexOf('\n') + 1)}</pre>
-                )}
-              </details>
-            ))}
-          </div>
-        </details>
-      )}
-      {approval && (
-        <section className="approval">
-          <div className="eyebrow">
-            <Icon name="shield" size={14} />
-            {t('YOUR APPROVAL')}
-          </div>
-          <h3>{approval.toolName.replaceAll('_', ' ')}</h3>
-          <p>{approval.reasons.join(' · ')}</p>
-          {approval.preview?.kind === 'FileChanges' && (
-            <button
-              className="diff-open"
-              onClick={() => send({ type: 'OpenDiffPreview', approvalId: approval.approvalId })}
-            >
-              <Icon name="review" size={15} />
-              <span>{approval.preview.relativePaths.join(', ')}</span>
-              <Icon name="arrow" size={14} />
-            </button>
-          )}
-          {approval.preview?.kind === 'Command' && <pre>{approval.preview.command}</pre>}
-          <div className="approval-buttons">
-            <button
-              onClick={() =>
-                send({
-                  type: 'ResolveApproval',
-                  runId: approval.runId,
-                  approvalId: approval.approvalId,
-                  preparationKey: approval.preparationKey,
-                  decision: 'Reject',
-                })
-              }
-            >
-              {t('Reject')}
-            </button>
-            <button
-              className="primary"
-              onClick={() =>
-                send({
-                  type: 'ResolveApproval',
-                  runId: approval.runId,
-                  approvalId: approval.approvalId,
-                  preparationKey: approval.preparationKey,
-                  decision: 'AllowOnce',
-                })
-              }
-            >
-              <Icon name="check" size={14} />
-              {t('Allow once')}
-            </button>
-          </div>
-        </section>
+      {approval && <ApprovalPrompt key={approval.approvalId} approval={approval} />}
+      {busy && !approval && !streaming && (
+        <WorkingIndicator state={snapshot.state} startedAt={runStartedAt} />
       )}
     </div>
   );

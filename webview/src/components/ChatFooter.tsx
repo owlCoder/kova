@@ -2,11 +2,12 @@ import { useI18n } from '../i18n/I18n.js';
 import { useLayoutEffect, useRef, type RefObject } from 'react';
 import type { AgentMode } from '../../../packages/protocol/src/AgentMode.js';
 import type { SessionSnapshot } from '../../../packages/protocol/src/SessionSnapshot.js';
-import { inHost, isDesktop, send } from '../messaging/bridge.js';
+import { inHost, send } from '../messaging/bridge.js';
 import { Icon } from './Icon.js';
 import { ModelPicker } from './ModelPicker.js';
 import { PromptPicker } from './PromptPicker.js';
 import { ContextAttachments } from './ContextAttachments.js';
+import { ContextMeter } from './ContextMeter.js';
 
 type Props = {
   snapshot: SessionSnapshot | null;
@@ -24,6 +25,20 @@ type Props = {
   onOpenLibrary(): void;
   onPreviewContext(id: string): void;
 };
+
+/** Shift+Tab walks the modes from most to least supervised, then plan-only. */
+const modeOrder: readonly AgentMode[] = ['Manual', 'Edit', 'Auto', 'Plan'];
+const modeView: Record<AgentMode, { label: string; hint: string; icon: 'code' | 'zap' | 'plan' }> =
+  {
+    Manual: { label: 'Ask before changes', hint: 'Approve every change and command', icon: 'code' },
+    Edit: {
+      label: 'Accept edits',
+      hint: 'Edits apply directly; commands need approval',
+      icon: 'code',
+    },
+    Auto: { label: 'Auto mode', hint: 'Allowlisted commands run without asking', icon: 'zap' },
+    Plan: { label: 'Plan mode', hint: 'Read only: explore and propose a plan', icon: 'plan' },
+  };
 
 export function ChatFooter({
   snapshot,
@@ -48,29 +63,27 @@ export function ChatFooter({
       const field = inputRef.current;
       if (!field) return;
       field.style.height = 'auto';
-      field.style.height = `${Math.min(field.scrollHeight, 240)}px`;
+      field.style.height = `${Math.min(field.scrollHeight, 260)}px`;
     };
     resize();
     window.addEventListener('resize', resize);
     return () => window.removeEventListener('resize', resize);
-  }, [prompt, inputRef, snapshot?.desktop?.textSize, snapshot?.textSize]);
-  const usage = snapshot?.usage;
-  const used = usage
-    ? (usage.actualInputTokens ?? usage.estimatedInputTokens) + (usage.actualOutputTokens ?? 0)
-    : 0;
-  const max = usage?.maxTokens ?? snapshot?.contextMaxTokens ?? 32768;
+  }, [prompt, inputRef, snapshot?.textSize]);
   const attach = (source: 'Selection' | 'CurrentFile' | 'PickFiles') => {
     send({ type: 'AddContext', source });
     if (contextMenu.current) contextMenu.current.open = false;
   };
+  const nextMode = () => modeOrder[(modeOrder.indexOf(mode) + 1) % modeOrder.length]!;
+  const view = modeView[mode];
+  const disabled = !inHost || !snapshot || snapshot.configuringProvider;
   return (
     <footer className="chat-footer">
       {error && (
         <div className="error-banner" role="alert">
-          <Icon name="warning" size={15} />
+          <Icon name="warning" size={14} />
           <span>{error}</span>
           <button aria-label={t('Dismiss error')} onClick={onDismissError}>
-            <Icon name="close" size={14} />
+            <Icon name="close" size={13} />
           </button>
         </div>
       )}
@@ -88,7 +101,7 @@ export function ChatFooter({
           </button>
         </div>
       )}
-      <div className={`composer ${busy ? 'busy' : ''}`}>
+      <div className={`composer ${busy ? 'busy' : ''} mode-${mode.toLowerCase()}`}>
         <ContextAttachments
           items={snapshot?.contextAttachments ?? []}
           busy={busy}
@@ -96,36 +109,52 @@ export function ChatFooter({
         />
         <textarea
           aria-label={t('Ask Kova')}
-          placeholder={t('Ask anything, or describe what you want to build…')}
+          placeholder={
+            busy
+              ? t('Kova is working… Esc to interrupt')
+              : t('Ask Kova to explain, edit or test your code')
+          }
           value={prompt}
           ref={inputRef}
-          disabled={!inHost || !snapshot || snapshot.configuringProvider}
+          disabled={disabled}
           maxLength={16000}
-          rows={3}
+          rows={1}
           onChange={(event) => onPromptChange(event.target.value)}
           onKeyDown={(event) => {
-            if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
+            if (event.nativeEvent.isComposing) return;
+            if (event.key === 'Enter' && !event.shiftKey) {
               event.preventDefault();
               onSubmit();
+            } else if (event.key === 'Tab' && event.shiftKey && !busy) {
+              event.preventDefault();
+              onModeChange(nextMode());
             }
           }}
         />
-        <div className="composer-actions">
+        <div className="composer-bar">
           <div className="composer-tools">
+            <button
+              className={`mode-toggle mode-${mode.toLowerCase()}`}
+              disabled={busy}
+              title={`${t(view.hint)} · ${t('Shift+Tab to switch')}`}
+              aria-label={`${t('Agent mode')}: ${t(view.label)}`}
+              onClick={() => onModeChange(nextMode())}
+            >
+              <Icon name={view.icon} size={13} />
+              <span>{t(view.label)}</span>
+            </button>
             <details className="attach-menu" ref={contextMenu}>
               <summary title={t('Add context')} aria-label={t('Add context')}>
-                <Icon name="plus" />
+                <Icon name="paperclip" size={14} />
               </summary>
               <div className="floating-menu">
-                {!isDesktop && (
-                  <button disabled={busy} onClick={() => attach('Selection')}>
-                    <Icon name="code" size={14} />
-                    {t('Selection')}
-                  </button>
-                )}
+                <button disabled={busy} onClick={() => attach('Selection')}>
+                  <Icon name="code" size={14} />
+                  {t('Selection')}
+                </button>
                 <button disabled={busy} onClick={() => attach('CurrentFile')}>
                   <Icon name="file" size={14} />
-                  {isDesktop ? t('Current preview') : t('Current file')}
+                  {t('Current file')}
                 </button>
                 <button disabled={busy} onClick={() => attach('PickFiles')}>
                   <Icon name="folderOpen" size={14} />
@@ -133,32 +162,7 @@ export function ChatFooter({
                 </button>
               </div>
             </details>
-            <PromptPicker
-              disabled={!inHost || !snapshot || Boolean(snapshot.configuringProvider)}
-              onOpen={onOpenLibrary}
-            />
-            <label className="mode-control">
-              <Icon name={mode === 'Plan' ? 'plan' : mode === 'Auto' ? 'zap' : 'code'} size={14} />
-              <select
-                aria-label={t('Agent mode')}
-                title={t(
-                  {
-                    Manual: 'Manual · approve changes',
-                    Plan: 'Plan · read only',
-                    Edit: 'Edit · approve commands',
-                    Auto: 'Auto · allowlisted commands',
-                  }[mode],
-                )}
-                value={mode}
-                disabled={busy}
-                onChange={(event) => onModeChange(event.target.value as AgentMode)}
-              >
-                <option value="Manual">{t('Manual · approve changes')}</option>
-                <option value="Plan">{t('Plan · read only')}</option>
-                <option value="Edit">{t('Edit · approve commands')}</option>
-                <option value="Auto">{t('Auto · allowlisted commands')}</option>
-              </select>
-            </label>
+            <PromptPicker disabled={disabled} onOpen={onOpenLibrary} />
             {!!snapshot?.skills.length && (
               <select
                 className="skill-picker"
@@ -178,89 +182,40 @@ export function ChatFooter({
               </select>
             )}
           </div>
-          {busy && !snapshot?.configuringProvider ? (
-            <button
-              className="send stop"
-              title={t('Stop generation')}
-              aria-label={t('Stop generation')}
-              onClick={() =>
-                snapshot?.activeRunId && send({ type: 'CancelRun', runId: snapshot.activeRunId })
-              }
-            >
-              <Icon name="stop" size={13} />
-            </button>
-          ) : (
-            <button
-              className="send"
-              title={t('Send message')}
-              aria-label={t('Send')}
-              disabled={
-                busy || !prompt.trim() || !snapshot?.models.some((item) => item.id === model)
-              }
-              onClick={onSubmit}
-            >
-              <Icon name="send" size={17} />
-            </button>
-          )}
-        </div>
-      </div>
-      <div className="composer-meta">
-        <div className="provider-control">
-          <button
-            title={t('Configure AI provider')}
-            disabled={busy}
-            onClick={() => send({ type: 'OpenProviderSetup' })}
-          >
-            <Icon name="sparkles" size={13} />
-            <span>{snapshot?.providerLabel ?? t('AI provider')}</span>
-          </button>
-          <span className="meta-divider">/</span>
-          <ModelPicker
-            models={snapshot?.models}
-            model={model}
-            busy={busy}
-            onChange={onModelChange}
-          />
-        </div>
-        <details className="context">
-          <summary title={t('Context usage')}>
-            <span className="context-ring">◔</span>
-            <span>
-              {Math.round(used / 100) / 10}k / {Math.round(max / 100) / 10}k
-            </span>
-          </summary>
-          <div className="context-details">
-            <strong>{t('Context window')}</strong>
-            <progress value={Math.min(used, max)} max={max} />
-            <span>
-              {t('Input')}
-              <b>{usage?.actualInputTokens ?? usage?.estimatedInputTokens ?? 0}</b>
-            </span>
-            <span>
-              {t('Output')}
-              <b>{usage?.actualOutputTokens ?? '—'}</b>
-            </span>
-            <span>
-              {t('Tool definitions')}
-              <b>{usage?.toolDefinitionTokens ?? 0}</b>
-            </span>
+          <div className="composer-send">
+            <ModelPicker
+              models={snapshot?.models}
+              model={model}
+              busy={busy}
+              onChange={onModelChange}
+            />
+            <ContextMeter snapshot={snapshot} />
+            {busy && !snapshot?.configuringProvider ? (
+              <button
+                className="send stop"
+                title={t('Stop generation')}
+                aria-label={t('Stop generation')}
+                onClick={() =>
+                  snapshot?.activeRunId && send({ type: 'CancelRun', runId: snapshot.activeRunId })
+                }
+              >
+                <Icon name="stop" size={12} />
+              </button>
+            ) : (
+              <button
+                className="send"
+                title={t('Send message')}
+                aria-label={t('Send')}
+                disabled={
+                  busy || !prompt.trim() || !snapshot?.models.some((item) => item.id === model)
+                }
+                onClick={onSubmit}
+              >
+                <Icon name="up" size={15} />
+              </button>
+            )}
           </div>
-        </details>
-      </div>
-      <div className="footer-note">
-        <span
-          className={`status-dot ${snapshot?.providerStatus === 'Available' ? 'online' : ''}`}
-        />
-        {snapshot?.toolsEnabled ? t('Workspace tools ready') : t('Chat mode')}
-        <span>
-          {prompt ? (
-            <>
-              <Icon name="pencil" size={11} /> {t('Draft')}
-            </>
-          ) : (
-            t('Shift + Enter for a new line')
-          )}
-        </span>
+        </div>
       </div>
     </footer>
   );

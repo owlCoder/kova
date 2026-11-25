@@ -20,7 +20,6 @@ export default tseslint.config(
                 '@kova/ollama*',
                 '@kova/mcp*',
                 '@kova/runtime*',
-                '@kova/desktop*',
                 '@kova/vscode*',
                 '@kova/protocol*',
                 '@kova/webview*',

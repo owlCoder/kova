@@ -3,8 +3,6 @@ export const promptLibraryDE: Readonly<Record<string, string>> = {
   'New prompt': 'Neuer Prompt',
   'Edit prompt': 'Prompt bearbeiten',
   'Close library': 'Bibliothek schließen',
-  'Saved on this device, across your desktop projects.':
-    'Auf diesem Gerät gespeichert, für alle Desktop-Projekte verfügbar.',
   'Saved locally in this VS Code workspace.': 'Lokal in diesem VS Code-Arbeitsbereich gespeichert.',
   'Prompt collections': 'Prompt-Sammlungen',
   Saved: 'Gespeichert',

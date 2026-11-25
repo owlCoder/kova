@@ -19,11 +19,11 @@ const run = {
 };
 describe('verified release preparation', () => {
   it('accepts only numeric run IDs and full source identities', () => {
-    expect(() => assertReleaseInput(repository, commit, ['12', '13'])).not.toThrow();
-    for (const ids of [['12; echo injected', '13'], ['$(secret)', '13'], ['12']])
+    expect(() => assertReleaseInput(repository, commit, ['12'])).not.toThrow();
+    for (const ids of [['12; echo injected'], ['$(secret)'], ['12', '13'], []])
       expect(() => assertReleaseInput(repository, commit, ids)).toThrow();
-    expect(() => assertReleaseInput('../other', commit, ['12', '13'])).toThrow();
-    expect(() => assertReleaseInput(repository, 'main', ['12', '13'])).toThrow();
+    expect(() => assertReleaseInput('../other', commit, ['12'])).toThrow();
+    expect(() => assertReleaseInput(repository, 'main', ['12'])).toThrow();
   });
   it('rejects PR/fork artifacts, failed builds, mismatched commits and different workflows', () => {
     expect(() => assertTrustedRun(run, repository, commit, 'ci')).not.toThrow();
@@ -38,21 +38,13 @@ describe('verified release preparation', () => {
     ])
       expect(() => assertTrustedRun({ ...run, ...patch }, repository, commit, 'ci')).toThrow();
   });
-  it('accepts a manual desktop rebuild on main while keeping CI checks restricted to pushes', () => {
-    expect(() =>
-      assertTrustedRun(
-        { ...run, event: 'workflow_dispatch', path: '.github/workflows/desktop.yml' },
-        repository,
-        commit,
-        'desktop',
-      ),
-    ).not.toThrow();
+  it('keeps CI checks restricted to pushes', () => {
     expect(() =>
       assertTrustedRun({ ...run, event: 'workflow_dispatch' }, repository, commit, 'ci'),
     ).toThrow();
   });
-  it('generates six stable packages and notes only from the selected changelog section', () => {
-    expect(releaseAssets('0.8.0')).toHaveLength(6);
+  it('generates the VSIX package and notes only from the selected changelog section', () => {
+    expect(releaseAssets('0.8.0')).toEqual(['kova-local-0.8.0.vsix']);
     expect(() => releaseAssets('../escape')).toThrow();
     const text = releaseNotes(
       '0.8.0',
@@ -60,12 +52,11 @@ describe('verified release preparation', () => {
       repository,
       commit,
       '12',
-      '13',
     );
     expect(text).toContain('New context tools.');
     expect(text).not.toContain('Older change');
-    expect(text).toContain('unsigned and not notarized');
+    expect(text).not.toContain('Desktop');
     expect(text).toContain('/actions/runs/12');
-    expect(() => releaseNotes('0.9.0', text, repository, commit, '12', '13')).toThrow('CHANGELOG');
+    expect(() => releaseNotes('0.9.0', text, repository, commit, '12')).toThrow('CHANGELOG');
   });
 });
