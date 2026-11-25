@@ -471,6 +471,7 @@ details.timeline-note > summary {
   background: transparent;
 }
 .extension-frame .composer {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -515,6 +516,18 @@ details.timeline-note > summary {
 }
 .composer-send {
   flex: none;
+}
+/* Narrow sidebar: collapse to icons and a truncated model name so the bar fits one row. */
+@media (max-width: 600px) {
+  .extension-frame .mode-toggle > span {
+    display: none;
+  }
+  .extension-frame .model-trigger > span {
+    max-width: 96px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }
 .mode-toggle {
   display: flex;
@@ -634,13 +647,11 @@ details.timeline-note > summary {
 .context-full .ring-value {
   stroke: var(--bad);
 }
-.extension-frame .context {
-  position: relative;
-}
+/* The context popover also floats above the whole composer. */
 .extension-frame .context-details {
   position: absolute;
-  right: 0;
-  bottom: 30px;
+  right: 6px;
+  bottom: calc(100% + 8px);
   z-index: 20;
   display: grid;
   gap: 5px;
@@ -984,13 +995,16 @@ body.editor .extension-frame .chat-footer {
   font-size: 11.5px;
   line-height: 1.35;
 }
-.extension-frame .attach-menu {
-  position: relative;
+/* Menus anchor to the positioned .composer, so their triggers stay static. */
+.extension-frame .attach-menu,
+.extension-frame .context {
+  position: static;
 }
+/* The attach menu floats above the whole composer, anchored to its top edge. */
 .extension-frame .attach-menu .floating-menu {
   position: absolute;
-  bottom: 32px;
-  left: 0;
+  bottom: calc(100% + 8px);
+  left: 6px;
   z-index: 30;
   display: grid;
   gap: 1px;
@@ -1003,7 +1017,6 @@ body.editor .extension-frame .chat-footer {
   display: none;
 }
 .extension-frame .context-details {
-  bottom: 34px;
   width: 240px;
   padding: 10px 12px;
 }

@@ -15,7 +15,10 @@ export function useModelPopover(allowCustom: boolean, disabled: boolean, minimum
       if (panel.current?.matches(':popover-open')) panel.current.hidePopover();
       return;
     }
-    const above = rect.top - 16;
+    // Menus float above the whole composer, not above the trigger inside it.
+    const anchor = (trigger.current.closest('.composer') as HTMLElement | null) ?? trigger.current;
+    const anchorRect = anchor.getBoundingClientRect();
+    const above = anchorRect.top - 16;
     const below = window.innerHeight - rect.bottom - 16;
     const upward = below < 260 && above > below;
     const width = Math.min(Math.max(rect.width, minimumWidth), window.innerWidth - 24);
@@ -23,7 +26,7 @@ export function useModelPopover(allowCustom: boolean, disabled: boolean, minimum
       width,
       left: Math.max(12, Math.min(rect.left, window.innerWidth - width - 12)),
       top: upward ? 'auto' : rect.bottom + 8,
-      bottom: upward ? window.innerHeight - rect.top + 8 : 'auto',
+      bottom: upward ? window.innerHeight - anchorRect.top + 8 : 'auto',
       maxHeight: Math.min(380, Math.max(100, upward ? above : below)),
     });
   };
