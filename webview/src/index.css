@@ -355,41 +355,59 @@ kbd {
   border-top: 1px solid var(--border);
   margin: 25px 0;
 }
-.code-block {
+.extension-frame .code-block {
   margin: 17px 0;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-control);
-  background: var(--panel);
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--vscode-foreground) 3.5%, var(--panel));
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.14);
   overflow: hidden;
 }
-.code-toolbar {
-  height: 32px;
+.extension-frame .code-toolbar {
+  min-height: 34px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 12px;
-  border-bottom: 1px solid var(--border-soft);
-  font-size: calc(12px * var(--text-scale, 1));
+  gap: 8px;
+  padding: 0 8px 0 14px;
+  background: color-mix(in srgb, var(--vscode-foreground) 3%, transparent);
   color: var(--muted);
 }
-.code-toolbar > span {
+.extension-frame .code-toolbar > span {
   font-family: var(--code);
+  font-size: calc(10.5px * var(--text-scale, 1));
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
 }
-.code-toolbar button {
-  font-size: calc(12px * var(--text-scale, 1));
-  padding: 3px 5px;
+.extension-frame .code-toolbar button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: calc(11.5px * var(--text-scale, 1));
+  padding: 4px 8px;
   border: 0;
+  border-radius: 6px;
+  background: transparent;
   color: var(--muted);
+  cursor: pointer;
 }
-.code-block pre {
+.extension-frame .code-toolbar button:hover,
+.extension-frame .code-toolbar button:focus-visible {
+  outline: none;
+  background: var(--vscode-toolbar-hoverBackground, rgb(128 128 128 / 0.18));
+  color: var(--vscode-foreground);
+}
+.extension-frame .code-block pre {
   overflow: auto;
-  padding: 15px;
+  padding: 14px 16px;
   margin: 0;
-  line-height: 1.75;
+  line-height: 1.65;
   tab-size: 2;
 }
-.code-block pre code {
-  font-size: calc(14px * var(--text-scale, 1));
+.extension-frame .code-block pre code {
+  font-family: var(--code);
+  font-size: calc(13px * var(--text-scale, 1));
   background: none;
   padding: 0;
   white-space: pre;

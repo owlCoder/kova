@@ -43,6 +43,12 @@ interface LanguageSpec {
   readonly keywords: readonly string[];
   readonly types?: boolean;
   readonly sqlCaseVariants?: boolean;
+  readonly preprocessor?: boolean;
+  readonly variables?: boolean;
+  readonly symbols?: boolean;
+  readonly decls?: boolean;
+  readonly atRules?: boolean;
+  readonly colors?: boolean;
 }
 
 const CSHARP: LanguageSpec = {
@@ -93,7 +99,179 @@ const SQL: LanguageSpec = {
   sqlCaseVariants: true,
 };
 
+const C_COMMENTS = [C_LINE_COMMENT, BLOCK_COMMENT];
+
+const RUST: LanguageSpec = {
+  comments: C_COMMENTS,
+  strings: STRINGS + String.raw`|r#*"[^"]*"#*`,
+  keywords:
+    'as async await box break const continue crate dyn else enum extern false fn for if impl in let loop match mod move mut pub ref return self Self static struct super trait true type unsafe use where while'.split(
+      ' ',
+    ),
+  types: true,
+};
+
+const GO: LanguageSpec = {
+  comments: C_COMMENTS,
+  strings: STRINGS,
+  keywords:
+    'any bool break byte case chan complex64 complex128 comparable const continue default defer else error fallthrough false float32 float64 for func go goto if import int int8 int16 int32 int64 iota map nil package range return rune select string struct switch true type uint uint8 uint16 uint32 uint64 uintptr var'.split(
+      ' ',
+    ),
+  types: true,
+};
+
+const JAVA: LanguageSpec = {
+  comments: C_COMMENTS,
+  strings: STRINGS,
+  keywords:
+    'abstract assert boolean break byte case catch char class const continue default do double else enum extends final finally float for goto if implements import instanceof int interface long native new package private protected public record return sealed short static strictfp super switch synchronized this throw throws transient try var void volatile while yield true false null'.split(
+      ' ',
+    ),
+  types: true,
+};
+
+const KOTLIN: LanguageSpec = {
+  comments: C_COMMENTS,
+  strings: STRINGS + '|' + PY_STRINGS,
+  keywords:
+    'abstract actual annotation as break by catch class companion const constructor continue data do else enum expect external false final finally for fun if import in infix init inline inner interface internal is late object open operator out override package private protected public reified return sealed super suspend tailrec this throw true try typealias val var vararg when where while'.split(
+      ' ',
+    ),
+  types: true,
+};
+
+const SWIFT: LanguageSpec = {
+  comments: C_COMMENTS,
+  strings: STRINGS,
+  keywords:
+    'actor any as async await break case catch class continue default defer do else enum extension fallthrough false final for func guard if import in init inout internal is let nil open operator private protocol public repeat rethrows return self Self static struct super switch throw throws true try typealias var where while some'.split(
+      ' ',
+    ),
+  types: true,
+};
+
+const C: LanguageSpec = {
+  comments: C_COMMENTS,
+  strings: STRINGS,
+  keywords:
+    'auto break case char const continue default do double else enum extern float for goto if inline int long register restrict return short signed sizeof static struct switch typedef union unsigned void volatile while _Bool _Complex _Imaginary'.split(
+      ' ',
+    ),
+  preprocessor: true,
+  types: true,
+};
+
+const CPP: LanguageSpec = {
+  comments: C_COMMENTS,
+  strings: STRINGS,
+  keywords: [
+    ...C.keywords,
+    ...'class namespace template typename using virtual override new delete this nullptr constexpr consteval constinit noexcept explicit friend operator try catch throw static_cast dynamic_cast reinterpret_cast const_cast auto decltype mutable alignof typeid concept requires co_await co_return co_yield bool wchar_t char8_t char16_t char32_t'.split(
+      ' ',
+    ),
+  ],
+  preprocessor: true,
+  types: true,
+};
+
+const PHP: LanguageSpec = {
+  comments: [C_LINE_COMMENT, BLOCK_COMMENT, HASH_COMMENT],
+  strings: STRINGS,
+  keywords:
+    'abstract and array as bool break callable case catch class clone const continue declare default do echo else elseif empty enddeclare endfor endforeach endif endswitch endwhile enum extends final finally fn for foreach function global goto if implements include include_once instanceof insteadof interface isset list match namespace new or print private protected public readonly require require_once return static switch throw trait try unset use var while xor yield true false null'.split(
+      ' ',
+    ),
+  variables: true,
+  types: true,
+};
+
+const RUBY: LanguageSpec = {
+  comments: [HASH_COMMENT],
+  strings: STRINGS,
+  keywords:
+    'alias and begin break case class def defined do else elsif end ensure false for if in module next nil not or redo rescue retry return self super then true unless until when while yield attr_accessor attr_reader attr_writer private protected public require require_relative lambda proc'.split(
+      ' ',
+    ),
+  symbols: true,
+  types: true,
+};
+
+const LUA: LanguageSpec = {
+  comments: [String.raw`--\[\[[\s\S]*?\]\]`, String.raw`--[^\n]*`],
+  strings: STRINGS,
+  keywords:
+    'and break do else elseif end false for function goto if in local nil not or repeat return then true until while'.split(
+      ' ',
+    ),
+};
+
+const R_LANG: LanguageSpec = {
+  comments: [HASH_COMMENT],
+  strings: STRINGS,
+  keywords:
+    'function if else for while repeat return break next library require TRUE FALSE NULL NA Inf NaN in'.split(
+      ' ',
+    ),
+};
+
+const SCALA: LanguageSpec = {
+  comments: C_COMMENTS,
+  strings: STRINGS + '|' + PY_STRINGS,
+  keywords:
+    'abstract case catch class def do else extends final finally for if implicit import lazy match new null object override package private protected return sealed super this throw trait true false type val var while with yield try'.split(
+      ' ',
+    ),
+  types: true,
+};
+
+const DART: LanguageSpec = {
+  comments: C_COMMENTS,
+  strings: STRINGS + String.raw`|r"(?:[^"\\]|\\.)*"|r'(?:[^'\\]|\\.)*'`,
+  keywords:
+    'abstract as assert async await break case catch class const continue covariant default deferred do dynamic else enum export extends extension external factory false final finally for get if implements import in interface is late library mixin new null on operator part rethrow return set show static super switch sync this throw true try typedef var void while with yield'.split(
+      ' ',
+    ),
+  types: true,
+};
+
+const CSS: LanguageSpec = {
+  comments: [BLOCK_COMMENT],
+  strings: STRINGS,
+  keywords: ['important'],
+  decls: true,
+  atRules: true,
+  colors: true,
+};
+
 const SPECS: Readonly<Record<string, LanguageSpec>> = {
+  rust: RUST,
+  rs: RUST,
+  go: GO,
+  golang: GO,
+  java: JAVA,
+  kotlin: KOTLIN,
+  kt: KOTLIN,
+  kts: KOTLIN,
+  swift: SWIFT,
+  c: C,
+  h: C,
+  cpp: CPP,
+  'c++': CPP,
+  cc: CPP,
+  cxx: CPP,
+  hpp: CPP,
+  hh: CPP,
+  php: PHP,
+  ruby: RUBY,
+  rb: RUBY,
+  lua: LUA,
+  r: R_LANG,
+  scala: SCALA,
+  dart: DART,
+  css: CSS,
+  scss: CSS,
+  less: CSS,
   csharp: CSHARP,
   cs: CSHARP,
   'c#': CSHARP,
@@ -154,13 +332,19 @@ function buildPattern(language: string): RegExp | null {
     : spec.keywords;
   const parts = [
     spec.comments.length ? `(?<comment>${spec.comments.join('|')})` : null,
+    spec.preprocessor ? String.raw`(?<meta>^[ \t]*#[^\n]*)` : null,
     `(?<string>${spec.strings})`,
     `(?<keyword>\\b(?:${keywords.map(escapeRegExp).join('|')})\\b)`,
+    spec.atRules ? String.raw`(?<keyword>@[\w-]+)` : null,
     `(?<number>${NUMBERS})`,
+    spec.colors ? String.raw`(?<number>#[0-9a-fA-F]{3,8}\b)` : null,
     spec.types ? `(?<type>${TYPE_NAME})` : null,
     `(?<func>${IDENT_FUNC})`,
+    spec.variables ? String.raw`(?<attr>\$[A-Za-z_]\w*)` : null,
+    spec.symbols ? String.raw`(?<attr>:[A-Za-z_]\w*[!?]?)` : null,
+    spec.decls ? String.raw`(?<attr>[a-zA-Z-]+(?=\s*:))` : null,
   ].filter(Boolean);
-  return new RegExp(parts.join('|'), 'g');
+  return new RegExp(parts.join('|'), spec.preprocessor ? 'gm' : 'g');
 }
 
 const KINDS: readonly string[] = [

@@ -47,6 +47,38 @@ describe('syntax highlighting', () => {
     ]);
   });
 
+  it('highlights Rust, Go and Java with keywords, types, funcs and numbers', () => {
+    const rust = highlightTokens('fn main() { let count = 42; }', 'rust');
+    expect(rust.map((t) => t.text).join('')).toBe('fn main() { let count = 42; }');
+    expect(rust.find((t) => t.text === 'fn')?.kind).toBe('keyword');
+    expect(rust.find((t) => t.text === 'main')?.kind).toBe('func');
+    expect(rust.find((t) => t.text === '42')?.kind).toBe('number');
+    const go = highlightTokens('package main\nfunc Add(a int) int { return a }', 'go');
+    expect(go.find((t) => t.text === 'package')?.kind).toBe('keyword');
+    expect(go.find((t) => t.text === 'int')?.kind).toBe('keyword');
+    const java = highlightTokens('public class User { String name; }', 'java');
+    expect(java.find((t) => t.text === 'class')?.kind).toBe('keyword');
+    expect(java.find((t) => t.text === 'User')?.kind).toBe('type');
+    expect(java.find((t) => t.text === 'String')?.kind).toBe('type');
+  });
+
+  it('marks C preprocessor lines as meta and PHP variables as attr', () => {
+    const c = highlightTokens('#include <stdio.h>\nint main(void) { return 0; }', 'c');
+    expect(c.map((t) => t.text).join('')).toContain('#include <stdio.h>');
+    expect(c.find((t) => t.text === '#include <stdio.h>')?.kind).toBe('meta');
+    const php = highlightTokens('<?php $name = "kova";', 'php');
+    expect(php.find((t) => t.text === '$name')?.kind).toBe('attr');
+    expect(php.find((t) => t.text === '"kova"')?.kind).toBe('string');
+  });
+
+  it('highlights CSS at-rules, declarations and colors', () => {
+    const css = highlightTokens('@media (min-width: 600px) {\n  color: #fff;\n}', 'css');
+    expect(css.map((t) => t.text).join('')).toBe('@media (min-width: 600px) {\n  color: #fff;\n}');
+    expect(css.find((t) => t.text === '@media')?.kind).toBe('keyword');
+    expect(css.find((t) => t.text === 'color')?.kind).toBe('attr');
+    expect(css.find((t) => t.text === '#fff')?.kind).toBe('number');
+  });
+
   it('keeps HTML-looking content as inert text tokens', () => {
     const code = '<script>alert(1)</script>';
     const tokens = highlightTokens(code, 'html');
