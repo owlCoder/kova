@@ -46,7 +46,7 @@ export class KovaViewProvider implements vscode.WebviewViewProvider, vscode.Disp
     if (this.launcher) {
       view.title = 'Kova';
       this.listeners.push(
-        renderLauncher(view.webview, (action) => {
+        renderLauncher(view.webview, this.context.extensionUri, (action) => {
           const command = {
             open: 'kova.openInEditor',
             new: 'kova.newConversation',

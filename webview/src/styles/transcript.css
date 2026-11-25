@@ -889,3 +889,158 @@ body.editor .extension-frame .welcome p {
 body.editor .extension-frame .chat-footer {
   max-width: 680px;
 }
+
+/* Menus and popovers: one Kova surface for modes, models, actions, context. */
+.extension-frame .kova-popover,
+.extension-frame .model-popover,
+.extension-frame .conversation-actions,
+.extension-frame .attach-menu .floating-menu,
+.extension-frame .context-details {
+  margin: 0;
+  padding: 5px;
+  border: 1px solid var(--vscode-editorWidget-border, var(--line));
+  border-radius: 10px;
+  background: var(--vscode-quickInput-background, var(--vscode-editorWidget-background, #202020));
+  color: var(--vscode-foreground);
+  box-shadow:
+    0 12px 32px rgb(0 0 0 / 0.38),
+    0 2px 6px rgb(0 0 0 / 0.24);
+  font-size: calc(12.5px * var(--text-scale, 1));
+}
+.extension-frame .kova-popover {
+  position: fixed;
+  overflow: auto;
+}
+.extension-frame .kova-popover:popover-open {
+  display: grid;
+  gap: 1px;
+}
+.popover-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 8px 6px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.popover-heading kbd {
+  padding: 0 4px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  font-family: var(--mono);
+  font-size: 10px;
+}
+.extension-frame .popover-item,
+.extension-frame .conversation-actions button,
+.extension-frame .attach-menu .floating-menu button,
+.extension-frame .model-options button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 9px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--vscode-foreground);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.extension-frame .popover-item:hover,
+.extension-frame .popover-item:focus-visible,
+.extension-frame .conversation-actions button:hover:not(:disabled),
+.extension-frame .conversation-actions button:focus-visible,
+.extension-frame .attach-menu .floating-menu button:hover:not(:disabled),
+.extension-frame .model-options button:hover,
+.extension-frame .model-options button.active {
+  outline: none;
+  background: var(--vscode-list-hoverBackground, rgb(255 255 255 / 0.06));
+}
+.extension-frame .popover-item[aria-checked='true'] {
+  background: color-mix(in srgb, var(--brand) 13%, transparent);
+}
+.extension-frame .popover-item > svg:first-child {
+  flex: none;
+  color: var(--muted);
+}
+.extension-frame .popover-item[aria-checked='true'] > svg:first-child,
+.extension-frame .popover-item > svg:last-child:not(:first-child) {
+  flex: none;
+  color: var(--brand);
+}
+.popover-copy {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  gap: 1px;
+}
+.popover-copy strong {
+  font-weight: 500;
+}
+.popover-copy small {
+  color: var(--muted);
+  font-size: 11.5px;
+  line-height: 1.35;
+}
+.extension-frame .attach-menu {
+  position: relative;
+}
+.extension-frame .attach-menu .floating-menu {
+  position: absolute;
+  bottom: 32px;
+  left: 0;
+  z-index: 30;
+  display: grid;
+  gap: 1px;
+  min-width: 190px;
+}
+.extension-frame .attach-menu summary {
+  list-style: none;
+}
+.extension-frame .attach-menu summary::-webkit-details-marker {
+  display: none;
+}
+.extension-frame .context-details {
+  bottom: 34px;
+  width: 240px;
+  padding: 10px 12px;
+}
+.extension-frame .context-details progress {
+  appearance: none;
+  height: 4px;
+  border: 0;
+  border-radius: 2px;
+  background: var(--line);
+  overflow: hidden;
+}
+.extension-frame .context-details progress::-webkit-progress-bar {
+  background: var(--line);
+}
+.extension-frame .context-details progress::-webkit-progress-value {
+  background: var(--brand);
+}
+
+/* Bigger Kova mark on the empty page and in the editor title. */
+body.editor .extension-frame .welcome-mark .kova-mark img,
+body.editor .extension-frame .welcome-mark .kova-mark {
+  width: 72px;
+  height: 72px;
+}
+body.editor .extension-frame .workspace-breadcrumb .kova-mark img,
+body.editor .extension-frame .workspace-breadcrumb .kova-mark {
+  width: 18px;
+  height: 18px;
+}
+body.editor .extension-frame .welcome h1 {
+  margin-top: 18px;
+  font-size: calc(17px * var(--text-scale, 1));
+}
+body.editor .extension-frame .composer textarea {
+  min-height: 26px;
+  padding: 12px 14px 4px;
+}
+body.editor .extension-frame .composer-bar {
+  padding: 4px 8px 8px;
+}

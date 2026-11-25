@@ -8,6 +8,7 @@ import { ModelPicker } from './ModelPicker.js';
 import { PromptPicker } from './PromptPicker.js';
 import { ContextAttachments } from './ContextAttachments.js';
 import { ContextMeter } from './ContextMeter.js';
+import { ModeMenu, modeOrder } from './ModeMenu.js';
 
 type Props = {
   snapshot: SessionSnapshot | null;
@@ -25,20 +26,6 @@ type Props = {
   onOpenLibrary(): void;
   onPreviewContext(id: string): void;
 };
-
-/** Shift+Tab walks the modes from most to least supervised, then plan-only. */
-const modeOrder: readonly AgentMode[] = ['Manual', 'Edit', 'Auto', 'Plan'];
-const modeView: Record<AgentMode, { label: string; hint: string; icon: 'code' | 'zap' | 'plan' }> =
-  {
-    Manual: { label: 'Ask before changes', hint: 'Approve every change and command', icon: 'code' },
-    Edit: {
-      label: 'Accept edits',
-      hint: 'Edits apply directly; commands need approval',
-      icon: 'code',
-    },
-    Auto: { label: 'Auto mode', hint: 'Allowlisted commands run without asking', icon: 'zap' },
-    Plan: { label: 'Plan mode', hint: 'Read only: explore and propose a plan', icon: 'plan' },
-  };
 
 export function ChatFooter({
   snapshot,
@@ -74,7 +61,6 @@ export function ChatFooter({
     if (contextMenu.current) contextMenu.current.open = false;
   };
   const nextMode = () => modeOrder[(modeOrder.indexOf(mode) + 1) % modeOrder.length]!;
-  const view = modeView[mode];
   const disabled = !inHost || !snapshot || snapshot.configuringProvider;
   return (
     <footer className="chat-footer">
@@ -133,16 +119,7 @@ export function ChatFooter({
         />
         <div className="composer-bar">
           <div className="composer-tools">
-            <button
-              className={`mode-toggle mode-${mode.toLowerCase()}`}
-              disabled={busy}
-              title={`${t(view.hint)} · ${t('Shift+Tab to switch')}`}
-              aria-label={`${t('Agent mode')}: ${t(view.label)}`}
-              onClick={() => onModeChange(nextMode())}
-            >
-              <Icon name={view.icon} size={13} />
-              <span>{t(view.label)}</span>
-            </button>
+            <ModeMenu mode={mode} disabled={busy} onChange={onModeChange} />
             <details className="attach-menu" ref={contextMenu}>
               <summary title={t('Add context')} aria-label={t('Add context')}>
                 <Icon name="paperclip" size={14} />

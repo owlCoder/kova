@@ -469,4 +469,6 @@ export const sr: Readonly<Record<string, string>> = {
   'Changes files': 'Menja fajlove',
   'Runs a process': 'Pokreće proces',
   Destructive: 'Destruktivno',
+  Modes: 'Režimi',
+  'to switch': 'za promenu',
 };

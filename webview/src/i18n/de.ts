@@ -473,4 +473,6 @@ export const de: Readonly<Record<string, string>> = {
   'Changes files': 'Ändert Dateien',
   'Runs a process': 'Startet einen Prozess',
   Destructive: 'Destruktiv',
+  Modes: 'Modi',
+  'to switch': 'zum Wechseln',
 };
