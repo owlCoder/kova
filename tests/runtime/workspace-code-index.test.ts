@@ -128,4 +128,31 @@ describe('WorkspaceCodeIndex', () => {
       1,
     );
   });
+  it('builds one snippet per symbol with real boundaries', async () => {
+    await writeFile(
+      join(directory, 'src', 'math.ts'),
+      [
+        'export function alpha() {', // 1
+        '  return 1;', // 2
+        '}', // 3
+        '', // 4
+        'export function betaCalculator() {', // 5
+        '  return 2;', // 6
+        '}', // 7
+      ].join('\n'),
+    );
+    const index = new WorkspaceCodeIndex(directory);
+    await index.refresh(directory, null, activeToken);
+
+    const snippets = await index.findRelevantSnippets(
+      directory,
+      { queryText: 'betaCalculator', maxSnippets: 1 },
+      activeToken,
+    );
+    expect(snippets[0]).toMatchObject({
+      relativePath: 'src/math.ts',
+      startLine: 5,
+      endLine: 7,
+    });
+  });
 });

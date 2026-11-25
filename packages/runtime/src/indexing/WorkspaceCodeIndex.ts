@@ -11,6 +11,7 @@ import type {
 import { RelevanceRanker } from '../../../core/src/indexing/RelevanceRanker.js';
 import { BoundedTextFile } from '../adapters/BoundedTextFile.js';
 import { NodeWorkspacePathGuard } from '../adapters/NodeWorkspacePathGuard.js';
+import { TreeSitterSymbolExtractor } from './TreeSitterSymbolExtractor.js';
 
 const IGNORED_DIRS = new Set([
   'node_modules',
@@ -127,19 +128,36 @@ function buildSnippets(
   symbols: readonly CodeSymbol[],
 ): readonly IndexedSnippet[] {
   const lines = content.split('\n');
-  const snippets: IndexedSnippet[] = [];
 
+  const topLevel = symbols.filter((symbol) => symbol.kind !== 'Method');
+  if (topLevel.length > 0) {
+    const bySymbol = new Map<string, IndexedSnippet>();
+    for (const symbol of topLevel) {
+      const endLine = Math.min(symbol.endLine, symbol.startLine + 79);
+      const id = `${relativePath}:${symbol.startLine}-${endLine}`;
+      if (bySymbol.has(id)) continue;
+      bySymbol.set(id, {
+        id,
+        relativePath,
+        content: lines.slice(symbol.startLine - 1, endLine).join('\n'),
+        startLine: symbol.startLine,
+        endLine,
+        symbolNames: symbols
+          .filter((item) => item.startLine >= symbol.startLine && item.startLine <= endLine)
+          .map((item) => item.name),
+      });
+    }
+    return [...bySymbol.values()];
+  }
+
+  // Fallback for files without symbols: fixed blocks of 40 lines.
+  const snippets: IndexedSnippet[] = [];
   for (let startIdx = 0; startIdx < lines.length; startIdx += SNIPPET_LINE_SPAN) {
     const endIdx = Math.min(lines.length, startIdx + SNIPPET_LINE_SPAN);
     const startLine = startIdx + 1;
     const endLine = endIdx;
     const chunkLines = lines.slice(startIdx, endIdx);
-    const chunkText = chunkLines.join('\n').trim();
-    if (!chunkText) continue;
-
-    const symbolNames = symbols
-      .filter((sym) => sym.startLine >= startLine && sym.startLine <= endLine)
-      .map((sym) => sym.name);
+    if (!chunkLines.join('\n').trim()) continue;
 
     snippets.push({
       id: `${relativePath}:${startLine}-${endLine}`,
@@ -147,10 +165,11 @@ function buildSnippets(
       content: chunkLines.join('\n'),
       startLine,
       endLine,
-      symbolNames,
+      symbolNames: symbols
+        .filter((sym) => sym.startLine >= startLine && sym.startLine <= endLine)
+        .map((sym) => sym.name),
     });
   }
-
   return snippets;
 }
 
@@ -158,6 +177,7 @@ export class WorkspaceCodeIndex implements CodeIndex {
   private readonly guard: NodeWorkspacePathGuard;
   private readonly reader = new BoundedTextFile();
   private readonly ranker = new RelevanceRanker();
+  private readonly treeSitter = new TreeSitterSymbolExtractor();
   private readonly files = new Map<string, FileRecord>();
 
   constructor(private readonly root: string) {
@@ -189,8 +209,22 @@ export class WorkspaceCodeIndex implements CodeIndex {
         MAX_FILE_BYTES,
       );
       cancellation.throwIfCancellationRequested();
-      const symbols = extractSymbols(normalized, content);
-      const edges = extractEdges(normalized, content);
+      let symbols: readonly CodeSymbol[] | null = null;
+      try {
+        symbols = await this.treeSitter.extractSymbols(normalized, content);
+      } catch {
+        cancellation.throwIfCancellationRequested();
+        symbols = null;
+      }
+      symbols ??= extractSymbols(normalized, content);
+      let edges: readonly DependencyEdge[] | null = null;
+      try {
+        edges = await this.treeSitter.extractEdges(normalized, content);
+      } catch {
+        cancellation.throwIfCancellationRequested();
+        edges = null;
+      }
+      edges ??= extractEdges(normalized, content);
       const snippets = buildSnippets(normalized, content, symbols);
       return { mtimeMs: info.mtimeMs, symbols, edges, snippets };
     } catch {
