@@ -25,12 +25,17 @@ export interface ToolEntry {
   readonly omitted: number;
 }
 
-/** Lifecycle information that is not a tool call (hooks, MCP, rules, stops). */
+/**
+ * Lifecycle information that is not a tool call (hooks, MCP, rules, stops).
+ * `text` is an English i18n key with {placeholders}; `values` fills them when
+ * the note is rendered through t().
+ */
 export interface NoteEntry {
   readonly kind: 'note';
   readonly id: string;
   readonly anchor: number;
   readonly text: string;
+  readonly values: Readonly<Record<string, string>>;
   readonly detail: string;
   readonly tone: 'info' | 'warning' | 'error';
 }
@@ -66,10 +71,19 @@ function note(
   sequence: number,
   anchor: number,
   text: string,
+  values: Readonly<Record<string, string>> = {},
   detail = '',
   tone: NoteEntry['tone'] = 'info',
 ): NoteEntry {
-  return { kind: 'note', id: `note-${sequence}`, anchor, text, detail: clip(detail), tone };
+  return {
+    kind: 'note',
+    id: `note-${sequence}`,
+    anchor,
+    text,
+    values,
+    detail: clip(detail),
+    tone,
+  };
 }
 
 /**
@@ -133,7 +147,14 @@ export function applyTimelineEvent(
     case 'ToolValidationFailed':
       return bound([
         ...entries,
-        note(sequence, anchor, `Tool repair ${event.repairAttempt}/2`, event.message, 'warning'),
+        note(
+          sequence,
+          anchor,
+          'Tool repair {attempt}/2',
+          { attempt: String(event.repairAttempt) },
+          event.message,
+          'warning',
+        ),
       ]);
     case 'GuardrailEvaluated':
       return event.decision.action === 'Allow'
@@ -143,7 +164,8 @@ export function applyTimelineEvent(
             note(
               sequence,
               anchor,
-              `Guardrail · ${event.decision.action}`,
+              'Guardrail · {action}',
+              { action: event.decision.action },
               event.decision.reasons.join('\n'),
               'warning',
             ),
@@ -154,28 +176,39 @@ export function applyTimelineEvent(
         note(
           sequence,
           anchor,
-          `Hook ${event.report.hookId} · ${event.report.outcome}`,
+          'Hook {hookId} · {outcome}',
+          { hookId: event.report.hookId, outcome: event.report.outcome },
           `${event.report.command} ${event.report.args.join(' ')}\n${event.report.message}`,
         ),
       ]);
     case 'SkillLoaded':
-      return bound([...entries, note(sequence, anchor, `Skill · ${event.name}`)]);
+      return bound([...entries, note(sequence, anchor, 'Skill · {name}', { name: event.name })]);
     case 'ProjectInstructionsLoaded':
-      return bound([...entries, note(sequence, anchor, `Project rules · ${event.relativePath}`)]);
+      return bound([
+        ...entries,
+        note(sequence, anchor, 'Project rules · {path}', { path: event.relativePath }),
+      ]);
     case 'McpServerStarted':
       return bound([
         ...entries,
         note(
           sequence,
           anchor,
-          `MCP server ${event.serverId} started`,
+          'MCP server {serverId} started',
+          { serverId: event.serverId },
           `${event.command} ${event.args.join(' ')}`,
         ),
       ]);
     case 'McpServerStopped':
       return bound([
         ...entries,
-        note(sequence, anchor, `MCP server ${event.serverId} stopped`, event.reason),
+        note(
+          sequence,
+          anchor,
+          'MCP server {serverId} stopped',
+          { serverId: event.serverId },
+          event.reason,
+        ),
       ]);
     case 'ConfigurationReloaded':
       return bound([
@@ -183,28 +216,34 @@ export function applyTimelineEvent(
         note(
           sequence,
           anchor,
-          `Configuration reloaded · ${event.changedServers.length} MCP server changes${event.hooksChanged ? ' · hooks updated' : ''}`,
+          event.hooksChanged
+            ? 'Configuration reloaded · {count} MCP server changes · hooks updated'
+            : 'Configuration reloaded · {count} MCP server changes',
+          { count: String(event.changedServers.length) },
         ),
       ]);
     case 'AgentLoopStopped':
       return bound([
         ...entries,
-        note(sequence, anchor, `Agent stopped · ${event.reason}`, '', 'error'),
+        note(sequence, anchor, 'Agent stopped · {reason}', { reason: event.reason }, '', 'error'),
       ]);
     case 'GenerationCancelled':
       return bound([
         ...updateCancelled(entries),
-        note(sequence, anchor, 'Interrupted', '', 'warning'),
+        note(sequence, anchor, 'Interrupted', {}, '', 'warning'),
       ]);
     case 'ResponseCompleted':
       return event.finishReason === 'Length'
-        ? bound([...entries, note(sequence, anchor, 'Output token limit reached', '', 'warning')])
+        ? bound([
+            ...entries,
+            note(sequence, anchor, 'Output token limit reached', {}, '', 'warning'),
+          ])
         : entries;
     case 'ErrorOccurred':
       // Provider connection problems are shown in the composer banner instead.
       return event.code === 'ProviderUnavailable'
         ? entries
-        : bound([...entries, note(sequence, anchor, event.code, event.message, 'error')]);
+        : bound([...entries, note(sequence, anchor, event.code, {}, event.message, 'error')]);
     default:
       return entries;
   }

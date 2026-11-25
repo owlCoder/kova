@@ -1,7 +1,9 @@
 import { promptLibrarySR } from './promptLibrarySR.js';
+import { notesSR } from './notesSR.js';
 
 export const sr: Readonly<Record<string, string>> = {
   ...promptLibrarySR,
+  ...notesSR,
   'Find in conversation': 'Pronađi u razgovoru',
   'Find in conversation…': 'Pronađi u razgovoru…',
   'Conversation actions': 'Radnje razgovora',

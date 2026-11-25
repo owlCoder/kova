@@ -6,6 +6,7 @@ import type { SessionSnapshot } from '../../packages/protocol/src/SessionSnapsho
 import { applyTimelineEvent, type TimelineEntry } from '../../webview/src/state/timeline.js';
 import { Conversation } from '../../webview/src/components/Conversation.js';
 import { toolLabel } from '../../webview/src/components/toolLabel.js';
+import { I18nProvider } from '../../webview/src/i18n/I18n.js';
 
 const fold = (events: readonly PresentationEvent[], anchor = 1) =>
   events.reduce<readonly TimelineEntry[]>(
@@ -95,7 +96,10 @@ describe('transcript timeline', () => {
     }));
     const entries = fold(events);
     expect(entries).toHaveLength(200);
-    expect(entries.at(-1)).toMatchObject({ text: 'Project rules · rules-259.md' });
+    expect(entries.at(-1)).toMatchObject({
+      text: 'Project rules · {path}',
+      values: { path: 'rules-259.md' },
+    });
   });
 
   it('names built-in and MCP tools briefly', () => {
@@ -160,5 +164,50 @@ describe('transcript timeline', () => {
     expect(html).toContain('Yes, allow once');
     // The approval replaces the working indicator while Kova waits.
     expect(html).not.toContain('working-indicator');
+  });
+
+  it('renders lifecycle notes through t() with their placeholder values', () => {
+    const snapshot: SessionSnapshot = {
+      conversationId: 'c',
+      activeRunId: null,
+      state: 'Idle',
+      mode: 'Manual',
+      selectedModelId: 'm',
+      models: [],
+      providerStatus: 'Available',
+      providerLabel: 'Local',
+      setupCompleted: true,
+      configuringProvider: false,
+      toolsEnabled: true,
+      skills: [],
+      activeSkillId: null,
+      usage: null,
+      messages: [{ id: '1', role: 'user', content: 'Hi', partial: false }],
+      contextAttachments: [],
+      pendingApproval: null,
+      thinkingEnabled: false,
+      contextMaxTokens: 4096,
+    };
+    const timeline = fold([{ type: 'ProjectInstructionsLoaded', relativePath: 'AGENTS.md' }], 1);
+    const render = (language: 'en' | 'sr') =>
+      renderToStaticMarkup(
+        createElement(I18nProvider, {
+          language,
+          children: createElement(Conversation, {
+            snapshot,
+            thinking: {},
+            timeline,
+            runStartedAt: null,
+            busy: false,
+            onReuse: () => {},
+            onSavePrompt: () => {},
+            scroller: { current: null },
+            searching: false,
+            followLatest: true,
+          }),
+        }),
+      );
+    expect(render('en')).toContain('Project rules · AGENTS.md');
+    expect(render('sr')).toContain('Projektna pravila · AGENTS.md');
   });
 });

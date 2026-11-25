@@ -1,7 +1,9 @@
 import { promptLibraryDE } from './promptLibraryDE.js';
+import { notesDE } from './notesDE.js';
 
 export const de: Readonly<Record<string, string>> = {
   ...promptLibraryDE,
+  ...notesDE,
   'Find in conversation': 'Im Gespräch suchen',
   'Find in conversation…': 'Im Gespräch suchen…',
   'Conversation actions': 'Gesprächsaktionen',
