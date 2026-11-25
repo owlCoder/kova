@@ -1,4 +1,4 @@
-import { opendir } from 'node:fs/promises';
+import { opendir, stat } from 'node:fs/promises';
 import { dirname, extname, posix, resolve } from 'node:path';
 import type { CancellationToken } from '../../../core/src/common/CancellationToken.js';
 import type { CodeIndex, CodeIndexQuery } from '../../../core/src/indexing/CodeIndex.js';
@@ -41,6 +41,7 @@ const MAX_FILE_BYTES = 256_000;
 const SNIPPET_LINE_SPAN = 40;
 
 interface FileRecord {
+  readonly mtimeMs: number;
   readonly symbols: readonly CodeSymbol[];
   readonly edges: readonly DependencyEdge[];
   readonly snippets: readonly IndexedSnippet[];
@@ -171,6 +172,7 @@ export class WorkspaceCodeIndex implements CodeIndex {
     workspaceRoot: string,
     relativePath: string,
     cancellation: CancellationToken,
+    previous?: FileRecord,
   ): Promise<FileRecord | null> {
     cancellation.throwIfCancellationRequested();
     const normalized = normalizeRelPath(relativePath);
@@ -179,6 +181,8 @@ export class WorkspaceCodeIndex implements CodeIndex {
     try {
       const resolved = await this.guard.resolve(workspaceRoot, normalized, 'Read', cancellation);
       if (!resolved.exists || resolved.protected) return null;
+      const info = await stat(resolved.canonicalPath);
+      if (previous && previous.mtimeMs === info.mtimeMs) return previous;
       const { content } = await this.reader.read(
         resolved.canonicalPath,
         cancellation,
@@ -188,7 +192,7 @@ export class WorkspaceCodeIndex implements CodeIndex {
       const symbols = extractSymbols(normalized, content);
       const edges = extractEdges(normalized, content);
       const snippets = buildSnippets(normalized, content, symbols);
-      return { symbols, edges, snippets };
+      return { mtimeMs: info.mtimeMs, symbols, edges, snippets };
     } catch {
       cancellation.throwIfCancellationRequested();
       return null;
@@ -257,7 +261,12 @@ export class WorkspaceCodeIndex implements CodeIndex {
     }
 
     for (const relPath of allPaths) {
-      const record = await this.indexSingleFile(workspaceRoot, relPath, cancellation);
+      const record = await this.indexSingleFile(
+        workspaceRoot,
+        relPath,
+        cancellation,
+        this.files.get(relPath),
+      );
       if (record) {
         this.files.set(relPath, record);
       } else {

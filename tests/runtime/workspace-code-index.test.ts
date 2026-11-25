@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm, utimes, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -104,5 +104,28 @@ describe('WorkspaceCodeIndex', () => {
   it('respects cancellation tokens', async () => {
     const index = new WorkspaceCodeIndex(directory);
     await expect(index.refresh(directory, null, cancelledToken)).rejects.toThrow('Cancelled');
+  });
+
+  it('reuses unchanged files on a full refresh and picks up changed ones', async () => {
+    const index = new WorkspaceCodeIndex(directory);
+    await index.refresh(directory, null, activeToken);
+    const before = await index.searchSymbols(directory, 'OrderService', 10, activeToken);
+
+    // Nothing changed: a second full refresh must give identical results.
+    await index.refresh(directory, null, activeToken);
+    const again = await index.searchSymbols(directory, 'OrderService', 10, activeToken);
+    expect(again).toEqual(before);
+
+    // Change a file with a clearly different mtime, then do a FULL refresh (null).
+    const file = join(directory, 'src', 'helper.ts');
+    await writeFile(file, 'export class CurrencyFormatter {}\n');
+    const later = new Date(Date.now() + 5000);
+    await utimes(file, later, later);
+    await index.refresh(directory, null, activeToken);
+
+    expect(await index.searchSymbols(directory, 'formatPrice', 10, activeToken)).toEqual([]);
+    expect(await index.searchSymbols(directory, 'CurrencyFormatter', 10, activeToken)).toHaveLength(
+      1,
+    );
   });
 });

@@ -45,8 +45,8 @@ describe('RelevanceRanker', () => {
     });
 
     expect(ranked).toHaveLength(2);
-    expect(ranked[0]?.snippet.id).toBe('s3');
-    expect(ranked[1]?.snippet.id).toBe('s2');
+    expect(ranked[0]?.snippet.id).toBe('s2');
+    expect(ranked[1]?.snippet.id).toBe('s3');
     expect((ranked[0]?.score ?? 0) > (ranked[1]?.score ?? 0)).toBe(true);
   });
 
@@ -62,5 +62,17 @@ describe('RelevanceRanker', () => {
     });
 
     expect(ranked).toEqual([]);
+  });
+
+  it('matches camelCase symbols from plain words', () => {
+    const snippets = [
+      makeSnippet('s1', 'src/ranker.ts', 'ranks things', ['RelevanceRanker']),
+      makeSnippet('s2', 'src/other.ts', 'nothing here', []),
+    ];
+    const ranked = ranker.rank(snippets, [], {
+      queryText: 'relevance ranker',
+      maxSnippets: 5,
+    });
+    expect(ranked[0]?.snippet.id).toBe('s1');
   });
 });

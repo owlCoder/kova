@@ -86,12 +86,23 @@ export class ChatAgent implements Agent {
       for (let round = 0; round <= iterationLimit; round++) {
         cancellation.throwIfCancellationRequested();
         events.emit({ type: 'StateChanged', state: 'BuildingContext' });
-        const codeSnippets = this.codeIndex
+        const attachedPaths = new Set(
+          request.attachments.map((attachment) => attachment.label.replaceAll('\\', '/')),
+        );
+        const fullFilePaths = new Set(
+          request.attachments
+            .filter((attachment) => attachment.source !== 'Selection')
+            .map((attachment) => attachment.label.replaceAll('\\', '/')),
+        );
+        const found = this.codeIndex
           ? await this.codeIndex.findRelevantSnippets(
               request.workspaceId,
-              { queryText: request.prompt, maxSnippets: 4 },
+              { queryText: request.prompt, focusPaths: [...attachedPaths], maxSnippets: 12 },
               cancellation,
             )
+          : null;
+        const codeSnippets = found
+          ? found.filter((snippet) => !fullFilePaths.has(snippet.relativePath)).slice(0, 4)
           : undefined;
         const built = this.context.build({
           systemInstructions: instructions,
