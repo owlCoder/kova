@@ -16,9 +16,69 @@
   --warn: var(--vscode-editorWarning-foreground, #cca700);
   --info: var(--vscode-textLink-foreground, #4daafc);
   --brand: #d9a37a;
+  /* Syntax token colors, VS Code Dark+ inspired. */
+  --tok-keyword: #569cd6;
+  --tok-string: #ce9178;
+  --tok-comment: #6a9955;
+  --tok-number: #b5cea8;
+  --tok-type: #4ec9b0;
+  --tok-func: #dcdcaa;
+  --tok-attr: #9cdcfe;
+  --tok-tag: #569cd6;
+  --tok-add: #73c991;
+  --tok-del: #f85149;
+  --tok-meta: #9dbfdc;
   font-family: var(--ui-font);
   font-size: var(--ui-size);
   line-height: 1.5;
+}
+/* High-contrast token colors stay readable on pure black. */
+body.vscode-high-contrast .extension-frame {
+  --tok-keyword: #7cb4ff;
+  --tok-string: #ffd28a;
+  --tok-comment: #b8b8b8;
+  --tok-number: #d7f0c8;
+  --tok-type: #7fe0cd;
+  --tok-func: #f0e6a0;
+  --tok-attr: #a8e0ff;
+  --tok-tag: #7cb4ff;
+  --tok-add: #73c991;
+  --tok-del: #ff8a80;
+  --tok-meta: #d4d4d4;
+}
+.extension-frame .tok-keyword {
+  color: var(--tok-keyword);
+}
+.extension-frame .tok-string {
+  color: var(--tok-string);
+}
+.extension-frame .tok-comment {
+  color: var(--tok-comment);
+  font-style: italic;
+}
+.extension-frame .tok-number {
+  color: var(--tok-number);
+}
+.extension-frame .tok-type {
+  color: var(--tok-type);
+}
+.extension-frame .tok-func {
+  color: var(--tok-func);
+}
+.extension-frame .tok-attr {
+  color: var(--tok-attr);
+}
+.extension-frame .tok-tag {
+  color: var(--tok-tag);
+}
+.extension-frame .tok-add {
+  color: var(--tok-add);
+}
+.extension-frame .tok-del {
+  color: var(--tok-del);
+}
+.extension-frame .tok-meta {
+  color: var(--tok-meta);
 }
 :is(body.vscode-light, body.vscode-high-contrast-light) .extension-frame {
   --brand: #a55f2e;

@@ -16,6 +16,7 @@
 - Remove the Kova mark from the chat header (the editor tab and view already carry the icon) and center a larger mark on the empty page.
 - Do not preselect a default Ollama model: `kova.ollama.model` starts empty and is filled when you choose a model in setup or the chat; the model picker shows "Choose model" until then.
 - Add slash commands in the composer: typing `/` opens a menu with `/clear`, `/compact` (folds older messages into a bounded summary via the existing compactor, keeping the last messages visible), `/export`, `/copy`, `/model`, `/mode`, `/context`, `/prompts`, `/settings` and `/help`; arrow keys and Enter run a command, Esc dismisses the menu.
+- Highlight generated code blocks locally (C#, TS/JS, Python, Bash, SQL, JSON, YAML, XML, diff) with theme-aware colors for dark, light and high-contrast. Tokens are rendered as React text spans, so the webview CSP is untouched and no remote highlighter is loaded.
 
 ## 0.10.0
 

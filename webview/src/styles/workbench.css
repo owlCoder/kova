@@ -8,6 +8,18 @@
   --green: #396d50;
   --red: #a64339;
   --blue: #376586;
+  /* Light-theme syntax token colors (VS Code Light+ inspired). */
+  --tok-keyword: #0000ff;
+  --tok-string: #a31515;
+  --tok-comment: #008000;
+  --tok-number: #098658;
+  --tok-type: #267f99;
+  --tok-func: #795e26;
+  --tok-attr: #001080;
+  --tok-tag: #800000;
+  --tok-add: #22863a;
+  --tok-del: #cb2431;
+  --tok-meta: #5a5a5a;
 }
 ::selection {
   background: var(--selection);
