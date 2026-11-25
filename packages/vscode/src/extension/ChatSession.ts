@@ -12,6 +12,7 @@ import { CancellationSource } from '../../../core/src/common/CancellationSource.
 import type { ContextUsage } from '../../../core/src/context/ContextUsage.js';
 import { TokenCounter } from '../../../core/src/context/TokenCounter.js';
 import { InMemoryConversationRepository } from '../../../core/src/conversations/InMemoryConversationRepository.js';
+import type { ConversationRepository } from '../../../core/src/conversations/ConversationRepository.js';
 import type { ModelInfo } from '../../../core/src/models/ModelInfo.js';
 import type { SkillMetadata } from '../../../core/src/skills/Skill.js';
 import { SkillLoader } from '../../../core/src/skills/SkillLoader.js';
@@ -36,6 +37,7 @@ import { readRunSettings } from './readRunSettings.js';
 import { createWorkspaceServices } from './createWorkspaceServices.js';
 export class ChatSession {
   readonly hostSessionId = randomUUID();
+  readonly currentConversationId = (): string => this.conversationId;
   readonly approval = new WebviewApprovalPort();
   private sequence = 0;
   private readonly resources: ChatResources;
@@ -49,7 +51,6 @@ export class ChatSession {
       event: projectEvent(event),
     }),
   );
-  private readonly repository = new InMemoryConversationRepository();
   private readonly counters = new Map<string, TokenCounter>();
   private readonly providers: ProviderManager;
   private readonly contextAttachments: ContextAttachmentManager;
@@ -81,6 +82,7 @@ export class ChatSession {
     private readonly root: string | null,
     private readonly output: vscode.OutputChannel,
     providers?: ProviderManager,
+    private readonly repository: ConversationRepository = new InMemoryConversationRepository(),
   ) {
     this.providers =
       providers ?? new ProviderManager(new ProviderApiKeyStore(this.context.secrets));
@@ -167,14 +169,13 @@ export class ChatSession {
     this.initializationCancellation = cancellation;
     const task = this.initializeSession(cancellation);
     this.initialization = task;
-    void task
-      .finally(() => {
-        if (this.initialization === task) {
-          this.initialization = null;
-          this.initializationCancellation = null;
-        }
-      })
-      .catch(() => {});
+    const clear = () => {
+      if (this.initialization === task) {
+        this.initialization = null;
+        this.initializationCancellation = null;
+      }
+    };
+    void task.finally(clear).catch(() => {});
     return task;
   }
   private async initializeSession(source: CancellationSource): Promise<void> {
@@ -305,13 +306,7 @@ export class ChatSession {
         await this.snapshot(message.requestId);
         return;
       case 'SubmitPrompt': {
-        const runId = await this.submit(message);
-        this.deliver({
-          ...this.envelope(),
-          type: 'Accepted',
-          requestId: message.requestId,
-          runId,
-        });
+        this.accept(message.requestId, await this.submit(message));
         return;
       }
       case 'CancelRun':
@@ -321,6 +316,9 @@ export class ChatSession {
       case 'NewConversation':
         await this.newConversation();
         await this.snapshot(message.requestId);
+        return;
+      case 'OpenConversation':
+        await this.openConversation(message.conversationId);
         return;
       case 'SelectSkill':
         if (this.activeRun) throw new Error('Cannot change skill during a run.');
@@ -358,12 +356,10 @@ export class ChatSession {
         await this.snapshot(message.requestId);
         return;
     }
-    this.deliver({
-      ...this.envelope(),
-      type: 'Accepted',
-      requestId: message.requestId,
-      runId: this.activeRun?.id ?? null,
-    });
+    this.accept(message.requestId, this.activeRun?.id ?? null);
+  }
+  private accept(requestId: string, runId: string | null): void {
+    this.deliver({ ...this.envelope(), type: 'Accepted', requestId, runId });
   }
   reject(requestId: string, message: string): void {
     const envelope = this.envelope();
@@ -466,9 +462,8 @@ export class ChatSession {
     const active = this.activeRun;
     this.cancelActiveRun();
     await active?.task;
-    const previousConversationId = this.conversationId;
-    await this.repository.remove(previousConversationId);
-    this.providers.forgetConversation(previousConversationId);
+    // The previous conversation stays in the repository so the launcher can list it.
+    this.providers.forgetConversation(this.conversationId);
     this.conversationId = randomUUID();
     this.contextAttachments.clear();
     await this.resources.draft.set('');
@@ -476,6 +471,15 @@ export class ChatSession {
     this.usage = null;
     this.partial = false;
     this.streamingResponse = null;
+  }
+  /** Reopens a stored conversation; the next snapshot shows its messages. */
+  async openConversation(id: string): Promise<void> {
+    if (id === this.conversationId) return;
+    if (this.activeRun || !(await this.repository.get(id)))
+      throw new Error('Unknown conversation.');
+    await this.newConversation();
+    this.conversationId = id as typeof this.conversationId;
+    await this.snapshot('open-conversation');
   }
   async dispose(): Promise<void> {
     this.disposed = true;

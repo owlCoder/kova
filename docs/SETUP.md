@@ -48,7 +48,7 @@ Selecting DeepSeek or an OpenAI-compatible endpoint sends the prompt and context
 
 ## Working with Kova
 
-Use **Cmd/Ctrl+F** to search the current conversation. The header actions menu exports or copies Markdown without internal tool logs or reasoning. VS Code preserves the unsent composer draft in workspace storage, even though conversation history still lasts only for the current extension session. A new conversation clears the draft. Exporting requires the active run to be stopped.
+Use **Cmd/Ctrl+F** to search the current conversation. The header actions menu exports or copies Markdown without internal tool logs or reasoning. VS Code preserves the unsent composer draft in workspace storage, and conversation history is persisted there too: the Activity Bar launcher lists past conversations and reopens any of them. A new conversation clears the draft. Exporting requires the active run to be stopped.
 
 Use the **Kova settings** dialog (**Kova: Open Settings**) to change the context budget and the exact Auto command allowlist; provider and model settings stay in **Kova: Set Up AI Provider**. Context shows estimated input before generation and measured input/output after the final chunk.
 

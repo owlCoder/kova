@@ -20,6 +20,7 @@ export function validateMessage(raw: unknown): WebviewMessage {
     CancelRun: ['runId'],
     NewConversation: [],
     CompactConversation: [],
+    OpenConversation: ['conversationId'],
     UpdateDraft: ['conversationId', 'prompt'],
     ExportConversation: ['conversationId', 'action'],
     SelectSkill: ['skillId'],
@@ -80,6 +81,8 @@ export function validateMessage(raw: unknown): WebviewMessage {
     'conversationId' in value &&
     (typeof value.conversationId !== 'string' || !/^[a-f0-9-]{36}$/.test(value.conversationId))
   )
+    throw new Error('Invalid conversation ID.');
+  if (value.type === 'OpenConversation' && !/^[a-f0-9-]{36}$/.test(value.conversationId as string))
     throw new Error('Invalid conversation ID.');
   if (
     value.type === 'UpdateDraft' &&

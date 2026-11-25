@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { randomBytes } from 'node:crypto';
+import type { ConversationHistoryEntry } from '../extension/conversationStore.js';
 
 const modelSetting: Readonly<Record<string, string>> = {
   ollama: 'ollama.model',
@@ -16,7 +17,18 @@ const providerName: Readonly<Record<string, string>> = {
   deepseek: 'DeepSeek',
   openaiCompatible: 'OpenAI-compatible',
 };
-const actions = new Set(['open', 'new', 'setup', 'key', 'settings']);
+const actions = new Set(['open', 'new', 'setup', 'key', 'settings', 'history']);
+
+const relativeTime = (timestamp: number): string => {
+  const seconds = Math.max(1, Math.floor((Date.now() - timestamp) / 1000));
+  if (seconds < 60) return `${seconds}s ago`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return days === 1 ? 'yesterday' : `${days}d ago`;
+};
 
 const escape = (text: string) =>
   text.replace(
@@ -43,7 +55,9 @@ const icon = (name: string) =>
 export function renderLauncher(
   webview: vscode.Webview,
   extensionUri: vscode.Uri,
-  run: (action: string) => void,
+  activeId: string,
+  history: readonly ConversationHistoryEntry[],
+  run: (action: string, id?: string) => void,
 ) {
   const config = vscode.workspace.getConfiguration('kova');
   const kind = config.get<string>('provider', 'ollama');
@@ -62,6 +76,12 @@ export function renderLauncher(
   const logo = webview.asWebviewUri(vscode.Uri.joinPath(media, 'logo.png'));
   const row = (action: string, label: string) =>
     `<button class="row" data-action="${action}">${icon(action)}<span>${escape(label)}</span><i>›</i></button>`;
+  const historyRow = (item: ConversationHistoryEntry) =>
+    `<button class="row${item.id === activeId ? ' active' : ''}" data-action="history" data-id="${escape(item.id)}" title="${escape(item.title)}"><span>${escape(item.title)}</span><small>${relativeTime(item.updatedAt)}</small></button>`;
+  const conversations =
+    history.length > 0
+      ? `<h2>Conversations</h2><div class="card">${history.map(historyRow).join('')}</div>`
+      : '';
   webview.html = `<!doctype html><html lang="en"><head><meta charset="UTF-8">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${webview.cspSource}; style-src 'nonce-${nonce}'; script-src 'nonce-${nonce}';">
 <style nonce="${nonce}">
@@ -82,12 +102,15 @@ dt{color:var(--muted)}dd{margin:0;text-align:right;overflow:hidden;text-overflow
 .row{display:flex;align-items:center;gap:10px;width:100%;padding:9px 12px;border:0;border-top:1px solid var(--line);background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer}
 .row:first-child{border-top:0}.row:hover,.row:focus-visible{outline:none;background:color-mix(in srgb,var(--brand) 10%,transparent)}
 .row svg{flex:none;width:15px;height:15px;fill:none;stroke:var(--brand);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.row span{flex:1}.row i{font-style:normal;color:var(--muted)}
+.row span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.row i{font-style:normal;color:var(--muted)}
+.row small{flex:none;font-size:10.5px;color:var(--muted)}
+.row.active{background:color-mix(in srgb,var(--brand) 14%,transparent)}
 ul{margin:0;padding:8px 12px;list-style:none;display:grid;gap:7px;color:var(--muted)}
 kbd{display:inline-block;min-width:18px;padding:0 5px;border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;font-family:var(--vscode-editor-font-family);font-size:10.5px;text-align:center;color:var(--vscode-foreground)}
 </style></head><body>
 <div class="hero"><img src="${logo}" alt=""><div><b>Kova</b><small>Local-first coding agent</small></div></div>
 <button class="primary" data-action="open">${icon('open')}Open Kova</button>
+${conversations}
 <h2>Connection</h2>
 <div class="card"><dl><dt>Provider</dt><dd><span class="status">${escape(providerName[kind] ?? kind)}</span></dd>
 <dt>Model</dt><dd title="${escape(model)}">${escape(model)}</dd>
@@ -100,10 +123,11 @@ ${host ? `<dt>Endpoint</dt><dd title="${escape(host)}">${escape(host)}</dd>` : '
 <li>${key('Esc')} interrupt a running task</li>
 <li>${key('1')} ${key('2')} allow / reject a request</li>
 <li>Right-click a file → <b>Add to Kova Context</b></li></ul></div>
-<script nonce="${nonce}">const vscode=acquireVsCodeApi();document.addEventListener('click',e=>{const b=e.target.closest('button[data-action]');if(b)vscode.postMessage({action:b.dataset.action});});</script>
+<script nonce="${nonce}">const vscode=acquireVsCodeApi();document.addEventListener('click',e=>{const b=e.target.closest('button[data-action]');if(b)vscode.postMessage({action:b.dataset.action,id:b.dataset.id||undefined});});</script>
 </body></html>`;
   return webview.onDidReceiveMessage((raw: unknown) => {
-    const action = (raw as { action?: unknown } | null)?.action;
-    if (typeof action === 'string' && actions.has(action)) run(action);
+    const message = raw as { action?: unknown; id?: unknown } | null;
+    if (typeof message?.action === 'string' && actions.has(message.action))
+      run(message.action, typeof message.id === 'string' ? message.id : undefined);
   });
 }

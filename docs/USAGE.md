@@ -99,6 +99,10 @@ Click an attachment to preview its captured text, source and character count. Th
 
 The interface initially renders the latest 40 saved messages. Load earlier messages in batches of 40 while keeping your reading position, or choose Show recent to return to the end. Find in conversation loads the saved messages in the current snapshot, including those initially outside the rendered window. Closing Find keeps those messages available until you choose Show recent or change conversations. Rendering limits do not change the agent's context-compaction policy.
 
+## Chat history
+
+Conversations are saved in VS Code workspace storage after each turn, so they survive a window reload. The Activity Bar launcher lists them under **Conversations**, newest first, titled by the first prompt; click one to reopen it in the chat. The list keeps at most 50 conversations per workspace, stores at most the newest 200 messages each and drops the oldest entries beyond a 3 MB total, so storage stays bounded on disk.
+
 ## Personal prompt library
 
 Open **Prompt library** from the composer or command palette. **Saved** contains your own reusable prompts; **Templates** has six translated starting points; **Recent** shows up to 12 distinct user messages from the current conversation. Search the selected collection by title or content.

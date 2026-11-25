@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { ChatSession } from '../extension/ChatSession.js';
+import type { WorkspaceConversationRepository } from '../extension/conversationStore.js';
 import { KovaWebviewHost } from './KovaWebviewHost.js';
 import { renderLauncher } from './KovaLauncherView.js';
 
@@ -16,6 +17,7 @@ export class KovaViewProvider implements vscode.WebviewViewProvider, vscode.Disp
     private readonly context: vscode.ExtensionContext,
     private readonly session: ChatSession,
     private readonly openEditor: () => Promise<void>,
+    private readonly conversations: WorkspaceConversationRepository,
   ) {}
   private get launcher(): boolean {
     return (
@@ -25,7 +27,10 @@ export class KovaViewProvider implements vscode.WebviewViewProvider, vscode.Disp
   async resolveWebviewView(view: vscode.WebviewView): Promise<void> {
     this.view = view;
     const visibility = view.onDidChangeVisibility(() => {
-      if (view.visible && this.launcher) void this.openEditor();
+      if (view.visible && this.launcher) {
+        void this.render();
+        void this.openEditor();
+      }
     });
     const close = view.onDidDispose(() => {
       close.dispose();
@@ -45,17 +50,28 @@ export class KovaViewProvider implements vscode.WebviewViewProvider, vscode.Disp
     this.release();
     if (this.launcher) {
       view.title = 'Kova';
+      const history = await this.conversations.list();
       this.listeners.push(
-        renderLauncher(view.webview, this.context.extensionUri, (action) => {
-          const command = {
-            open: 'kova.openInEditor',
-            new: 'kova.newConversation',
-            setup: 'kova.setup',
-            key: 'kova.setProviderApiKey',
-            settings: 'kova.settings',
-          }[action];
-          if (command) void vscode.commands.executeCommand(command);
-        }),
+        renderLauncher(
+          view.webview,
+          this.context.extensionUri,
+          this.session.currentConversationId(),
+          history,
+          (action, id) => {
+            if (action === 'history' && id) {
+              void this.openHistory(id);
+              return;
+            }
+            const command = {
+              open: 'kova.openInEditor',
+              new: 'kova.newConversation',
+              setup: 'kova.setup',
+              key: 'kova.setProviderApiKey',
+              settings: 'kova.settings',
+            }[action];
+            if (command) void vscode.commands.executeCommand(command);
+          },
+        ),
       );
       return;
     }
@@ -65,6 +81,18 @@ export class KovaViewProvider implements vscode.WebviewViewProvider, vscode.Disp
   }
   show(): void {
     this.view?.show(false);
+  }
+  /** Opens a stored conversation from the launcher history. */
+  private async openHistory(id: string): Promise<void> {
+    try {
+      await vscode.commands.executeCommand('kova.open');
+      await this.session.openConversation(id);
+      await this.render();
+    } catch (error) {
+      await vscode.window.showErrorMessage(
+        error instanceof Error ? error.message : 'Could not open the conversation.',
+      );
+    }
   }
   get visible(): boolean {
     return this.view?.visible ?? false;

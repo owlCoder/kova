@@ -7,6 +7,7 @@ import { editProviderCredential } from '../providers/editProviderCredential.js';
 import { KovaPanelController } from '../webview/KovaPanelController.js';
 import { KovaViewProvider } from '../webview/KovaViewProvider.js';
 import { ChatSession } from './ChatSession.js';
+import { WorkspaceConversationRepository } from './conversationStore.js';
 
 let session: ChatSession | undefined;
 
@@ -21,9 +22,10 @@ export function activate(context: vscode.ExtensionContext) {
     null;
   const apiKeys = new ProviderApiKeyStore(context.secrets);
   const providers = new ProviderManager(apiKeys);
-  session = new ChatSession(context, root, output, providers);
+  const conversations = new WorkspaceConversationRepository(context.workspaceState);
+  session = new ChatSession(context, root, output, providers, conversations);
   const panels = new KovaPanelController(context, session);
-  const sidebar = new KovaViewProvider(context, session, () => panels.show());
+  const sidebar = new KovaViewProvider(context, session, () => panels.show(), conversations);
   session.captureEditor(vscode.window.activeTextEditor);
 
   const configure = async (action: () => Promise<boolean>) => {
@@ -89,6 +91,7 @@ export function activate(context: vscode.ExtensionContext) {
       await session?.newConversation();
       await session?.snapshot('new-chat');
       await vscode.commands.executeCommand('kova.open');
+      void sidebar.render();
     }),
     vscode.commands.registerCommand('kova.settings', async () => {
       // Open the chat and let it show its own settings dialog.

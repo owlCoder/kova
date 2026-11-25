@@ -46,6 +46,30 @@ describe('host message validation and projection', () => {
       }),
     ).toThrow();
   });
+  it('accepts OpenConversation only with a uuid conversation id', () => {
+    const id = '123e4567-e89b-42d3-a456-426614174000';
+    expect(
+      validateMessage({
+        protocolVersion: 1,
+        requestId: 'x',
+        type: 'OpenConversation',
+        conversationId: id,
+      }).type,
+    ).toBe('OpenConversation');
+    for (const conversationId of ['not-a-uuid', '', '../../etc', id.toUpperCase()]) {
+      expect(() =>
+        validateMessage({
+          protocolVersion: 1,
+          requestId: 'x',
+          type: 'OpenConversation',
+          conversationId,
+        }),
+      ).toThrow();
+    }
+    expect(() =>
+      validateMessage({ protocolVersion: 1, requestId: 'x', type: 'OpenConversation' }),
+    ).toThrow();
+  });
   it('accepts slash-command intents like CompactConversation', () => {
     expect(
       validateMessage({ protocolVersion: 1, requestId: 'x', type: 'CompactConversation' }).type,

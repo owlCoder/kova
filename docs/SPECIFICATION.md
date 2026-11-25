@@ -543,7 +543,7 @@ The compacted summary becomes part of the context instead of the entire historic
 
 ## 11.1 Persistence
 
-v1 keeps conversations in memory for the lifetime of the extension session. `ConversationRepository` remains a Core port with an in-memory implementation. Persistent storage (for example VS Code workspace state) can be added later without changing the Core.
+v1 persists conversations in VS Code workspace state (bounded to 50 conversations, 200 messages each, 3 MB total) so the launcher can list and reopen them. `ConversationRepository` remains a Core port with an in-memory implementation for tests; the VS Code adapter implements persistence without changing the Core.
 
 ---
 
