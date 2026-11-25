@@ -261,6 +261,8 @@ function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
               onModelChange={chat.setModel}
               onModeChange={chat.setMode}
               onOpenLibrary={() => openLibrary()}
+              onOpenSettings={() => setSettingsOpen(true)}
+              onOpenPalette={() => setPaletteOpen(true)}
               onInsertPrompt={insertPrompt}
               onPreviewContext={context.open}
             />

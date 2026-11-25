@@ -93,6 +93,9 @@ export function useChat() {
       } else if (data.type === 'OpenSettings') {
         // The launcher's settings action: open the in-chat settings dialog.
         setSettingsRequest((count) => count + 1);
+      } else if (data.type === 'Compacted') {
+        // The host compacted the conversation; pull a fresh snapshot.
+        if (data.conversationId === currentConversation.current) send({ type: 'Ready' });
       } else if (data.type === 'Rejected') {
         if (pendingSubmit.current?.id === data.requestId) {
           if (pendingSubmit.current.conversationId === currentConversation.current && !getPrompt())

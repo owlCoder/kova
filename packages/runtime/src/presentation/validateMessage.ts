@@ -19,6 +19,7 @@ export function validateMessage(raw: unknown): WebviewMessage {
     SubmitPrompt: ['prompt', 'modelId', 'mode', 'skillId', 'attachmentIds'],
     CancelRun: ['runId'],
     NewConversation: [],
+    CompactConversation: [],
     UpdateDraft: ['conversationId', 'prompt'],
     ExportConversation: ['conversationId', 'action'],
     SelectSkill: ['skillId'],

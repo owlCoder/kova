@@ -1,5 +1,5 @@
 import { useI18n } from '../i18n/I18n.js';
-import { useLayoutEffect, type RefObject } from 'react';
+import { useLayoutEffect, useState, type RefObject } from 'react';
 import type { AgentMode } from '../../../packages/protocol/src/AgentMode.js';
 import type { SessionSnapshot } from '../../../packages/protocol/src/SessionSnapshot.js';
 import { inHost, send } from '../messaging/bridge.js';
@@ -12,6 +12,7 @@ import { ModeMenu, modeOrder } from './ModeMenu.js';
 import { ProviderBanner } from './ProviderBanner.js';
 import { usePopover } from './usePopover.js';
 import { menuKeydown } from './menuKeydown.js';
+import { matchSlashCommands, type SlashCommand } from './slashCommands.js';
 
 type Props = {
   snapshot: SessionSnapshot | null;
@@ -28,6 +29,8 @@ type Props = {
   onModelChange(value: string): void;
   onModeChange(value: AgentMode): void;
   onOpenLibrary(): void;
+  onOpenSettings(): void;
+  onOpenPalette(): void;
   onInsertPrompt(text: string): void;
   onPreviewContext(id: string): void;
 };
@@ -47,11 +50,17 @@ export function ChatFooter({
   onModelChange,
   onModeChange,
   onOpenLibrary,
+  onOpenSettings,
+  onOpenPalette,
   onInsertPrompt,
   onPreviewContext,
 }: Props) {
   const { t } = useI18n();
   const attachMenu = usePopover({ disabled: busy, minimumWidth: 190 });
+  const [slashIndex, setSlashIndex] = useState(0);
+  const [slashDismissed, setSlashDismissed] = useState(false);
+  const slashMatches = matchSlashCommands(prompt);
+  const slashOpen = prompt.startsWith('/') && !slashDismissed;
   useLayoutEffect(() => {
     const resize = () => {
       const field = inputRef.current;
@@ -69,6 +78,36 @@ export function ChatFooter({
   };
   const nextMode = () => modeOrder[(modeOrder.indexOf(mode) + 1) % modeOrder.length]!;
   const disabled = !inHost || !snapshot || snapshot.configuringProvider;
+  const runSlashCommand = (command: SlashCommand) => {
+    onPromptChange('');
+    setSlashDismissed(false);
+    setSlashIndex(0);
+    if (command.action.type === 'message') {
+      send({ type: command.action.message });
+    } else if (command.action.type === 'export') {
+      if (snapshot)
+        send({
+          type: 'ExportConversation',
+          conversationId: snapshot.conversationId,
+          action: command.action.action,
+        });
+    } else {
+      const target = command.action.target;
+      if (target === 'settings') onOpenSettings();
+      else if (target === 'library') onOpenLibrary();
+      else if (target === 'palette') onOpenPalette();
+      else {
+        // Open the matching composer popover: model picker, mode menu or context ring.
+        const selector =
+          target === 'model'
+            ? '.model-trigger'
+            : target === 'mode'
+              ? '.mode-toggle'
+              : '.context-trigger';
+        document.querySelector<HTMLButtonElement>(selector)?.click();
+      }
+    }
+  };
   return (
     <footer className="chat-footer">
       {error && (
@@ -84,6 +123,28 @@ export function ChatFooter({
         <ProviderBanner snapshot={snapshot} issue={providerIssue} busy={busy} />
       )}
       <div className={`composer ${busy ? 'busy' : ''} mode-${mode.toLowerCase()}`}>
+        {slashOpen && (
+          <div className="slash-menu" role="menu" aria-label={t('Slash commands')}>
+            {slashMatches.length ? (
+              slashMatches.map((command, index) => (
+                <button
+                  key={command.id}
+                  role="menuitemradio"
+                  aria-checked={index === slashIndex}
+                  className={index === slashIndex ? 'active' : ''}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => runSlashCommand(command)}
+                  onMouseEnter={() => setSlashIndex(index)}
+                >
+                  <strong>{command.command}</strong>
+                  <small>{t(command.hintKey)}</small>
+                </button>
+              ))
+            ) : (
+              <p className="slash-empty">{t('No matching commands.')}</p>
+            )}
+          </div>
+        )}
         <ContextAttachments
           items={snapshot?.contextAttachments ?? []}
           busy={busy}
@@ -94,16 +155,40 @@ export function ChatFooter({
           placeholder={
             busy
               ? t('Kova is working… Esc to interrupt')
-              : t('Ask Kova to explain, edit or test your code')
+              : t('Ask Kova to explain, edit or test your code, or type / for commands')
           }
           value={prompt}
           ref={inputRef}
           disabled={disabled}
           maxLength={16000}
           rows={1}
-          onChange={(event) => onPromptChange(event.target.value)}
+          onChange={(event) => {
+            onPromptChange(event.target.value);
+            setSlashIndex(0);
+            setSlashDismissed(false);
+          }}
           onKeyDown={(event) => {
             if (event.nativeEvent.isComposing) return;
+            if (slashOpen && event.key === 'Escape') {
+              event.preventDefault();
+              event.stopPropagation();
+              setSlashDismissed(true);
+              return;
+            }
+            if (slashOpen && ['ArrowDown', 'ArrowUp'].includes(event.key)) {
+              event.preventDefault();
+              setSlashIndex(
+                (index) =>
+                  (index + (event.key === 'ArrowDown' ? 1 : -1) + slashMatches.length) %
+                  Math.max(1, slashMatches.length),
+              );
+              return;
+            }
+            if (slashOpen && event.key === 'Enter' && !event.shiftKey && slashMatches.length) {
+              event.preventDefault();
+              runSlashCommand(slashMatches[Math.min(slashIndex, slashMatches.length - 1)]!);
+              return;
+            }
             if (event.key === 'Enter' && !event.shiftKey) {
               event.preventDefault();
               onSubmit();

@@ -502,6 +502,62 @@ details.timeline-note > summary {
   min-height: 32px;
   padding: 3px 5px 5px 6px;
 }
+/* Slash-command menu floats above the composer while the draft starts with '/'. */
+.extension-frame .slash-menu {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 8px;
+  z-index: 30;
+  display: grid;
+  gap: 1px;
+  width: min(340px, calc(100% - 16px));
+  max-height: 280px;
+  overflow: auto;
+  padding: 5px;
+  border: 1px solid var(--vscode-editorWidget-border, var(--line));
+  border-radius: 10px;
+  background: var(--vscode-quickInput-background, var(--vscode-editorWidget-background, #202020));
+  box-shadow:
+    0 12px 32px rgb(0 0 0 / 0.38),
+    0 2px 6px rgb(0 0 0 / 0.24);
+}
+.extension-frame .slash-menu button {
+  display: grid;
+  gap: 1px;
+  width: 100%;
+  padding: 7px 9px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--vscode-foreground);
+  font: inherit;
+  font-size: calc(12.5px * var(--text-scale, 1));
+  text-align: left;
+  cursor: pointer;
+}
+.extension-frame .slash-menu button:hover,
+.extension-frame .slash-menu button.active {
+  outline: none;
+  background: var(--vscode-list-hoverBackground, rgb(255 255 255 / 0.06));
+}
+.extension-frame .slash-menu button.active {
+  background: var(--vscode-list-activeSelectionBackground, #04395e);
+  color: var(--vscode-list-activeSelectionForeground, #fff);
+}
+.extension-frame .slash-menu button.active small {
+  color: inherit;
+  opacity: 0.8;
+}
+.extension-frame .slash-menu small {
+  color: var(--muted);
+  font-size: 11.5px;
+}
+.extension-frame .slash-menu .slash-empty {
+  margin: 0;
+  padding: 8px 9px;
+  color: var(--muted);
+  font-size: calc(12px * var(--text-scale, 1));
+}
 .composer-tools,
 .composer-send {
   display: flex;

@@ -15,6 +15,7 @@
 - Add a Kova-styled settings dialog (header gear, Cmd/Ctrl+,, command palette, launcher action) covering interface language, text size, chat placement, context budget, Ollama options and the Auto-mode command allowlist, instead of the generic VS Code settings editor. Values are validated against a host-side allowlist before they are written to the global configuration.
 - Remove the Kova mark from the chat header (the editor tab and view already carry the icon) and center a larger mark on the empty page.
 - Do not preselect a default Ollama model: `kova.ollama.model` starts empty and is filled when you choose a model in setup or the chat; the model picker shows "Choose model" until then.
+- Add slash commands in the composer: typing `/` opens a menu with `/clear`, `/compact` (folds older messages into a bounded summary via the existing compactor, keeping the last messages visible), `/export`, `/copy`, `/model`, `/mode`, `/context`, `/prompts`, `/settings` and `/help`; arrow keys and Enter run a command, Esc dismisses the menu.
 
 ## 0.10.0
 

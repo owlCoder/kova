@@ -46,6 +46,19 @@ describe('host message validation and projection', () => {
       }),
     ).toThrow();
   });
+  it('accepts slash-command intents like CompactConversation', () => {
+    expect(
+      validateMessage({ protocolVersion: 1, requestId: 'x', type: 'CompactConversation' }).type,
+    ).toBe('CompactConversation');
+    expect(() =>
+      validateMessage({
+        protocolVersion: 1,
+        requestId: 'x',
+        type: 'CompactConversation',
+        extra: true,
+      }),
+    ).toThrow();
+  });
   it('validates UpdateSettings payloads: bounded keys and JSON scalar values', () => {
     expect(
       validateMessage({

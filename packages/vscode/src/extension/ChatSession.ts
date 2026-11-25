@@ -90,6 +90,7 @@ export class ChatSession {
     );
     this.resources = new ChatResources(
       context,
+      this.repository,
       () => ({ conversationId: this.conversationId, attachments: this.contextAttachments.list() }),
       (payload) => this.deliver({ ...this.envelope(), ...payload } as HostMessage),
     );
@@ -365,13 +366,8 @@ export class ChatSession {
     });
   }
   reject(requestId: string, message: string): void {
-    this.deliver({
-      ...this.envelope(),
-      type: 'Rejected',
-      requestId,
-      code: 'InvalidRequest',
-      message,
-    });
+    const envelope = this.envelope();
+    this.deliver({ ...envelope, type: 'Rejected', requestId, code: 'InvalidRequest', message });
   }
   private async submit(
     message: Extract<WebviewMessage, { type: 'SubmitPrompt' }>,

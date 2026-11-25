@@ -13,6 +13,7 @@ export type HostMessage = {
   | { readonly type: 'PromptLibrary'; readonly requestId: string; readonly library: PromptLibrary }
   | { readonly type: 'Settings'; readonly requestId: string; readonly settings: KovaSettingsView }
   | { readonly type: 'OpenSettings' }
+  | { readonly type: 'Compacted'; readonly conversationId: string }
   | { readonly type: 'ClipboardCopied'; readonly requestId: string }
   | {
       readonly type: 'ContextPreview';
