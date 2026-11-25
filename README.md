@@ -4,7 +4,7 @@
 
 **Your code. Your models. Your workspace.**
 
-Kova is an open-source, local-first AI coding agent for **VS Code**. Run a model locally with Ollama or connect a compatible API, then work with your project in a sidebar agent panel: ask, plan, let Kova read and edit files or run commands, and approve each change inline.
+Kova is an open-source, local-first AI coding agent for **VS Code**. Run a model locally with Ollama or connect a compatible API, then work with your project in an agent chat tab beside your code: ask, plan, let Kova read and edit files or run commands, and approve each change inline.
 
 [![Checks](https://github.com/owlCoder/kova/actions/workflows/ci.yml/badge.svg)](https://github.com/owlCoder/kova/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/owlCoder/kova)](https://github.com/owlCoder/kova/releases/latest)

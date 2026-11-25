@@ -8,6 +8,8 @@
 - Show provider connection problems as a banner above the composer, as wide as the input, with Retry and Set up provider instead of a raw error code.
 - Add **Add to Kova Context** to the Explorer and editor tab context menus for the selected files.
 - Raise the default context budget to 200,000 tokens. It is capped to the selected model's reported window instead of refusing to run, and the output reservation stays within a quarter of that window. Local Ollama keeps a 32,768-token cap (`kova.ollama.maxContextTokens`) because Ollama reserves memory for the full window.
+- Translate the transcript's lifecycle notes (project rules, hooks, MCP servers, guardrails, skill loads, interruptions, token-limit and stop reasons) into Serbian Latin and German with the rest of the interface.
+- Polish the chat surfaces: light and high-contrast themes now cover the transcript, menus, banner and launcher; the mode, prompt, model, context and attach menus float above the composer instead of over its text; and the composer bar fits a narrow sidebar with an icon-only mode toggle and a truncated model name.
 
 ## 0.10.0
 
