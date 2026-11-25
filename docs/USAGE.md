@@ -4,7 +4,7 @@ Open the project folder in VS Code, then run **Kova: Open Chat**. Skills, tools,
 
 ## Context and thinking
 
-The defaults are 32,768 context tokens, 4,096 reserved output tokens and a 10% safety margin. Change them through **Kova: Open Settings** or VS Code settings JSON:
+The default context budget is 200,000 tokens (capped to the selected model's window, and to 32,768 for local Ollama), with 4,096 reserved output tokens and a 10% safety margin. Change them in the **Kova settings** dialog (**Kova: Open Settings**, or Cmd/Ctrl+, in the chat) or through VS Code settings JSON:
 
 ```json
 {

@@ -10,6 +10,9 @@
 - Raise the default context budget to 200,000 tokens. It is capped to the selected model's reported window instead of refusing to run, and the output reservation stays within a quarter of that window. Local Ollama keeps a 32,768-token cap (`kova.ollama.maxContextTokens`) because Ollama reserves memory for the full window.
 - Translate the transcript's lifecycle notes (project rules, hooks, MCP servers, guardrails, skill loads, interruptions, token-limit and stop reasons) into Serbian Latin and German with the rest of the interface.
 - Polish the chat surfaces: light and high-contrast themes now cover the transcript, menus, banner and launcher; the mode, prompt, model, context and attach menus float above the composer instead of over its text; and the composer bar fits a narrow sidebar with an icon-only mode toggle and a truncated model name.
+- Hide the header title until the first prompt names the conversation; only the Kova mark shows in the empty state.
+- Make every composer menu a native auto popover: clicking empty space or pressing Esc closes it, and opening one closes the others, so at most one menu is open at a time.
+- Add a Kova-styled settings dialog (header gear, Cmd/Ctrl+,, command palette, launcher action) covering interface language, text size, chat placement, context budget, Ollama options and the Auto-mode command allowlist, instead of the generic VS Code settings editor. Values are validated against a host-side allowlist before they are written to the global configuration.
 
 ## 0.10.0
 

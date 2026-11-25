@@ -14,7 +14,7 @@ The first-run guide appears in the chat. Select **Configure provider**, or run *
 
 Presets include Ollama, DeepSeek, OpenAI, OpenRouter, Groq, Gemini (through its OpenAI-compatible API), LM Studio and a custom compatible endpoint. Connection checking requests the model list; it sends no workspace content and does not generate a paid chat response. It checks model availability, not the model's chat or tool capabilities. Select a chat-capable model and enable tools only if that model supports function calling.
 
-Choose a permission mode in the guide, then **Start chatting**. **Set up later** dismisses the guide. Use **Setup** in the header to reopen it. **Kova: Open Settings** remains available for advanced configuration.
+Choose a permission mode in the guide, then **Start chatting**. **Set up later** dismisses the guide. Use **Setup** in the header to reopen it. **Kova: Open Settings** opens Kova's settings dialog for language, text size, chat placement, context budget, Ollama options and the Auto command allowlist.
 
 ### Ollama
 
@@ -50,7 +50,7 @@ Selecting DeepSeek or an OpenAI-compatible endpoint sends the prompt and context
 
 Use **Cmd/Ctrl+F** to search the current conversation. The header actions menu exports or copies Markdown without internal tool logs or reasoning. VS Code preserves the unsent composer draft in workspace storage, even though conversation history still lasts only for the current extension session. A new conversation clears the draft. Exporting requires the active run to be stopped.
 
-Use **Kova: Open Settings** to change provider/model settings, context budget and the exact Auto command allowlist. Context shows estimated input before generation and measured input/output after the final chunk.
+Use the **Kova settings** dialog (**Kova: Open Settings**) to change the context budget and the exact Auto command allowlist; provider and model settings stay in **Kova: Set Up AI Provider**. Context shows estimated input before generation and measured input/output after the final chunk.
 
 Attach a selection, current file or chosen files with **Add context**. While either chat view has focus, selection/current-file attachments use the most recently active file editor. In Manual mode, inspect the file diff or command and choose **Allow once** or **Reject**. Stale file versions require a new preview. Editor Undo restores file edits; cancellation does not undo applied changes.
 
