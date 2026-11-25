@@ -423,41 +423,6 @@ kbd {
   overflow: auto;
   margin: 13px 0 0;
 }
-.generating {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 8px 0;
-  color: var(--muted);
-}
-.generating > span {
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: var(--accent);
-  animation: pulse 1.2s ease-in-out infinite;
-}
-.generating > span:nth-child(2) {
-  animation-delay: 0.15s;
-}
-.generating > span:nth-child(3) {
-  animation-delay: 0.3s;
-}
-.generating small {
-  font-size: calc(13px * var(--text-scale, 1));
-  margin-left: 7px;
-}
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 0.25;
-    transform: translateY(0);
-  }
-  50% {
-    opacity: 1;
-    transform: translateY(-2px);
-  }
-}
 .activity {
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-control);
