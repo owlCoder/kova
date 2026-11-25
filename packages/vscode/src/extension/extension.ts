@@ -22,7 +22,7 @@ export function activate(context: vscode.ExtensionContext) {
   const providers = new ProviderManager(apiKeys);
   session = new ChatSession(context, root, output, providers);
   const panels = new KovaPanelController(context, session);
-  const sidebar = new KovaViewProvider(context, session);
+  const sidebar = new KovaViewProvider(context, session, () => panels.show());
   session.captureEditor(vscode.window.activeTextEditor);
 
   const configure = async (action: () => Promise<boolean>) => {
@@ -41,6 +41,7 @@ export function activate(context: vscode.ExtensionContext) {
     sidebar,
     vscode.window.onDidChangeActiveTextEditor((editor) => session?.captureEditor(editor)),
     vscode.workspace.onDidChangeConfiguration((event) => {
+      if (event.affectsConfiguration('kova')) void sidebar.render();
       if (event.affectsConfiguration('kova'))
         void session
           ?.configurationChanged()
@@ -59,6 +60,10 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand('kova.openInEditor', () => panels.show()),
     vscode.commands.registerCommand('kova.openInSidebar', async () => {
       session?.captureEditor(vscode.window.activeTextEditor);
+      // Choosing the sidebar explicitly makes it the chat's home until changed back.
+      await vscode.workspace
+        .getConfiguration('kova')
+        .update('chat.openIn', 'sidebar', vscode.ConfigurationTarget.Global);
       await vscode.commands.executeCommand('workbench.view.extension.kova');
       sidebar.show();
     }),

@@ -2,7 +2,8 @@
 
 ## 0.10.1
 
-- Open Kova as an editor tab beside the current file by default, like other agent tabs, so the Explorer stays free. **Kova: Open Chat** (Cmd+Alt+K / Ctrl+Alt+K) and a Kova button in the editor title bar open it; `kova.chat.openIn` switches back to the Activity Bar sidebar, also available as **Kova: Open Chat in Sidebar**.
+- Open Kova as an editor tab beside the current file by default, like other agent tabs, so the Explorer stays free. **Kova: Open Chat** (Cmd+Alt+K / Ctrl+Alt+K) and a Kova button in the editor title bar open it; `kova.chat.openIn` switches back to the Activity Bar sidebar, or run **Kova: Open Chat in Sidebar**, which switches that setting.
+- The Activity Bar icon now shows a small launcher (connection, actions, shortcuts) and opens the conversation as an editor tab. The editor tab uses a centered layout: title in the middle, a minimal empty state, a narrow reading column and a framed composer with a model chip and accent send button.
 - Add **Add to Kova Context** to the Explorer and editor tab context menus for the selected files.
 - Raise the default context budget to 200,000 tokens. It is capped to the selected model's reported window instead of refusing to run, and the output reservation stays within a quarter of that window. Local Ollama keeps a 32,768-token cap (`kova.ollama.maxContextTokens`) because Ollama reserves memory for the full window.
 

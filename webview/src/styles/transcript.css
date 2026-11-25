@@ -37,7 +37,7 @@
   min-width: 0;
   gap: 7px;
 }
-.extension-frame .workspace-breadcrumb svg {
+.extension-frame .workspace-breadcrumb .kova-mark img {
   width: 14px;
   height: 14px;
   flex: none;
@@ -793,4 +793,99 @@ details.timeline-note > summary {
   .tool-requested .tool-dot {
     animation: none;
   }
+}
+
+/*
+ * Editor tab: a centered agent page. Title in the middle, a narrow reading
+ * column, an empty state with the mark and one hint, and a framed composer.
+ */
+body.editor .extension-frame .workspace-header {
+  position: relative;
+  justify-content: flex-end;
+  height: 40px;
+  min-height: 40px;
+}
+body.editor .extension-frame .workspace-breadcrumb {
+  position: absolute;
+  left: 50%;
+  max-width: 50%;
+  transform: translateX(-50%);
+  justify-content: center;
+}
+body.editor .extension-frame .header-title {
+  font-size: calc(13px * var(--text-scale, 1));
+}
+body.editor .extension-frame .header-actions {
+  opacity: 0.55;
+  transition: opacity var(--motion-fast);
+}
+body.editor .extension-frame .workspace-header:hover .header-actions,
+body.editor .extension-frame .header-actions:focus-within {
+  opacity: 1;
+}
+body.editor .extension-frame .thread {
+  max-width: 720px;
+}
+body.editor .extension-frame .conversation {
+  padding: 12px 24px 24px;
+}
+body.editor .extension-frame .chat-footer {
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 6px 24px 18px;
+  box-sizing: border-box;
+}
+body.editor .extension-frame .composer {
+  border-radius: 10px;
+}
+body.editor .extension-frame .composer:focus-within {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--brand) 35%, transparent);
+}
+body.editor .extension-frame .send:not(.stop) {
+  border-radius: 6px;
+  background: var(--brand);
+  color: #1b1b1b;
+}
+body.editor .extension-frame .composer-send .model-picker > button,
+body.editor .extension-frame .composer-send .model-trigger {
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--vscode-foreground) 8%, transparent);
+}
+body.editor .extension-frame .welcome {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 460px;
+  min-height: calc(100vh - 230px);
+  margin: 0 auto;
+  justify-content: center;
+  text-align: center;
+}
+body.editor .extension-frame .welcome-mark .kova-mark img,
+body.editor .extension-frame .welcome-mark .kova-mark,
+body.editor .extension-frame .welcome-mark img {
+  width: 40px;
+  height: 40px;
+}
+body.editor .extension-frame .welcome h1 {
+  margin-top: 14px;
+}
+body.editor .extension-frame .suggestions {
+  width: 100%;
+  text-align: left;
+}
+body.editor .extension-frame .welcome-note {
+  justify-content: center;
+}
+body.editor .extension-frame .welcome .suggestions,
+body.editor .extension-frame .welcome .welcome-note {
+  display: none;
+}
+body.editor .extension-frame .welcome p {
+  max-width: 340px;
+}
+body.editor .extension-frame .chat-footer {
+  max-width: 680px;
 }
