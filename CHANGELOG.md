@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.10.1
+
+- Open Kova as an editor tab beside the current file by default, like other agent tabs, so the Explorer stays free. **Kova: Open Chat** (Cmd+Alt+K / Ctrl+Alt+K) and a Kova button in the editor title bar open it; `kova.chat.openIn` switches back to the Activity Bar sidebar, also available as **Kova: Open Chat in Sidebar**.
+- Add **Add to Kova Context** to the Explorer and editor tab context menus for the selected files.
+- Raise the default context budget to 200,000 tokens. It is capped to the selected model's reported window instead of refusing to run, and the output reservation stays within a quarter of that window. Local Ollama keeps a 32,768-token cap (`kova.ollama.maxContextTokens`) because Ollama reserves memory for the full window.
+
 ## 0.10.0
 
 - Kova is now a VS Code extension only. Remove the Electron desktop app, its installers, integrated terminal, session browser, file inspector, desktop preferences, protocol messages, scripts and workflow. Releases contain the VSIX and checksums.

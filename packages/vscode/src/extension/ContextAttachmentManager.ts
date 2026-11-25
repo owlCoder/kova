@@ -38,18 +38,24 @@ export class ContextAttachmentManager {
     this.revision++;
   }
 
-  async add(source: 'Selection' | 'CurrentFile' | 'PickFiles'): Promise<void> {
+  /** `uris` comes from an Explorer selection; without it PickFiles shows a file dialog. */
+  async add(
+    source: 'Selection' | 'CurrentFile' | 'PickFiles',
+    uris?: readonly vscode.Uri[],
+  ): Promise<void> {
     if (!this.editable()) throw new Error('Wait until generation stops.');
     if (!this.root) throw new Error('Open a workspace to attach context.');
     const revision = this.revision;
     const captured: ContextAttachment[] = [];
     const guard = new NodeWorkspacePathGuard(this.root);
     if (source === 'PickFiles') {
-      const files = await vscode.window.showOpenDialog({
-        canSelectMany: true,
-        canSelectFiles: true,
-        canSelectFolders: false,
-      });
+      const files =
+        uris ??
+        (await vscode.window.showOpenDialog({
+          canSelectMany: true,
+          canSelectFiles: true,
+          canSelectFolders: false,
+        }));
       if ((files?.length ?? 0) > 10) throw new Error('Choose up to 10 files at a time.');
       for (const uri of files ?? []) {
         const cancellation = new CancellationSource();

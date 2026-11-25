@@ -51,11 +51,31 @@ export function activate(context: vscode.ExtensionContext) {
       webviewOptions: { retainContextWhenHidden: true },
     }),
     vscode.commands.registerCommand('kova.open', async () => {
+      const where = vscode.workspace.getConfiguration('kova').get<string>('chat.openIn', 'editor');
+      await vscode.commands.executeCommand(
+        where === 'sidebar' ? 'kova.openInSidebar' : 'kova.openInEditor',
+      );
+    }),
+    vscode.commands.registerCommand('kova.openInEditor', () => panels.show()),
+    vscode.commands.registerCommand('kova.openInSidebar', async () => {
       session?.captureEditor(vscode.window.activeTextEditor);
       await vscode.commands.executeCommand('workbench.view.extension.kova');
       sidebar.show();
     }),
-    vscode.commands.registerCommand('kova.openInEditor', () => panels.show()),
+    vscode.commands.registerCommand(
+      'kova.addToContext',
+      async (uri?: vscode.Uri, selection?: vscode.Uri[]) => {
+        const uris = selection?.length ? selection : uri ? [uri] : [];
+        try {
+          if (uris.length) await session?.attachFiles(uris);
+          await vscode.commands.executeCommand('kova.open');
+        } catch (error) {
+          await vscode.window.showErrorMessage(
+            error instanceof Error ? error.message : 'Could not add the files to Kova.',
+          );
+        }
+      },
+    ),
     vscode.commands.registerCommand('kova.setup', () =>
       configure(() => new ProviderSetupWizard(providers, apiKeys).run()),
     ),

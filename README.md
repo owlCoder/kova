@@ -18,7 +18,7 @@ Kova is an open-source, local-first AI coding agent for **VS Code**. Run a model
 - **Approve inline.** File changes and commands stop at a permission prompt in the transcript: press **1** to allow once, **2** or **Esc** to reject, or open the diff first.
 - **Choose how much Kova may do.** Switch between _Ask before changes_, _Accept edits_, _Auto mode_ and _Plan mode_ with **Shift+Tab** in the composer. **Esc** interrupts a running task.
 - **Work locally or connect an API.** Ollama is the default. Guided setup also offers DeepSeek, OpenAI, OpenRouter, Groq, Gemini, LM Studio and custom OpenAI-compatible endpoints.
-- **Give it context.** Attach the editor selection, the current file or chosen files; preview each snapshot before sending. A ring in the composer shows how full the context window is.
+- **Give it context.** Right-click files in the Explorer and choose **Add to Kova Context**, or attach the editor selection, the current file or chosen files; preview each snapshot before sending. The context budget defaults to 200,000 tokens and is capped to what the model supports; a ring in the composer shows how full it is.
 - **Keep your work.** Search the conversation with Cmd/Ctrl+F, export or copy a Markdown transcript, and restore unsent drafts after reopening.
 - **Build your prompt library.** Save and edit reusable prompts, adapt localized templates and reuse recent messages.
 - **Extend the workflow.** Add project `AGENTS.md` rules, selected skills, local stdio MCP servers and command hooks.
@@ -38,7 +38,7 @@ Download `kova-local-<version>.vsix` from the [latest release](https://github.co
    ollama pull qwen3:4b
    ```
 
-2. Open a folder in VS Code and run **Kova: Open Chat**, or click the Kova icon in the activity bar.
+2. Open a folder in VS Code and run **Kova: Open Chat** (Cmd+Alt+K / Ctrl+Alt+K) or click the Kova icon in the editor title bar. Kova opens as an editor tab beside your code, so the Explorer stays free; set `kova.chat.openIn` to `sidebar` to use the Activity Bar view instead.
 3. Follow **Setup** to connect Ollama and select `qwen3:4b`. For a hosted model, run **Kova: Set Up AI Provider**, choose the provider and supply your API key (**Kova: Set Provider API Key** changes it later).
 4. Start in _Ask before changes_. Ask Kova to explain the project, attach relevant files, then review a proposed edit before pressing **1**.
 
@@ -63,16 +63,17 @@ Presets configure endpoints; they do not guarantee that every model supports too
 
 Protected configuration writes require approval in every mode. Destructive commands recognized by the guardrails are blocked. Approvals apply once to the prepared operation; a file changed after preview requires another preview. Interrupting cancels active work and preserves partial output; it does not undo completed changes or process effects.
 
-| Shortcut    | Action                       |
-| ----------- | ---------------------------- |
-| Enter       | Send                         |
-| Shift+Enter | New line                     |
-| Shift+Tab   | Switch permission mode       |
-| Esc         | Interrupt the running task   |
-| 1 / 2       | Allow once / reject a prompt |
-| Cmd/Ctrl+K  | Commands                     |
-| Cmd/Ctrl+F  | Find in the conversation     |
-| Cmd/Ctrl+,  | Settings                     |
+| Shortcut       | Action                       |
+| -------------- | ---------------------------- |
+| Enter          | Send                         |
+| Shift+Enter    | New line                     |
+| Shift+Tab      | Switch permission mode       |
+| Esc            | Interrupt the running task   |
+| 1 / 2          | Allow once / reject a prompt |
+| Cmd/Ctrl+Alt+K | Open Kova                    |
+| Cmd/Ctrl+K     | Commands                     |
+| Cmd/Ctrl+F     | Find in the conversation     |
+| Cmd/Ctrl+,     | Settings                     |
 
 ## Privacy and trust
 

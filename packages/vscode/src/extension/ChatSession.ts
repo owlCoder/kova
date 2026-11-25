@@ -25,6 +25,7 @@ import type { WorkspaceSkillRepository } from '../../../runtime/src/skills/Works
 import type { WorkspaceProjectInstructions } from '../../../runtime/src/adapters/WorkspaceProjectInstructions.js';
 import { WebviewApprovalPort } from '../webview/WebviewApprovalPort.js';
 import { approvalView, projectEvent } from '../../../runtime/src/presentation/projectEvent.js';
+import { configuredContext } from './effectiveContext.js';
 import { ContextAttachmentManager } from './ContextAttachmentManager.js';
 import { projectConversationMessages } from '../../../runtime/src/presentation/projectConversationMessages.js';
 import { nextStreamingMessage } from '../../../runtime/src/presentation/nextStreamingMessage.js';
@@ -221,6 +222,10 @@ export class ChatSession {
       }
     }
   }
+  async attachFiles(uris: readonly vscode.Uri[]): Promise<void> {
+    await this.contextAttachments.add('PickFiles', uris);
+    await this.snapshot('explorer-context');
+  }
   async snapshot(requestId: string): Promise<void> {
     const conversationId = this.conversationId;
     const conversation = await this.repository.get(conversationId);
@@ -258,7 +263,9 @@ export class ChatSession {
         ? approvalView(this.approval.requestPending)
         : null,
       thinkingEnabled: activeRun?.thinkingEnabled ?? this.providers.thinkingEnabled(),
-      contextMaxTokens: activeRun?.contextMaxTokens ?? settings.get('context.maxTokens', 32768),
+      contextMaxTokens:
+        activeRun?.contextMaxTokens ??
+        configuredContext(settings, selected, this.providers.kind()).maxTokens,
     };
     this.events.flush();
     this.deliver({ ...this.envelope(), type: 'Snapshot', requestId, snapshot });

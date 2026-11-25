@@ -8,7 +8,7 @@ The defaults are 32,768 context tokens, 4,096 reserved output tokens and a 10% s
 
 ```json
 {
-  "kova.context.maxTokens": 32768,
+  "kova.context.maxTokens": 200000,
   "kova.context.reservedOutputTokens": 4096,
   "kova.context.safetyMarginRatio": 0.1,
   "kova.ollama.think": true
