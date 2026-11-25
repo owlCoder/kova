@@ -1,5 +1,5 @@
 import { useI18n } from '../i18n/I18n.js';
-import { useLayoutEffect, useRef, type RefObject } from 'react';
+import { useLayoutEffect, type RefObject } from 'react';
 import type { AgentMode } from '../../../packages/protocol/src/AgentMode.js';
 import type { SessionSnapshot } from '../../../packages/protocol/src/SessionSnapshot.js';
 import { inHost, send } from '../messaging/bridge.js';
@@ -10,6 +10,8 @@ import { ContextAttachments } from './ContextAttachments.js';
 import { ContextMeter } from './ContextMeter.js';
 import { ModeMenu, modeOrder } from './ModeMenu.js';
 import { ProviderBanner } from './ProviderBanner.js';
+import { usePopover } from './usePopover.js';
+import { menuKeydown } from './menuKeydown.js';
 
 type Props = {
   snapshot: SessionSnapshot | null;
@@ -49,7 +51,7 @@ export function ChatFooter({
   onPreviewContext,
 }: Props) {
   const { t } = useI18n();
-  const contextMenu = useRef<HTMLDetailsElement>(null);
+  const attachMenu = usePopover({ disabled: busy, minimumWidth: 190 });
   useLayoutEffect(() => {
     const resize = () => {
       const field = inputRef.current;
@@ -63,7 +65,7 @@ export function ChatFooter({
   }, [prompt, inputRef, snapshot?.textSize]);
   const attach = (source: 'Selection' | 'CurrentFile' | 'PickFiles') => {
     send({ type: 'AddContext', source });
-    if (contextMenu.current) contextMenu.current.open = false;
+    attachMenu.hide();
   };
   const nextMode = () => modeOrder[(modeOrder.indexOf(mode) + 1) % modeOrder.length]!;
   const disabled = !inHost || !snapshot || snapshot.configuringProvider;
@@ -114,11 +116,31 @@ export function ChatFooter({
         <div className="composer-bar">
           <div className="composer-tools">
             <ModeMenu mode={mode} disabled={busy} onChange={onModeChange} />
-            <details className="attach-menu" ref={contextMenu}>
-              <summary title={t('Add context')} aria-label={t('Add context')}>
+            <div className="attach-menu" ref={attachMenu.root}>
+              <button
+                ref={(node) => {
+                  attachMenu.trigger.current = node;
+                }}
+                type="button"
+                className="icon-button"
+                disabled={busy}
+                title={t('Add context')}
+                aria-label={t('Add context')}
+                aria-haspopup="menu"
+                aria-expanded={attachMenu.open}
+                onClick={() => (attachMenu.open ? attachMenu.hide() : attachMenu.show())}
+              >
                 <Icon name="paperclip" size={14} />
-              </summary>
-              <div className="floating-menu">
+              </button>
+              <div
+                ref={attachMenu.panel}
+                popover="auto"
+                role="menu"
+                aria-label={t('Add context')}
+                className="floating-menu"
+                style={attachMenu.position}
+                onKeyDown={(event) => menuKeydown(event, () => attachMenu.hide(true))}
+              >
                 <button disabled={busy} onClick={() => attach('Selection')}>
                   <Icon name="code" size={14} />
                   {t('Selection')}
@@ -132,7 +154,7 @@ export function ChatFooter({
                   {t('Choose files…')}
                 </button>
               </div>
-            </details>
+            </div>
             <PromptMenu
               messages={snapshot?.messages}
               disabled={disabled}

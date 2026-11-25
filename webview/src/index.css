@@ -521,24 +521,6 @@ kbd {
   gap: 7px;
   min-width: 0;
 }
-.attach-menu {
-  position: relative;
-}
-.attach-menu > summary {
-  list-style: none;
-  width: 27px;
-  height: 27px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-  color: var(--muted);
-}
-.attach-menu > summary:hover {
-  color: var(--text);
-  background: var(--hover);
-}
 .floating-menu {
   position: absolute;
   bottom: 37px;

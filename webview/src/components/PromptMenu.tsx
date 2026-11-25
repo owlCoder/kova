@@ -6,7 +6,7 @@ import { usePromptLibrary } from '../state/usePromptLibrary.js';
 import { Icon } from './Icon.js';
 import { menuKeydown } from './menuKeydown.js';
 import { promptTemplates } from './promptTemplates.js';
-import { useModelPopover } from './useModelPopover.js';
+import { usePopover } from './usePopover.js';
 
 type Item = {
   id: string;
@@ -34,7 +34,7 @@ export function PromptMenu({
 }) {
   const { t } = useI18n();
   const id = useId();
-  const menu = useModelPopover(true, disabled, 340);
+  const menu = usePopover({ disabled, minimumWidth: 340 });
   return (
     <div className="prompt-picker" ref={menu.root}>
       <button

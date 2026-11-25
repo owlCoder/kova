@@ -3,7 +3,7 @@ import type { ModelInfo } from '../../../packages/protocol/src/ModelInfo.js';
 import { useI18n } from '../i18n/I18n.js';
 import { Icon } from './Icon.js';
 import { modelChoices } from './modelChoices.js';
-import { useModelPopover } from './useModelPopover.js';
+import { usePopover } from './usePopover.js';
 
 export const ModelPicker = memo(function ModelPicker({
   models,
@@ -28,7 +28,7 @@ export const ModelPicker = memo(function ModelPicker({
   const popupId = `${uid}-popup`;
   const [query, setQuery] = useState('');
   const [active, setActive] = useState(0);
-  const popover = useModelPopover(allowCustom, busy);
+  const popover = usePopover({ disabled: busy, focusSearch: !allowCustom });
   const { items, more } = useMemo(() => modelChoices(models, model, query), [models, model, query]);
   const index = Math.min(active, items.length - 1);
   const selected = models?.find((item) => item.id === model);

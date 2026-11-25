@@ -91,7 +91,8 @@ function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
     !snapshot.activeRunId &&
     (setupOpen || (!snapshot.setupCompleted && !setupDismissed)),
   );
-  const title = conversationTitle(snapshot?.messages ?? []) ?? t('New conversation');
+  // A fresh conversation has no title yet; the header shows just the mark.
+  const title = conversationTitle(snapshot?.messages ?? []);
   const dialogOpen = paletteOpen || Boolean(context.preview) || Boolean(library);
   useLayoutEffect(() => {
     nearBottom.current = true;

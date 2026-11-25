@@ -1,9 +1,11 @@
 import type { SessionSnapshot } from '../../../packages/protocol/src/SessionSnapshot.js';
 import { useI18n } from '../i18n/I18n.js';
+import { usePopover } from './usePopover.js';
 
 /** Small ring showing how full the context window is, with a breakdown on open. */
 export function ContextMeter({ snapshot }: { snapshot: SessionSnapshot | null }) {
   const { t } = useI18n();
+  const menu = usePopover({ minimumWidth: 240, align: 'end' });
   const usage = snapshot?.usage;
   const used = usage
     ? (usage.actualInputTokens ?? usage.estimatedInputTokens) + (usage.actualOutputTokens ?? 0)
@@ -13,10 +15,18 @@ export function ContextMeter({ snapshot }: { snapshot: SessionSnapshot | null })
   const circumference = 2 * Math.PI * 6;
   const level = ratio > 0.9 ? 'full' : ratio > 0.7 ? 'high' : 'ok';
   return (
-    <details className={`context context-${level}`}>
-      <summary
+    <div className={`context context-${level}`} ref={menu.root}>
+      <button
+        ref={(node) => {
+          menu.trigger.current = node;
+        }}
+        type="button"
+        className="context-trigger"
         title={t('Context usage')}
         aria-label={`${t('Context usage')}: ${Math.round(ratio * 100)}%`}
+        aria-haspopup="dialog"
+        aria-expanded={menu.open}
+        onClick={() => (menu.open ? menu.hide() : menu.show())}
       >
         <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
           <circle cx="8" cy="8" r="6" className="ring-track" />
@@ -30,8 +40,15 @@ export function ContextMeter({ snapshot }: { snapshot: SessionSnapshot | null })
           />
         </svg>
         <span>{Math.round(ratio * 100)}%</span>
-      </summary>
-      <div className="context-details">
+      </button>
+      <div
+        ref={menu.panel}
+        popover="auto"
+        role="dialog"
+        aria-label={t('Context window')}
+        className="context-details"
+        style={menu.position}
+      >
         <strong>{t('Context window')}</strong>
         <progress value={Math.min(used, max)} max={max} />
         <span>
@@ -53,6 +70,6 @@ export function ContextMeter({ snapshot }: { snapshot: SessionSnapshot | null })
           <b>{usage?.toolDefinitionTokens ?? 0}</b>
         </span>
       </div>
-    </details>
+    </div>
   );
 }

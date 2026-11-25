@@ -15,7 +15,7 @@ export function WorkspaceHeader({
   onPreferences,
   onFind,
 }: {
-  title: string;
+  title: string | null;
   busy: boolean;
   conversationId: string | undefined;
   hasMessages: boolean;
@@ -29,9 +29,11 @@ export function WorkspaceHeader({
     <header className="workspace-header">
       <div className="workspace-breadcrumb">
         <BrandMark />
-        <span className="header-title" title={title}>
-          {title}
-        </span>
+        {title && (
+          <span className="header-title" title={title}>
+            {title}
+          </span>
+        )}
       </div>
       <div className="header-actions">
         <button

@@ -3,7 +3,7 @@ import type { AgentMode } from '../../../packages/protocol/src/AgentMode.js';
 import { useI18n } from '../i18n/I18n.js';
 import { Icon } from './Icon.js';
 import { menuKeydown } from './menuKeydown.js';
-import { useModelPopover } from './useModelPopover.js';
+import { usePopover } from './usePopover.js';
 
 /** Menu order; Shift+Tab in the composer walks the same order. */
 export const modeOrder: readonly AgentMode[] = ['Manual', 'Edit', 'Plan', 'Auto'];
@@ -34,7 +34,7 @@ export function ModeMenu({
 }) {
   const { t } = useI18n();
   const id = useId();
-  const menu = useModelPopover(true, disabled, 300);
+  const menu = usePopover({ disabled, minimumWidth: 300 });
   useEffect(() => {
     if (menu.open)
       menu.panel.current?.querySelector<HTMLButtonElement>('[aria-checked="true"]')?.focus();

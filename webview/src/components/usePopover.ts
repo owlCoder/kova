@@ -1,7 +1,24 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 
-/** Native light-dismiss behavior, with viewport placement and focus scoped to the control. */
-export function useModelPopover(allowCustom: boolean, disabled: boolean, minimumWidth = 340) {
+export type PopoverOptions = {
+  disabled?: boolean;
+  minimumWidth?: number;
+  /** 'end' right-aligns the panel with the trigger (context meter). */
+  align?: 'start' | 'end';
+  focusSearch?: boolean;
+};
+
+/**
+ * Native light-dismiss popover: clicking empty space closes it, Escape closes
+ * it, and opening one closes the others (only one auto popover in the top
+ * layer). Upward placement floats the panel above the whole composer.
+ */
+export function usePopover({
+  disabled = false,
+  minimumWidth = 340,
+  align = 'start',
+  focusSearch = false,
+}: PopoverOptions = {}) {
   const root = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement | HTMLInputElement>(null);
   const panel = useRef<HTMLDivElement>(null);
@@ -22,9 +39,10 @@ export function useModelPopover(allowCustom: boolean, disabled: boolean, minimum
     const below = window.innerHeight - rect.bottom - 16;
     const upward = below < 260 && above > below;
     const width = Math.min(Math.max(rect.width, minimumWidth), window.innerWidth - 24);
+    const rawLeft = align === 'end' ? rect.right - width : rect.left;
     setPosition({
       width,
-      left: Math.max(12, Math.min(rect.left, window.innerWidth - width - 12)),
+      left: Math.max(12, Math.min(rawLeft, window.innerWidth - width - 12)),
       top: upward ? 'auto' : rect.bottom + 8,
       bottom: upward ? window.innerHeight - anchorRect.top + 8 : 'auto',
       maxHeight: Math.min(380, Math.max(100, upward ? above : below)),
@@ -47,7 +65,7 @@ export function useModelPopover(allowCustom: boolean, disabled: boolean, minimum
       const shown = Boolean(popup?.matches(':popover-open'));
       setOpen(shown);
       cancelAnimationFrame(frame);
-      if (shown && !allowCustom) frame = requestAnimationFrame(() => search.current?.focus());
+      if (shown && focusSearch) frame = requestAnimationFrame(() => search.current?.focus());
     };
     const blur = (event: FocusEvent) => {
       if (event.target instanceof Node && !root.current?.contains(event.target)) hide();
@@ -59,7 +77,7 @@ export function useModelPopover(allowCustom: boolean, disabled: boolean, minimum
       popup?.removeEventListener('toggle', toggle);
       document.removeEventListener('focusin', blur);
     };
-  }, [allowCustom]);
+  }, [focusSearch]);
   useEffect(() => {
     if (disabled) hide();
   }, [disabled]);
