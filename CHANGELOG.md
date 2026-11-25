@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.10.1
+## 1.26.11
 
 - Open Kova as an editor tab beside the current file by default, like other agent tabs, so the Explorer stays free. **Kova: Open Chat** (Cmd+Alt+K / Ctrl+Alt+K) and a Kova button in the editor title bar open it; `kova.chat.openIn` switches back to the Activity Bar sidebar, or run **Kova: Open Chat in Sidebar**, which switches that setting.
 - The Activity Bar icon now shows a small launcher (connection, actions, shortcuts) and opens the conversation as an editor tab. The editor tab uses a centered layout: title in the middle, a minimal empty state, a narrow reading column and a framed composer with a model chip and accent send button.
