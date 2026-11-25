@@ -108,7 +108,7 @@ input[type='checkbox']:disabled {
   padding: 0;
   color: var(--text);
   background: var(--elevated);
-  border: 1px solid var(--border);
+  border: 0;
   border-radius: var(--radius-panel);
   box-shadow: var(--shadow-float);
   overflow: hidden;

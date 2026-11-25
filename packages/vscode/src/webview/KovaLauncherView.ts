@@ -111,7 +111,7 @@ dt{color:var(--muted)}dd{margin:0;text-align:right;overflow:hidden;text-overflow
 ul{margin:0;padding:8px 12px;list-style:none;display:grid;gap:7px;color:var(--muted)}
 kbd{display:inline-block;min-width:18px;padding:0 5px;border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;font-family:var(--vscode-editor-font-family);font-size:10.5px;text-align:center;color:var(--vscode-foreground)}
 /* Popup card shared by the right-click menu and the shortcuts popover. */
-.pop{position:fixed;z-index:60;display:grid;gap:1px;min-width:170px;padding:5px;border:1px solid var(--vscode-editorWidget-border,var(--line));border-radius:10px;background:var(--vscode-quickInput-background,var(--vscode-editorWidget-background,#202020));box-shadow:0 12px 32px rgb(0 0 0 / .38),0 2px 6px rgb(0 0 0 / .24)}
+.pop{position:fixed;z-index:60;display:grid;gap:1px;min-width:170px;padding:5px;border:0;border-radius:10px;background:var(--vscode-quickInput-background,var(--vscode-editorWidget-background,#202020));box-shadow:0 12px 32px rgb(0 0 0 / .38),0 2px 6px rgb(0 0 0 / .24)}
 .pop[hidden]{display:none}
 .pop button{display:flex;align-items:center;gap:9px;width:100%;padding:7px 10px;border:0;border-radius:6px;background:transparent;color:inherit;font:inherit;font-size:12.5px;text-align:left;cursor:pointer}
 .pop button:hover,.pop button:focus-visible{outline:none;background:var(--vscode-list-hoverBackground,rgb(255 255 255 / .06))}

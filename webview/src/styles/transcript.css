@@ -574,7 +574,7 @@ details.timeline-note > summary {
   max-height: 280px;
   overflow: auto;
   padding: 5px;
-  border: 1px solid var(--vscode-editorWidget-border, var(--line));
+  border: 0;
   border-radius: 10px;
   background: var(--vscode-quickInput-background, var(--vscode-editorWidget-background, #202020));
   box-shadow:
@@ -775,7 +775,7 @@ details.timeline-note > summary {
   gap: 5px;
   width: 210px;
   padding: 10px;
-  border: 1px solid var(--line);
+  border: 0;
   border-radius: 7px;
   background: var(--vscode-editorWidget-background, #202020);
   box-shadow: var(--shadow-float);
@@ -1033,7 +1033,7 @@ body.editor .extension-frame .chat-footer {
 .extension-frame .context-details {
   margin: 0;
   padding: 5px;
-  border: 1px solid var(--vscode-editorWidget-border, var(--line));
+  border: 0;
   border-radius: 10px;
   background: var(--vscode-quickInput-background, var(--vscode-editorWidget-background, #202020));
   color: var(--vscode-foreground);

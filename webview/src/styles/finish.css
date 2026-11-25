@@ -24,7 +24,7 @@
   position: fixed;
   margin: 0;
   padding: 5px;
-  border: 1px solid var(--border);
+  border: 0;
   border-radius: var(--radius-panel);
   background: var(--elevated);
   color: var(--text);
