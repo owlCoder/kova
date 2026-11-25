@@ -10,7 +10,8 @@
   border: 1px solid var(--border);
   border-radius: 6px;
   background: var(--panel);
-  box-shadow: var(--shadow-dialog);
+  /* Subtle shadow only: the shared --shadow-dialog halo reads as a dark ring on dark themes. */
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.35);
   overflow: auto;
   overscroll-behavior: contain;
   font-size: calc(13px * var(--text-scale, 1));
