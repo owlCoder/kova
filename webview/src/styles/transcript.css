@@ -889,7 +889,9 @@ body.editor .extension-frame .welcome .welcome-note {
   display: none;
 }
 body.editor .extension-frame .welcome p {
-  max-width: 340px;
+  max-width: 420px;
+  font-size: calc(14px * var(--text-scale, 1));
+  line-height: 1.55;
 }
 body.editor .extension-frame .chat-footer {
   max-width: 680px;
@@ -1020,7 +1022,8 @@ body.editor .extension-frame .chat-footer {
 
 body.editor .extension-frame .welcome h1 {
   margin-top: 18px;
-  font-size: calc(17px * var(--text-scale, 1));
+  font-size: calc(21px * var(--text-scale, 1));
+  letter-spacing: -0.02em;
 }
 body.editor .extension-frame .composer textarea {
   min-height: 26px;
