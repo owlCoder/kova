@@ -201,7 +201,10 @@ export function applyTimelineEvent(
         ? bound([...entries, note(sequence, anchor, 'Output token limit reached', '', 'warning')])
         : entries;
     case 'ErrorOccurred':
-      return bound([...entries, note(sequence, anchor, event.code, event.message, 'error')]);
+      // Provider connection problems are shown in the composer banner instead.
+      return event.code === 'ProviderUnavailable'
+        ? entries
+        : bound([...entries, note(sequence, anchor, event.code, event.message, 'error')]);
     default:
       return entries;
   }

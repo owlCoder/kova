@@ -22,6 +22,7 @@ export function useChat() {
   const [runStartedAt, setRunStartedAt] = useState<number | null>(null);
   const [thinking, setThinking] = useState<Record<string, string>>({});
   const [error, setError] = useState('');
+  const [providerIssue, setProviderIssue] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const serial = useRef({ session: '', sequence: 0 });
   const hostSelection = useRef<{ modelId: string; mode: AgentMode } | null>(null);
@@ -65,6 +66,7 @@ export function useChat() {
           retired.current.delete(retired.current.values().next().value!);
         active.current = data.snapshot.activeRunId;
         setSnapshot(data.snapshot);
+        if (data.snapshot.providerStatus === 'Available') setProviderIssue('');
         if (
           !hostSelection.current ||
           data.snapshot.activeRunId ||
@@ -139,6 +141,8 @@ export function useChat() {
           }));
         }
         const event = data.event;
+        if (event.type === 'ErrorOccurred' && event.code === 'ProviderUnavailable')
+          setProviderIssue(event.message);
         const anchor = messageCount.current;
         const sequence = data.sequence;
         setTimeline((previous) => applyTimelineEvent(previous, event, anchor, sequence));
@@ -189,6 +193,7 @@ export function useChat() {
     runStartedAt,
     thinking,
     error,
+    providerIssue,
     dismissError: () => setError(''),
     busy,
     submit,

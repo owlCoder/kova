@@ -76,8 +76,13 @@ describe('transcript timeline', () => {
       { type: 'ToolCompleted', callId: 'c1', result: result('Error', '', 'Not found') },
       { type: 'GuardrailEvaluated', callId: 'c1', decision: { action: 'Allow', reasons: [] } },
       { type: 'ProjectInstructionsLoaded', relativePath: 'AGENTS.md' },
-      { type: 'ErrorOccurred', code: 'ProviderUnavailable', message: 'down', recoverable: true },
+      { type: 'ErrorOccurred', code: 'ProviderUnavailable', message: 'offline', recoverable: true },
+      { type: 'ErrorOccurred', code: 'StreamFailed', message: 'down', recoverable: true },
     ] as PresentationEvent[]);
+    // Connection problems belong to the composer banner, not the transcript.
+    expect(entries.some((entry) => entry.kind === 'note' && entry.detail === 'offline')).toBe(
+      false,
+    );
     expect(entries.map((entry) => entry.kind)).toEqual(['tool', 'note', 'note']);
     expect(entries[0]).toMatchObject({ status: 'Error', detail: 'Not found' });
     expect(entries[2]).toMatchObject({ tone: 'error', detail: 'down' });

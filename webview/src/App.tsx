@@ -239,6 +239,7 @@ function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
               snapshot={snapshot}
               busy={busy}
               error={chat.error}
+              providerIssue={chat.providerIssue}
               prompt={chat.prompt}
               model={chat.model}
               mode={chat.mode}
@@ -249,6 +250,7 @@ function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
               onModelChange={chat.setModel}
               onModeChange={chat.setMode}
               onOpenLibrary={() => openLibrary()}
+              onInsertPrompt={insertPrompt}
               onPreviewContext={context.open}
             />
           )}

@@ -471,4 +471,15 @@ export const sr: Readonly<Record<string, string>> = {
   Destructive: 'Destruktivno',
   Modes: 'Režimi',
   'to switch': 'za promenu',
+  Prompts: 'Promptovi',
+  'Manage…': 'Upravljaj…',
+  'Search prompts…': 'Pretraži promptove…',
+  'No matching prompts.': 'Nema odgovarajućih promptova.',
+  'Kova can’t reach {provider}': 'Kova ne može da dođe do {provider}',
+  'The selected model is not offered by this provider.':
+    'Izabrani model nije dostupan kod ovog provajdera.',
+  'Check the endpoint and API key, then try again.':
+    'Proverite adresu i API ključ, pa pokušajte ponovo.',
+  Retry: 'Pokušaj ponovo',
+  'Set up provider': 'Podesi provajdera',
 };

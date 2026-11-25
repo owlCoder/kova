@@ -5,15 +5,17 @@ import type { SessionSnapshot } from '../../../packages/protocol/src/SessionSnap
 import { inHost, send } from '../messaging/bridge.js';
 import { Icon } from './Icon.js';
 import { ModelPicker } from './ModelPicker.js';
-import { PromptPicker } from './PromptPicker.js';
+import { PromptMenu } from './PromptMenu.js';
 import { ContextAttachments } from './ContextAttachments.js';
 import { ContextMeter } from './ContextMeter.js';
 import { ModeMenu, modeOrder } from './ModeMenu.js';
+import { ProviderBanner } from './ProviderBanner.js';
 
 type Props = {
   snapshot: SessionSnapshot | null;
   busy: boolean;
   error: string;
+  providerIssue: string;
   prompt: string;
   model: string;
   mode: AgentMode;
@@ -24,6 +26,7 @@ type Props = {
   onModelChange(value: string): void;
   onModeChange(value: AgentMode): void;
   onOpenLibrary(): void;
+  onInsertPrompt(text: string): void;
   onPreviewContext(id: string): void;
 };
 
@@ -31,6 +34,7 @@ export function ChatFooter({
   snapshot,
   busy,
   error,
+  providerIssue,
   prompt,
   model,
   mode,
@@ -41,6 +45,7 @@ export function ChatFooter({
   onModelChange,
   onModeChange,
   onOpenLibrary,
+  onInsertPrompt,
   onPreviewContext,
 }: Props) {
   const { t } = useI18n();
@@ -74,18 +79,7 @@ export function ChatFooter({
         </div>
       )}
       {snapshot && snapshot.providerStatus !== 'Available' && (
-        <div className="connection">
-          <span className="status-dot" />
-          <span>
-            {snapshot.providerStatus === 'ModelMissing'
-              ? t('Choose an available model')
-              : t('Connect an AI provider to get started')}
-          </span>
-          <button disabled={busy} onClick={() => send({ type: 'OpenProviderSetup' })}>
-            {t('Connect')}
-            <Icon name="arrow" size={13} />
-          </button>
-        </div>
+        <ProviderBanner snapshot={snapshot} issue={providerIssue} busy={busy} />
       )}
       <div className={`composer ${busy ? 'busy' : ''} mode-${mode.toLowerCase()}`}>
         <ContextAttachments
@@ -139,7 +133,12 @@ export function ChatFooter({
                 </button>
               </div>
             </details>
-            <PromptPicker disabled={disabled} onOpen={onOpenLibrary} />
+            <PromptMenu
+              messages={snapshot?.messages}
+              disabled={disabled}
+              onChoose={onInsertPrompt}
+              onManage={onOpenLibrary}
+            />
             {!!snapshot?.skills.length && (
               <select
                 className="skill-picker"
