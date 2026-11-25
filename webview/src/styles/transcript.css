@@ -857,9 +857,10 @@ body.editor .extension-frame .composer-send .model-trigger {
   border-radius: 5px;
   background: color-mix(in srgb, var(--vscode-foreground) 8%, transparent);
 }
-/* The empty page is centered in the stage above the composer. margin:auto
-   keeps the top reachable when the content is taller than the stage. */
-body.editor .extension-frame .conversation:has(> .welcome) {
+/* The empty page is centered in the stage above the composer. The
+   conversation-empty class (set by React, not :has) drives the flex stage;
+   margin:auto keeps the top reachable when the content is taller. */
+body.editor .extension-frame .conversation-empty {
   display: flex;
   flex-direction: column;
   overflow: auto;
@@ -1149,9 +1150,17 @@ body.editor .extension-frame .composer-bar {
   background: var(--brand);
   color: #1b1b1b;
 }
-/* Large Kova mark on the empty page. */
-body.editor .extension-frame .welcome-mark .kova-mark img,
-body.editor .extension-frame .welcome-mark .kova-mark {
+/* Large Kova mark on the empty page: the container itself is sized so the
+   image is never clipped by the smaller .kova-mark box. */
+body.editor .extension-frame .welcome-mark {
+  flex: none;
+  display: grid;
+  place-items: center;
   width: 128px;
   height: 128px;
+}
+body.editor .extension-frame .welcome-mark .kova-mark,
+body.editor .extension-frame .welcome-mark .kova-mark img {
+  width: 100%;
+  height: 100%;
 }

@@ -191,7 +191,7 @@ function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
           )}
           <div className="conversation-stage">
             <div
-              className="conversation"
+              className={`conversation${showSetup || snapshot?.messages.length ? '' : ' conversation-empty'}`}
               ref={scroller}
               onScroll={() => {
                 const view = scroller.current;
