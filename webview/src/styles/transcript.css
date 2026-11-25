@@ -570,8 +570,8 @@ details.timeline-note > summary {
   z-index: 30;
   display: grid;
   gap: 1px;
-  width: min(360px, calc(100% - 16px));
-  max-height: 264px;
+  width: min(380px, calc(100% - 16px));
+  max-height: 280px;
   overflow: auto;
   padding: 5px;
   border: 1px solid var(--vscode-editorWidget-border, var(--line));
@@ -586,7 +586,7 @@ details.timeline-note > summary {
   align-items: baseline;
   gap: 10px;
   width: 100%;
-  padding: 6px 9px;
+  padding: 7px 10px;
   border: 0;
   border-radius: 6px;
   background: transparent;

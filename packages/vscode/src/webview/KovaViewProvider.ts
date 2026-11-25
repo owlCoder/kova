@@ -75,6 +75,10 @@ export class KovaViewProvider implements vscode.WebviewViewProvider, vscode.Disp
               void this.openHistory(id);
               return;
             }
+            if (action === 'history-delete' && id) {
+              void this.deleteHistory(id);
+              return;
+            }
             const command = {
               open: 'kova.openInEditor',
               new: 'kova.newConversation',
@@ -104,6 +108,21 @@ export class KovaViewProvider implements vscode.WebviewViewProvider, vscode.Disp
     } catch (error) {
       await vscode.window.showErrorMessage(
         error instanceof Error ? error.message : 'Could not open the conversation.',
+      );
+    }
+  }
+  /** Deletes a stored conversation; the active one is replaced by a fresh chat. */
+  private async deleteHistory(id: string): Promise<void> {
+    try {
+      await this.conversations.remove(id);
+      if (id === this.session.currentConversationId()) {
+        await this.session.newConversation();
+        await this.session.snapshot('deleted-active');
+      }
+      await this.render();
+    } catch (error) {
+      await vscode.window.showErrorMessage(
+        error instanceof Error ? error.message : 'Could not delete the conversation.',
       );
     }
   }
