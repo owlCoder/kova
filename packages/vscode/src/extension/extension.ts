@@ -91,7 +91,6 @@ export function activate(context: vscode.ExtensionContext) {
       await session?.newConversation();
       await session?.snapshot('new-chat');
       await vscode.commands.executeCommand('kova.open');
-      void sidebar.render();
     }),
     vscode.commands.registerCommand('kova.settings', async () => {
       // Open the chat and let it show its own settings dialog.

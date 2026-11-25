@@ -13,12 +13,25 @@ export class KovaViewProvider implements vscode.WebviewViewProvider, vscode.Disp
   private view: vscode.WebviewView | null = null;
   private host: KovaWebviewHost | null = null;
   private listeners: vscode.Disposable[] = [];
+  private lastConversationId: string | null = null;
+  private readonly unsubscribeSession: () => void;
   constructor(
     private readonly context: vscode.ExtensionContext,
     private readonly session: ChatSession,
     private readonly openEditor: () => Promise<void>,
     private readonly conversations: WorkspaceConversationRepository,
-  ) {}
+  ) {
+    // Refresh the launcher history whenever the active conversation changes
+    // (new chat via /clear or the command, reopened history row).
+    this.unsubscribeSession = this.session.connect((message) => {
+      if (message.type !== 'Snapshot') return;
+      const id = message.snapshot.conversationId;
+      if (id !== this.lastConversationId) {
+        this.lastConversationId = id;
+        if (this.launcher) void this.render();
+      }
+    });
+  }
   private get launcher(): boolean {
     return (
       vscode.workspace.getConfiguration('kova').get<string>('chat.openIn', 'editor') !== 'sidebar'
@@ -103,6 +116,7 @@ export class KovaViewProvider implements vscode.WebviewViewProvider, vscode.Disp
     for (const listener of this.listeners.splice(0)) listener.dispose();
   }
   dispose(): void {
+    this.unsubscribeSession();
     this.release();
     this.view = null;
   }

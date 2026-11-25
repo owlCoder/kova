@@ -570,8 +570,8 @@ details.timeline-note > summary {
   z-index: 30;
   display: grid;
   gap: 1px;
-  width: min(340px, calc(100% - 16px));
-  max-height: 280px;
+  width: min(360px, calc(100% - 16px));
+  max-height: 264px;
   overflow: auto;
   padding: 5px;
   border: 1px solid var(--vscode-editorWidget-border, var(--line));
@@ -582,10 +582,11 @@ details.timeline-note > summary {
     0 2px 6px rgb(0 0 0 / 0.24);
 }
 .extension-frame .slash-menu button {
-  display: grid;
-  gap: 1px;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
   width: 100%;
-  padding: 7px 9px;
+  padding: 6px 9px;
   border: 0;
   border-radius: 6px;
   background: transparent;
@@ -595,22 +596,33 @@ details.timeline-note > summary {
   text-align: left;
   cursor: pointer;
 }
+.extension-frame .slash-menu button strong {
+  flex: none;
+  font-weight: 600;
+}
+.extension-frame .slash-menu button small {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+  font-size: 11.5px;
+}
 .extension-frame .slash-menu button:hover,
 .extension-frame .slash-menu button.active {
   outline: none;
   background: var(--vscode-list-hoverBackground, rgb(255 255 255 / 0.06));
 }
 .extension-frame .slash-menu button.active {
-  background: var(--vscode-list-activeSelectionBackground, #04395e);
-  color: var(--vscode-list-activeSelectionForeground, #fff);
+  background: color-mix(in srgb, var(--brand) 16%, transparent);
+}
+.extension-frame .slash-menu button.active strong {
+  color: var(--brand);
 }
 .extension-frame .slash-menu button.active small {
   color: inherit;
-  opacity: 0.8;
-}
-.extension-frame .slash-menu small {
-  color: var(--muted);
-  font-size: 11.5px;
+  opacity: 0.75;
 }
 .extension-frame .slash-menu .slash-empty {
   margin: 0;
