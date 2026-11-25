@@ -46,6 +46,34 @@ describe('host message validation and projection', () => {
       }),
     ).toThrow();
   });
+  it('validates UpdateSettings payloads: bounded keys and JSON scalar values', () => {
+    expect(
+      validateMessage({
+        protocolVersion: 1,
+        requestId: 'x',
+        type: 'UpdateSettings',
+        values: { 'ui.language': 'sr', 'context.maxTokens': 200000, 'ollama.think': true },
+      }).type,
+    ).toBe('UpdateSettings');
+    expect(
+      validateMessage({
+        protocolVersion: 1,
+        requestId: 'x',
+        type: 'UpdateSettings',
+        values: { 'commands.allow': ['git status', 'dotnet test'] },
+      }).type,
+    ).toBe('UpdateSettings');
+    for (const values of [
+      { 'bad key!': 'x' },
+      { 'ui.language': { nested: true } },
+      { 'commands.allow': ['ok', 42] },
+      { 'commands.allow': Array.from({ length: 51 }, () => 'cmd') },
+      Object.fromEntries(Array.from({ length: 33 }, (_, i) => [`k${i}.x`, 'v'])),
+    ])
+      expect(() =>
+        validateMessage({ protocolVersion: 1, requestId: 'x', type: 'UpdateSettings', values }),
+      ).toThrow();
+  });
   it('does not forward file-write content to activity summaries', () => {
     const event = projectEvent({
       type: 'ToolRequested',

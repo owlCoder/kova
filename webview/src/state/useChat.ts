@@ -23,6 +23,7 @@ export function useChat() {
   const [thinking, setThinking] = useState<Record<string, string>>({});
   const [error, setError] = useState('');
   const [providerIssue, setProviderIssue] = useState('');
+  const [settingsRequest, setSettingsRequest] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const serial = useRef({ session: '', sequence: 0 });
   const hostSelection = useRef<{ modelId: string; mode: AgentMode } | null>(null);
@@ -89,6 +90,9 @@ export function useChat() {
         )
           setError('');
         setSubmitting(false);
+      } else if (data.type === 'OpenSettings') {
+        // The launcher's settings action: open the in-chat settings dialog.
+        setSettingsRequest((count) => count + 1);
       } else if (data.type === 'Rejected') {
         if (pendingSubmit.current?.id === data.requestId) {
           if (pendingSubmit.current.conversationId === currentConversation.current && !getPrompt())
@@ -194,6 +198,7 @@ export function useChat() {
     thinking,
     error,
     providerIssue,
+    settingsRequest,
     dismissError: () => setError(''),
     busy,
     submit,

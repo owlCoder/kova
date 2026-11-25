@@ -9,7 +9,6 @@ export const presentationActions = new Set([
   'CopyText',
   'OpenExternal',
   'OpenProviderSetup',
-  'OpenSettings',
   'OpenSetupInstructions',
 ]);
 
@@ -69,12 +68,6 @@ export async function handlePresentationAction(
       return true;
     case 'OpenProviderSetup':
       await vscode.commands.executeCommand('kova.setup');
-      return true;
-    case 'OpenSettings':
-      await vscode.commands.executeCommand(
-        'workbench.action.openSettings',
-        `@ext:${context.extension.id}`,
-      );
       return true;
     case 'OpenSetupInstructions':
       await vscode.commands.executeCommand(

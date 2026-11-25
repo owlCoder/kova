@@ -28,6 +28,8 @@ export function validateMessage(raw: unknown): WebviewMessage {
     ResolveApproval: ['runId', 'approvalId', 'preparationKey', 'decision'],
     OpenDiffPreview: ['approvalId'],
     RetryProvider: [],
+    GetSettings: [],
+    UpdateSettings: ['values'],
     OpenSettings: [],
     OpenProviderSetup: [],
     CompleteSetup: [],
@@ -113,5 +115,26 @@ export function validateMessage(raw: unknown): WebviewMessage {
     throw new Error('Only HTTP(S) links can be opened.');
   if (value.type === 'CopyText' && (typeof value.text !== 'string' || value.text.length > 60_000))
     throw new Error('Text exceeds the clipboard limit. Select and copy a smaller section.');
+  if (value.type === 'UpdateSettings') {
+    const values = value.values;
+    const validValue = (entry: unknown): boolean =>
+      typeof entry === 'string' ||
+      typeof entry === 'number' ||
+      typeof entry === 'boolean' ||
+      (Array.isArray(entry) &&
+        entry.length <= 50 &&
+        entry.every((item) => typeof item === 'string' && item.length <= 200));
+    if (
+      !values ||
+      typeof values !== 'object' ||
+      Array.isArray(values) ||
+      Object.keys(values).length > 32 ||
+      Object.entries(values).some(
+        ([key, entry]) =>
+          !/^[a-z][a-z0-9]*(\.[a-z][a-zA-Z0-9]*){1,3}$/.test(key) || !validValue(entry),
+      )
+    )
+      throw new Error('Invalid settings payload.');
+  }
   return value as WebviewMessage;
 }

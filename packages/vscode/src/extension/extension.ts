@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { randomUUID } from 'node:crypto';
 import { ProviderApiKeyStore } from '../providers/ProviderApiKeyStore.js';
 import { ProviderManager } from '../providers/ProviderManager.js';
 import { ProviderSetupWizard } from '../providers/ProviderSetupWizard.js';
@@ -89,12 +90,18 @@ export function activate(context: vscode.ExtensionContext) {
       await session?.snapshot('new-chat');
       await vscode.commands.executeCommand('kova.open');
     }),
-    vscode.commands.registerCommand('kova.settings', () =>
-      vscode.commands.executeCommand(
-        'workbench.action.openSettings',
-        `@ext:${context.extension.id}`,
-      ),
-    ),
+    vscode.commands.registerCommand('kova.settings', async () => {
+      // Open the chat and let it show its own settings dialog.
+      await vscode.commands.executeCommand('kova.open');
+      if (session)
+        await session
+          .handle({
+            protocolVersion: 1,
+            requestId: randomUUID(),
+            type: 'OpenSettings',
+          })
+          .catch(() => {});
+    }),
     vscode.commands.registerCommand('kova.setProviderApiKey', () =>
       configure(() => editProviderCredential(providers, apiKeys, false)),
     ),

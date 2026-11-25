@@ -22,6 +22,12 @@ const PromptLibraryDialog = lazy(() =>
   })),
 );
 
+const SettingsDialog = lazy(() =>
+  import('./components/SettingsDialog.js').then((module) => ({
+    default: module.SettingsDialog,
+  })),
+);
+
 export function App() {
   const chat = useChat();
   return (
@@ -53,6 +59,10 @@ function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
   const [setupOpen, setSetupOpen] = useState(false);
   const [setupDismissed, setSetupDismissed] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  useEffect(() => {
+    if (chat.settingsRequest > 0) setSettingsOpen(true);
+  }, [chat.settingsRequest]);
   const { library, open: openLibrary, close: closeLibrary } = usePromptWorkbench(paletteOpen);
   const context = useContextPreview(snapshot, paletteOpen || Boolean(library));
   const [findOpen, setFindOpen] = useState(false);
@@ -93,7 +103,7 @@ function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
   );
   // A fresh conversation has no title yet; the header shows just the mark.
   const title = conversationTitle(snapshot?.messages ?? []);
-  const dialogOpen = paletteOpen || Boolean(context.preview) || Boolean(library);
+  const dialogOpen = paletteOpen || settingsOpen || Boolean(context.preview) || Boolean(library);
   useLayoutEffect(() => {
     nearBottom.current = true;
     setShowLatest(false);
@@ -131,7 +141,7 @@ function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
         openFind();
       } else if (!paletteOpen && event.key === ',') {
         event.preventDefault();
-        send({ type: 'OpenSettings' });
+        setSettingsOpen(true);
       }
     };
     window.addEventListener('keydown', keyboard);
@@ -165,7 +175,7 @@ function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
               if (scroller.current) scroller.current.scrollTop = 0;
             }}
             onPalette={() => setPaletteOpen(true)}
-            onPreferences={() => send({ type: 'OpenSettings' })}
+            onPreferences={() => setSettingsOpen(true)}
             onFind={openFind}
           />
           {findOpen && !showSetup && (
@@ -287,7 +297,19 @@ function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
           onClose={() => setPaletteOpen(false)}
           onFind={openFind}
           onLibrary={() => openLibrary()}
+          onSettings={() => setSettingsOpen(true)}
         />
+      )}
+      {settingsOpen && (
+        <Suspense
+          fallback={
+            <div className="settings-loading" role="status">
+              {t('Loading settings…')}
+            </div>
+          }
+        >
+          <SettingsDialog onClose={() => setSettingsOpen(false)} />
+        </Suspense>
       )}
       {notice && (
         <div className="toast" role="status">

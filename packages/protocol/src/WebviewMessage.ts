@@ -1,4 +1,5 @@
 import type { AgentMode } from './AgentMode.js';
+import type { KovaSettingsView } from './KovaSettingsView.js';
 import type { PromptLibraryMessage } from './PromptLibrary.js';
 
 /** Untrusted UI intents; host validates shape, limits, IDs and current workspace/run. */
@@ -41,6 +42,8 @@ export type WebviewMessage = {
     }
   | { readonly type: 'OpenDiffPreview'; readonly approvalId: string }
   | { readonly type: 'RetryProvider' }
+  | { readonly type: 'GetSettings' }
+  | { readonly type: 'UpdateSettings'; readonly values: KovaSettingsView }
   | { readonly type: 'OpenSettings' }
   | { readonly type: 'OpenProviderSetup' }
   | { readonly type: 'CompleteSetup' }

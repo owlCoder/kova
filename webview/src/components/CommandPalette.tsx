@@ -12,12 +12,14 @@ export function CommandPalette({
   onClose,
   onFind,
   onLibrary,
+  onSettings,
 }: {
   snapshot: SessionSnapshot | null;
   busy: boolean;
   onClose(): void;
   onFind(): void;
   onLibrary(): void;
+  onSettings(): void;
 }) {
   const { t } = useI18n();
   const [query, setQuery] = useState('');
@@ -75,11 +77,11 @@ export function CommandPalette({
     },
     {
       id: 'settings',
-      label: t('Open settings'),
+      label: t('Kova settings'),
       icon: 'settings' as const,
       shortcut: `${mod} ,`,
       disabled: false,
-      run: () => send({ type: 'OpenSettings' }),
+      run: onSettings,
     },
     ...(snapshot?.activeRunId
       ? [

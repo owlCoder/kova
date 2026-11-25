@@ -1,6 +1,7 @@
 import type { PresentationEvent } from './PresentationEvent.js';
 import type { SessionSnapshot } from './SessionSnapshot.js';
 import type { ContextPreview } from './ContextAttachmentView.js';
+import type { KovaSettingsView } from './KovaSettingsView.js';
 import type { PromptLibrary } from './PromptLibrary.js';
 
 export type HostMessage = {
@@ -10,6 +11,8 @@ export type HostMessage = {
   readonly workspaceId: string | null;
 } & (
   | { readonly type: 'PromptLibrary'; readonly requestId: string; readonly library: PromptLibrary }
+  | { readonly type: 'Settings'; readonly requestId: string; readonly settings: KovaSettingsView }
+  | { readonly type: 'OpenSettings' }
   | { readonly type: 'ClipboardCopied'; readonly requestId: string }
   | {
       readonly type: 'ContextPreview';
