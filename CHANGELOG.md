@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.28.3
+
+- Remove the last popup border (context meter popover); all floating surfaces are now border-free with a soft shadow (high-contrast themes keep their contrast border).
+- Note: the default context budget is already 200,000 tokens (`kova.context.maxTokens`); the meter shows the selected model's reported window as the cap, which lifts automatically with a larger model/provider.
+
 ## 1.28.2
 
 - Fix `PinnedContextExceedsBudget` failures on small model windows: the pinned system prompt (instructions + AGENTS.md + skill) is capped at 25% of the context window with a truncation marker, and if tool schemas still do not fit, the run drops tool definitions (recorded as a `Disabled` eviction) and answers without tools instead of failing.
