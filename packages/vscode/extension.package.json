@@ -94,6 +94,10 @@
       {
         "command": "kova.addToContext",
         "title": "Add to Kova Context"
+      },
+      {
+        "command": "kova.inlineEdit",
+        "title": "Kova: Inline Edit Selection"
       }
     ],
     "configuration": {
@@ -281,6 +285,13 @@
           "command": "kova.addToContext",
           "group": "kova@1",
           "when": "resourceScheme == file"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "kova.inlineEdit",
+          "group": "kova@1",
+          "when": "editorHasSelection && resourceScheme == file"
         }
       ],
       "commandPalette": [
