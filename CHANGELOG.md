@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.28.0
+
+- Add prompt placeholders: `{selection}` and `{file}` in a prompt expand from the active editor at submit time.
+- Add **Import conversation**: `/import` or the command palette loads an exported conversation Markdown file back as the active conversation.
+- Show an estimated cost line in the context meter when `kova.cost.inputPerMillion` / `kova.cost.outputPerMillion` are set.
+- Add `kova.testing.command`: when set, the agent runs it once per round through the normal command/approval pipeline after a round that successfully wrote files.
+- Add voice input to the composer (Web Speech API): a microphone button appends recognized speech to the draft in sr-RS / de-DE / en-US based on the UI language, and hides itself where the API is missing.
+- Add keyboard transcript navigation: ↑/↓ move between messages, E edits the last user message into the composer, R resends it (listed in the launcher shortcuts popover).
+- File-change approvals now show a capped side-by-side before/after diff inline (LCS line diff, 200 lines / 12k chars per file, truncation noted); the full diff still opens in the editor.
+- Every run automatically creates a `git stash create` checkpoint; **Revert run changes** keeps precise per-file restore and falls back to `git stash apply` when needed. The revert bar shows when a checkpoint exists.
+- Multi-root workspaces get a folder picker in the chat header (`SetWorkspaceRoot`), applied through the existing queued root-switching path.
+- Add the **Kova: Inline Edit Selection** command (editor context menu, command palette): attaches the selection, prefills the composer and opens the chat.
+- Add read-only `web_search` (DuckDuckGo HTML, no API key) and `web_fetch` (http(s) only, 200 KB cap, HTML-to-text) tools.
+
 ## 1.27.0
 
 - Work in the opened workspace folder like a CLI harness: the agent knows the workspace root and follows folder changes live (adding/removing folders rebuilds the tool runtime after the current run). With no folder open the welcome screen says file tools are disabled.
