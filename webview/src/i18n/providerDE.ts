@@ -15,4 +15,9 @@ export const providerDE: Readonly<Record<string, string>> = {
   'Stop listening': 'Zuhören stoppen',
   'Microphone permission denied': 'Mikrofonzugriff wurde verweigert',
   'Voice input failed. Try again.': 'Spracheingabe fehlgeschlagen. Bitte erneut versuchen.',
+  'New file': 'Neue Datei',
+  Replace: 'Ersetzen',
+  Before: 'Vorher',
+  After: 'Nachher',
+  'Preview truncated': 'Vorschau gekürzt',
 };

@@ -41,12 +41,15 @@ describe('compile-time contract assertions', () => {
     expect(JSON.parse(JSON.stringify(message))).toEqual(message);
   });
 
-  it('presentation approval does not transport before/after file content', () => {
+  it('presentation approval transports only capped before/after previews', () => {
     type Preview = NonNullable<
       Extract<PresentationEvent, { type: 'ToolAwaitingApproval' }>['request']['preview']
     >;
-    expectTypeOf<Extract<Preview, { kind: 'FileChanges' }>>().not.toHaveProperty('changes');
-    expectTypeOf<Extract<Preview, { kind: 'FileChanges' }>>().toHaveProperty('relativePaths');
+    type FileChanges = Extract<Preview, { kind: 'FileChanges' }>;
+    expectTypeOf<FileChanges>().toHaveProperty('changes');
+    expectTypeOf<FileChanges>().toHaveProperty('relativePaths');
+    expectTypeOf<FileChanges['changes'][number]['before']>().toEqualTypeOf<string | null>();
+    expectTypeOf<FileChanges['changes'][number]['truncated']>().toEqualTypeOf<boolean>();
   });
 
   it('core and presentation preserve explicit loop-stop reasons', () => {

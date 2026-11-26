@@ -4,6 +4,7 @@ import { send } from '../messaging/bridge.js';
 import { useI18n } from '../i18n/I18n.js';
 import { Icon } from './Icon.js';
 import { toolLabel } from './toolLabel.js';
+import { ApprovalDiff } from './ApprovalDiff.js';
 
 /**
  * Inline permission question. Keys 1 and 2 answer it and Escape rejects, but
@@ -73,18 +74,23 @@ export function ApprovalPrompt({ approval }: { approval: ApprovalView }) {
         </pre>
       )}
       {preview?.kind === 'FileChanges' && (
-        <button
-          className="approval-diff"
-          onClick={() => send({ type: 'OpenDiffPreview', approvalId: approval.approvalId })}
-        >
-          <Icon name="review" size={14} />
-          <span>
-            {preview.relativePaths.length === 1
-              ? preview.relativePaths[0]
-              : t('{count} files', { count: preview.relativePaths.length })}
-          </span>
-          <span className="approval-diff-action">{t('Open diff')}</span>
-        </button>
+        <>
+          {preview.changes.map((change) => (
+            <ApprovalDiff key={change.relativePath} change={change} />
+          ))}
+          <button
+            className="approval-diff"
+            onClick={() => send({ type: 'OpenDiffPreview', approvalId: approval.approvalId })}
+          >
+            <Icon name="review" size={14} />
+            <span>
+              {preview.relativePaths.length === 1
+                ? preview.relativePaths[0]
+                : t('{count} files', { count: preview.relativePaths.length })}
+            </span>
+            <span className="approval-diff-action">{t('Open diff')}</span>
+          </button>
+        </>
       )}
       {preview?.kind === 'Description' && <p>{preview.text}</p>}
       {!!approval.reasons.length && (

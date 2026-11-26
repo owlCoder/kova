@@ -15,4 +15,9 @@ export const providerSR: Readonly<Record<string, string>> = {
   'Stop listening': 'Zaustavi slušanje',
   'Microphone permission denied': 'Dozvola za mikrofon je odbijena',
   'Voice input failed. Try again.': 'Glasovni unos nije uspeo. Pokušajte ponovo.',
+  'New file': 'Novi fajl',
+  Replace: 'Zameni',
+  Before: 'Pre',
+  After: 'Posle',
+  'Preview truncated': 'Prikaz skraćen',
 };

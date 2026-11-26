@@ -1,6 +1,10 @@
+import type { FileChangePreview } from './FileChangePreview.js';
 import type { RiskLevel } from './RiskLevel.js';
 
-/** Full file contents stay in host-side virtual diff documents. */
+/**
+ * File previews carry only capped before/after text; full contents stay in
+ * host-side virtual diff documents.
+ */
 export interface ApprovalView {
   readonly approvalId: string;
   readonly runId: string;
@@ -13,6 +17,7 @@ export interface ApprovalView {
         readonly kind: 'FileChanges';
         readonly relativePaths: readonly string[];
         readonly canOpenDiff: true;
+        readonly changes: readonly FileChangePreview[];
       }
     | {
         readonly kind: 'Command';

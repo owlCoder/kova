@@ -2,6 +2,7 @@ import type { AgentEvent } from '../../../core/src/agents/AgentEvent.js';
 import type { ApprovalRequest } from '../../../core/src/permissions/ApprovalRequest.js';
 import type { ApprovalView } from '../../../protocol/src/ApprovalView.js';
 import type { PresentationEvent } from '../../../protocol/src/PresentationEvent.js';
+import { capDiffText } from './capDiffText.js';
 
 export function approvalView(request: ApprovalRequest): ApprovalView {
   const preview = request.preview;
@@ -18,6 +19,18 @@ export function approvalView(request: ApprovalRequest): ApprovalView {
             kind: 'FileChanges',
             relativePaths: preview.changes.map((change) => change.relativePath),
             canOpenDiff: true,
+            changes: preview.changes.map((change) => {
+              const before =
+                change.beforeContent === null ? null : capDiffText(change.beforeContent);
+              const after = capDiffText(change.afterContent);
+              return {
+                relativePath: change.relativePath,
+                operation: change.operation,
+                before: before?.text ?? null,
+                after: after.text,
+                truncated: Boolean(before?.truncated) || after.truncated,
+              };
+            }),
           }
         : preview?.kind === 'Command'
           ? {
