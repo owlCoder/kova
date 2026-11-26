@@ -661,7 +661,7 @@ kbd {
   right: 0;
   bottom: 29px;
   z-index: 6;
-  border: 1px solid var(--border);
+  border: var(--frame-border, 0);
   border-radius: var(--radius-control);
   background: var(--elevated);
   padding: 13px;
