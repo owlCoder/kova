@@ -183,6 +183,7 @@ export const sr: Readonly<Record<string, string>> = {
   'New terminal': 'Novi terminal',
   'No analytics or telemetry.': 'Bez analitike i telemetrije.',
   'No matching commands or sessions.': 'Nema odgovarajućih komandi ili sesija.',
+  'Analyze the workspace and write AGENTS.md': 'Analiziraj workspace i napiši AGENTS.md',
   'Mention a file': 'Pomeni fajl',
   'No matching files.': 'Nema fajlova koji odgovaraju.',
   'Showing first matches only.': 'Prikazani su samo prvi rezultati.',

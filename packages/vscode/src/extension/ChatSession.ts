@@ -12,6 +12,7 @@ import { TokenCounter } from '../../../core/src/context/TokenCounter.js';
 import { InMemoryConversationRepository } from '../../../core/src/conversations/InMemoryConversationRepository.js';
 import type { Conversation } from '../../../core/src/conversations/Conversation.js';
 import type { ConversationRepository } from '../../../core/src/conversations/ConversationRepository.js';
+import type { WorkspaceConversationRepository } from './conversationStore.js';
 import type { SkillMetadata } from '../../../core/src/skills/Skill.js';
 import { SkillLoader } from '../../../core/src/skills/SkillLoader.js';
 import type { HostMessage } from '../../../protocol/src/HostMessage.js';
@@ -204,6 +205,12 @@ export class ChatSession {
       refreshModels: (force) => this.refreshModels(force),
       newConversation: () => this.newConversation(),
       openConversation: (id) => this.openConversation(id),
+      renameConversation: async (id, title) => {
+        const repository = this.repository as Partial<WorkspaceConversationRepository>;
+        if (typeof repository.rename !== 'function') throw new Error('History is unavailable.');
+        await repository.rename(id, title);
+        await this.snapshot('history-changed');
+      },
       submit: (message) => this.submit(message),
       accept: (requestId, runId) => this.accept(requestId, runId),
       notify: (text) => this.deliver({ ...this.envelope(), type: 'Notice', message: text }),

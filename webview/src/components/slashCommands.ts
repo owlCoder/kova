@@ -6,10 +6,15 @@
 export type SlashAction =
   | { readonly type: 'message'; readonly message: 'NewConversation' | 'CompactConversation' }
   | { readonly type: 'export'; readonly action: 'save' | 'copy' }
+  | { readonly type: 'submit'; readonly prompt: string }
   | {
       readonly type: 'open';
       readonly target: 'settings' | 'library' | 'palette' | 'model' | 'mode' | 'context';
     };
+
+/** Model-facing prompt for /init; kept in English because it goes to the model. */
+export const initPrompt =
+  'Inspect this workspace with list_directory, search_files and read_file (package.json, README, src layout, test setup). Then create or update AGENTS.md at the workspace root: project structure, build/test/lint commands, code conventions, and anything a coding agent must know. Write it with write_file or apply_patch, keep it under 16,000 bytes, and summarize what you wrote.';
 
 export interface SlashCommand {
   readonly id: string;
@@ -72,6 +77,12 @@ export const slashCommands: readonly SlashCommand[] = [
     command: '/settings',
     hintKey: 'Open the Kova settings dialog',
     action: { type: 'open', target: 'settings' },
+  },
+  {
+    id: 'init',
+    command: '/init',
+    hintKey: 'Analyze the workspace and write AGENTS.md',
+    action: { type: 'submit', prompt: initPrompt },
   },
   {
     id: 'help',

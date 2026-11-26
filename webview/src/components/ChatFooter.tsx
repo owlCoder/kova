@@ -26,6 +26,7 @@ type Props = {
   onDismissError(): void;
   onPromptChange(value: string): void;
   onSubmit(): void;
+  onSubmitText(text: string): void;
   onModelChange(value: string): void;
   onModeChange(value: AgentMode): void;
   onOpenLibrary(): void;
@@ -47,6 +48,7 @@ export function ChatFooter({
   onDismissError,
   onPromptChange,
   onSubmit,
+  onSubmitText,
   onModelChange,
   onModeChange,
   onOpenLibrary,
@@ -130,6 +132,8 @@ export function ChatFooter({
     setSlashIndex(0);
     if (command.action.type === 'message') {
       send({ type: command.action.message });
+    } else if (command.action.type === 'submit') {
+      onSubmitText(command.action.prompt);
     } else if (command.action.type === 'export') {
       if (snapshot)
         send({

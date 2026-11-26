@@ -258,6 +258,7 @@ function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
               onDismissError={chat.dismissError}
               onPromptChange={chat.setPrompt}
               onSubmit={chat.submit}
+              onSubmitText={chat.submitText}
               onModelChange={chat.setModel}
               onModeChange={chat.setMode}
               onOpenLibrary={() => openLibrary()}

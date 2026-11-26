@@ -185,6 +185,7 @@ export const de: Readonly<Record<string, string>> = {
   'New terminal': 'Neues Terminal',
   'No analytics or telemetry.': 'Keine Analytik oder Telemetrie.',
   'No matching commands or sessions.': 'Keine passenden Befehle oder Sitzungen.',
+  'Analyze the workspace and write AGENTS.md': 'Arbeitsbereich analysieren und AGENTS.md schreiben',
   'Mention a file': 'Datei erwähnen',
   'No matching files.': 'Keine passenden Dateien.',
   'Showing first matches only.': 'Nur die ersten Treffer werden angezeigt.',

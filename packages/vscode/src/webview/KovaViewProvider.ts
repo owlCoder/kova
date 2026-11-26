@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { randomUUID } from 'node:crypto';
 import { ChatSession } from '../extension/ChatSession.js';
 import type { WorkspaceConversationRepository } from '../extension/conversationStore.js';
 import { KovaWebviewHost } from './KovaWebviewHost.js';
@@ -26,7 +27,7 @@ export class KovaViewProvider implements vscode.WebviewViewProvider, vscode.Disp
     this.unsubscribeSession = this.session.connect((message) => {
       if (message.type !== 'Snapshot') return;
       const id = message.snapshot.conversationId;
-      if (id !== this.lastConversationId) {
+      if (id !== this.lastConversationId || message.requestId === 'history-changed') {
         this.lastConversationId = id;
         if (this.launcher) void this.render();
       }
@@ -79,6 +80,10 @@ export class KovaViewProvider implements vscode.WebviewViewProvider, vscode.Disp
               void this.deleteHistory(id);
               return;
             }
+            if (action === 'history-rename' && id) {
+              void this.renameHistory(id);
+              return;
+            }
             const command = {
               open: 'kova.openInEditor',
               new: 'kova.newConversation',
@@ -108,6 +113,31 @@ export class KovaViewProvider implements vscode.WebviewViewProvider, vscode.Disp
     } catch (error) {
       await vscode.window.showErrorMessage(
         error instanceof Error ? error.message : 'Could not open the conversation.',
+      );
+    }
+  }
+  /** Renames a history row through a small input box, then re-renders the launcher. */
+  private async renameHistory(id: string): Promise<void> {
+    try {
+      const current = (await this.conversations.list()).find((item) => item.id === id);
+      if (!current) return;
+      const title = await vscode.window.showInputBox({
+        title: 'Rename conversation',
+        value: current.title,
+        validateInput: (value) =>
+          value.trim().length > 80 ? 'Keep the title under 80 characters.' : undefined,
+      });
+      if (title === undefined) return;
+      await this.session.handle({
+        protocolVersion: 1,
+        requestId: randomUUID(),
+        type: 'RenameConversation',
+        conversationId: id,
+        title,
+      });
+    } catch (error) {
+      await vscode.window.showErrorMessage(
+        error instanceof Error ? error.message : 'Could not rename the conversation.',
       );
     }
   }

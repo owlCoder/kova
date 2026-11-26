@@ -21,6 +21,7 @@ export function validateMessage(raw: unknown): WebviewMessage {
     NewConversation: [],
     CompactConversation: [],
     OpenConversation: ['conversationId'],
+    RenameConversation: ['conversationId', 'title'],
     UpdateDraft: ['conversationId', 'prompt'],
     ExportConversation: ['conversationId', 'action'],
     SelectSkill: ['skillId'],
@@ -84,8 +85,19 @@ export function validateMessage(raw: unknown): WebviewMessage {
     (typeof value.conversationId !== 'string' || !/^[a-f0-9-]{36}$/.test(value.conversationId))
   )
     throw new Error('Invalid conversation ID.');
-  if (value.type === 'OpenConversation' && !/^[a-f0-9-]{36}$/.test(value.conversationId as string))
+  if (
+    (value.type === 'OpenConversation' || value.type === 'RenameConversation') &&
+    !/^[a-f0-9-]{36}$/.test(value.conversationId as string)
+  )
     throw new Error('Invalid conversation ID.');
+  if (
+    value.type === 'RenameConversation' &&
+    (typeof value.title !== 'string' ||
+      !value.title.trim() ||
+      value.title.length > 80 ||
+      value.title.includes('\0'))
+  )
+    throw new Error('Title must be 1-80 characters.');
   if (
     value.type === 'UpdateDraft' &&
     (typeof value.prompt !== 'string' || value.prompt.length > 16_000)

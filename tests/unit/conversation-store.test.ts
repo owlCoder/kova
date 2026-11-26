@@ -103,3 +103,39 @@ describe('workspace conversation store', () => {
     expect(await fresh.list()).toHaveLength(0);
   });
 });
+
+describe('conversation rename', () => {
+  it('stores a custom title and falls back to the derived one for blanks', async () => {
+    const memento = new Map<string, unknown>();
+    const repo = new WorkspaceConversationRepository({
+      get: (key: string) => memento.get(key),
+      update: async (key: string, value: unknown) => {
+        memento.set(key, value);
+      },
+    } as never);
+    const id = '123e4567-e89b-42d3-a456-426614174000';
+    await repo.save({
+      id,
+      workspaceId: '/w',
+      entries: [
+        {
+          id: 'e1',
+          turnId: 't',
+          stepId: null,
+          message: { role: 'user', content: 'first prompt line' },
+          toolResultOrigin: null,
+          omitted: false,
+        },
+      ],
+      summary: null,
+    });
+    expect((await repo.list())[0]?.title).toBe('first prompt line');
+    await repo.rename(id, '  My chat  ');
+    expect((await repo.list())[0]?.title).toBe('My chat');
+    await repo.rename(id, '   ');
+    expect((await repo.list())[0]?.title).toBe('My chat');
+    await expect(repo.rename('223e4567-e89b-42d3-a456-426614174000', 'x')).rejects.toThrow(
+      'Unknown conversation',
+    );
+  });
+});

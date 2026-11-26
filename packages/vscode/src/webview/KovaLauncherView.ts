@@ -17,7 +17,16 @@ const providerName: Readonly<Record<string, string>> = {
   deepseek: 'DeepSeek',
   openaiCompatible: 'OpenAI-compatible',
 };
-const actions = new Set(['open', 'new', 'setup', 'key', 'settings', 'history', 'history-delete']);
+const actions = new Set([
+  'open',
+  'new',
+  'setup',
+  'key',
+  'settings',
+  'history',
+  'history-delete',
+  'history-rename',
+]);
 
 const relativeTime = (timestamp: number): string => {
   const seconds = Math.max(1, Math.floor((Date.now() - timestamp) / 1000));
@@ -51,6 +60,7 @@ const icons: Readonly<Record<string, string>> = {
   shortcuts:
     '<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10h.01M11 10h.01M15 10h.01M17 10h.01M7 14h10"/>',
   delete: '<path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13M10 11v6M14 11v6"/>',
+  edit: '<path d="M4 20l4-1L20 7l-3-3L5 16l-1 4z"/>',
 };
 const icon = (name: string) =>
   `<svg viewBox="0 0 24 24" aria-hidden="true">${icons[name] ?? ''}</svg>`;
@@ -83,7 +93,7 @@ export function renderLauncher(
     `<button class="row${item.id === activeId ? ' active' : ''}" data-action="history" data-id="${escape(item.id)}" title="${escape(item.title)}"><span>${escape(item.title)}</span><small>${relativeTime(item.updatedAt)}</small></button>`;
   const conversations =
     history.length > 0
-      ? `<h2>Conversations</h2><div class="card">${history.map(historyRow).join('')}</div>`
+      ? `<h2>Conversations</h2><input id="history-search" type="search" placeholder="Search conversations…" aria-label="Search conversations"><div class="card" id="history-card">${history.map(historyRow).join('')}</div>`
       : '';
   webview.html = `<!doctype html><html lang="en"><head><meta charset="UTF-8">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${webview.cspSource}; style-src 'nonce-${nonce}'; script-src 'nonce-${nonce}';">
@@ -108,6 +118,8 @@ dt{color:var(--muted)}dd{margin:0;text-align:right;overflow:hidden;text-overflow
 .row span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.row i{font-style:normal;color:var(--muted)}
 .row small{flex:none;font-size:10.5px;color:var(--muted)}
 .row.active{background:color-mix(in srgb,var(--brand) 14%,transparent)}
+#history-search{width:100%;margin:0 0 7px;padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:inherit;font:inherit;font-size:12px}
+#history-search:focus{outline:1px solid var(--brand)}
 ul{margin:0;padding:8px 12px;list-style:none;display:grid;gap:7px;color:var(--muted)}
 kbd{display:inline-block;min-width:18px;padding:0 5px;border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;font-family:var(--vscode-editor-font-family);font-size:10.5px;text-align:center;color:var(--vscode-foreground)}
 /* Popup card shared by the right-click menu and the shortcuts popover. */
@@ -139,12 +151,14 @@ ${host ? `<dt>Endpoint</dt><dd title="${escape(host)}">${escape(host)}</dd>` : '
 <li>Right-click a file → <b>Add to Kova Context</b></li></ul></div>
 <div id="ctx" class="pop" hidden>
 <button data-action="history">${icon('open')}Open</button>
+<button data-action="history-rename">${icon('edit')}Rename</button>
 <button data-action="history-delete" class="danger">${icon('delete')}Delete</button>
 </div>
 <script nonce="${nonce}">const vscode=acquireVsCodeApi();const ctx=document.getElementById('ctx');let ctxId=null;const hide=()=>{ctx.hidden=true};
 document.addEventListener('click',e=>{const item=e.target.closest('#ctx button');if(item){hide();vscode.postMessage({action:item.dataset.action,id:ctxId});return}hide();const b=e.target.closest('button[data-action]');if(b)vscode.postMessage({action:b.dataset.action,id:b.dataset.id||undefined})});
 document.addEventListener('contextmenu',e=>{const b=e.target.closest('button[data-action="history"]');if(!b)return;e.preventDefault();ctxId=b.dataset.id;ctx.hidden=false;const r=ctx.getBoundingClientRect();ctx.style.left=Math.max(8,Math.min(e.clientX,innerWidth-r.width-8))+'px';ctx.style.top=Math.max(8,Math.min(e.clientY,innerHeight-r.height-8))+'px'});
-document.addEventListener('keydown',e=>{if(e.key==='Escape')hide()});window.addEventListener('blur',hide);</script>
+document.addEventListener('keydown',e=>{if(e.key==='Escape')hide()});window.addEventListener('blur',hide);
+const search=document.getElementById('history-search');if(search){search.addEventListener('input',()=>{const q=search.value.trim().toLowerCase();for(const row of document.querySelectorAll('#history-card .row')){row.style.display=row.textContent.toLowerCase().includes(q)?'':'none'}})}</script>
 </body></html>`;
   return webview.onDidReceiveMessage((raw: unknown) => {
     const message = raw as { action?: unknown; id?: unknown } | null;

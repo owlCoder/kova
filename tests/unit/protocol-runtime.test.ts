@@ -48,6 +48,42 @@ describe('host message validation and projection', () => {
     ])
       expect(() => validateMessage(bad)).toThrow();
   });
+  it('validates RenameConversation with uuid and bounded title', () => {
+    const id = '123e4567-e89b-42d3-a456-426614174000';
+    expect(
+      validateMessage({
+        protocolVersion: 1,
+        requestId: 'x',
+        type: 'RenameConversation',
+        conversationId: id,
+        title: 'Chat',
+      }).type,
+    ).toBe('RenameConversation');
+    for (const bad of [
+      {
+        protocolVersion: 1,
+        requestId: 'x',
+        type: 'RenameConversation',
+        conversationId: 'nope',
+        title: 'x',
+      },
+      {
+        protocolVersion: 1,
+        requestId: 'x',
+        type: 'RenameConversation',
+        conversationId: id,
+        title: '',
+      },
+      {
+        protocolVersion: 1,
+        requestId: 'x',
+        type: 'RenameConversation',
+        conversationId: id,
+        title: 't'.repeat(81),
+      },
+    ])
+      expect(() => validateMessage(bad)).toThrow();
+  });
   it('accepts valid prompt and requires exact approval identity fields', () => {
     expect(
       validateMessage({

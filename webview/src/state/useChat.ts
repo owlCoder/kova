@@ -163,8 +163,8 @@ export function useChat() {
   const busy =
     submitting || Boolean(snapshot?.activeRunId) || Boolean(snapshot?.configuringProvider);
 
-  const submit = () => {
-    if (!prompt.trim() || busy || !snapshot) return;
+  const doSubmit = (text: string) => {
+    if (!text.trim() || busy || !snapshot) return;
     setError('');
     setThinking({});
     setSubmitting(true);
@@ -174,24 +174,27 @@ export function useChat() {
       ...snapshot,
       messages: [
         ...snapshot.messages,
-        { id: crypto.randomUUID(), role: 'user', content: prompt, partial: false },
+        { id: crypto.randomUUID(), role: 'user', content: text, partial: false },
       ],
     });
     const id = send({
       type: 'SubmitPrompt',
-      prompt,
+      prompt: text,
       modelId: model,
       mode,
       skillId: snapshot.activeSkillId,
       attachmentIds: snapshot.contextAttachments.map((item) => item.id),
     });
-    pendingSubmit.current = { id, text: prompt, conversationId: snapshot.conversationId };
+    pendingSubmit.current = { id, text, conversationId: snapshot.conversationId };
     setPrompt('');
   };
+  const submitText = (text: string) => doSubmit(text);
+  const submit = () => doSubmit(prompt);
   return {
     snapshot,
     prompt,
     setPrompt,
+    submitText,
     model,
     setModel,
     mode,

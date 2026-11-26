@@ -110,6 +110,20 @@ export class WorkspaceConversationRepository implements ConversationRepository {
     await this.write;
   }
 
+  /** Sets a custom history title; the first prompt stays the fallback. */
+  async rename(id: string, title: string): Promise<void> {
+    const cache = await this.load();
+    const stored = cache.get(id);
+    if (!stored) throw new Error('Unknown conversation.');
+    cache.set(id, { ...stored, title: title.trim().slice(0, 80) || stored.title });
+    const snapshot: StoredShape = {
+      version: 1,
+      conversations: [...cache.values()].sort((a, b) => b.updatedAt - a.updatedAt),
+    };
+    this.write = this.write.then(() => this.state.update(STORAGE_KEY, snapshot));
+    await this.write;
+  }
+
   /** History for the launcher, newest first. */
   async list(): Promise<ConversationHistoryEntry[]> {
     const cache = await this.load();

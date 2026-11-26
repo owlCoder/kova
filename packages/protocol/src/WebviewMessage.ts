@@ -21,6 +21,7 @@ export type WebviewMessage = {
   | { readonly type: 'NewConversation' }
   | { readonly type: 'CompactConversation' }
   | { readonly type: 'OpenConversation'; readonly conversationId: string }
+  | { readonly type: 'RenameConversation'; readonly conversationId: string; readonly title: string }
   | { readonly type: 'UpdateDraft'; readonly conversationId: string; readonly prompt: string }
   | {
       readonly type: 'ExportConversation';
