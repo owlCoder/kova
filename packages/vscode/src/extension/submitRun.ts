@@ -131,6 +131,7 @@ export async function submitRun(
     host.setActiveRun(run);
     run.task = (async () => {
       try {
+        host.changes().onRunStarted(runId);
         await host.snapshot(`started-${runId}`);
         await host.runtime()?.initialize(cancellation);
         await agent.run(request, cancellation, { emit: (event) => host.emit(event) });

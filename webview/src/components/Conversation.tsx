@@ -111,6 +111,9 @@ export function Conversation({
             {t('This run changed {count} files', {
               count: String(snapshot.revertibleRun.files.length),
             })}
+            {snapshot.revertibleRun.checkpointed && (
+              <small className="revert-checkpoint"> · {t('Git checkpoint saved')}</small>
+            )}
           </span>
           <button
             onClick={() =>

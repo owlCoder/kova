@@ -44,6 +44,7 @@ export interface SnapshotInput {
   readonly revertibleRun: {
     readonly runId: string;
     readonly files: readonly { readonly path: string; readonly created: boolean }[];
+    readonly checkpointed: boolean;
   } | null;
 }
 
@@ -96,6 +97,7 @@ export async function composeSnapshot(input: SnapshotInput): Promise<SessionSnap
       ? {
           runId: input.revertibleRun.runId,
           files: input.revertibleRun.files.map((file) => ({ ...file })),
+          checkpointed: input.revertibleRun.checkpointed,
         }
       : null,
     thinkingEnabled: activeRun?.thinkingEnabled ?? input.providers.thinkingEnabled(),

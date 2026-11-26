@@ -20,4 +20,5 @@ export const providerDE: Readonly<Record<string, string>> = {
   Before: 'Vorher',
   After: 'Nachher',
   'Preview truncated': 'Vorschau gekürzt',
+  'Git checkpoint saved': 'Git-Checkpoint gespeichert',
 };

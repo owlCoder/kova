@@ -44,6 +44,8 @@ export interface SessionSnapshot {
   readonly revertibleRun: {
     readonly runId: string;
     readonly files: readonly { readonly path: string; readonly created: boolean }[];
+    /** A `git stash create` checkpoint exists for the run and can restore it. */
+    readonly checkpointed: boolean;
   } | null;
   readonly thinkingEnabled: boolean;
   readonly contextMaxTokens: number;

@@ -20,4 +20,5 @@ export const providerSR: Readonly<Record<string, string>> = {
   Before: 'Pre',
   After: 'Posle',
   'Preview truncated': 'Prikaz skraćen',
+  'Git checkpoint saved': 'Git checkpoint sačuvan',
 };
