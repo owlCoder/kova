@@ -9,6 +9,6 @@ export interface ContextUsage {
   readonly actualOutputTokens: number | null;
   readonly evictions: readonly {
     readonly label: string;
-    readonly action: 'Stubbed' | 'Truncated' | 'Compacted';
+    readonly action: 'Stubbed' | 'Truncated' | 'Compacted' | 'Disabled';
   }[];
 }

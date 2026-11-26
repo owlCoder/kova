@@ -328,3 +328,65 @@ describe('context and token accounting', () => {
     expect(observed).toBe(true);
   });
 });
+
+describe('context builder pinned-content safeguards', () => {
+  const baseBuild = {
+    systemInstructions: 'Kova',
+    tools: [] as const,
+    activeSkill: null,
+    currentUserMessageId: 'u1',
+    currentStepId: null,
+    imagesSupported: false,
+    attachments: [],
+    conversation: {
+      id: 'c',
+      workspaceId: '',
+      summary: null,
+      entries: [
+        {
+          id: 'u1',
+          turnId: 'run',
+          stepId: null,
+          omitted: false,
+          toolResultOrigin: null,
+          message: { role: 'user' as const, content: 'hi' },
+        },
+      ],
+    },
+  };
+  it('truncates an oversized AGENTS.md instead of overflowing a small window', () => {
+    const settings = {
+      maxTokens: 4096,
+      reservedOutputTokens: 512,
+      safetyMarginRatio: 0.1,
+      maxToolOutputCharacters: 8000,
+    };
+    const result = new ContextBuilder(new TokenCounter()).build({
+      ...baseBuild,
+      projectInstructions: 'RULE '.repeat(20_000),
+      settings,
+    });
+    expect(result.status).toBe('Ready');
+    if (result.status !== 'Ready') return;
+    const system = result.messages[0]!;
+    expect(system.role).toBe('system');
+    expect(String(system.content)).toContain('truncated to fit the context budget');
+    // Cap is 25% of the window, so the system prompt must stay well under the budget.
+    expect(new TokenCounter().estimate(String(system.content))).toBeLessThanOrEqual(1024 + 64);
+  });
+  it('still reports overflow when even the capped pinned content cannot fit', () => {
+    const settings = {
+      maxTokens: 1200,
+      reservedOutputTokens: 512,
+      safetyMarginRatio: 0.1,
+      maxToolOutputCharacters: 8000,
+    };
+    const result = new ContextBuilder(new TokenCounter()).build({
+      ...baseBuild,
+      projectInstructions: 'RULE '.repeat(20_000),
+      settings,
+    });
+    expect(result.status).toBe('Overflow');
+    if (result.status === 'Overflow') expect(result.code).toBe('PinnedContextExceedsBudget');
+  });
+});

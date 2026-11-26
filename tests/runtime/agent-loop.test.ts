@@ -371,3 +371,58 @@ describe('agent-loop repair/repeat/iteration safety', () => {
     expect(JSON.stringify(await repository.get('chat'))).toContain('partial');
   });
 });
+
+describe('context overflow with tools', () => {
+  it('drops tool definitions and completes instead of failing when they exceed a small budget', async () => {
+    const fatDefinition: ToolDefinition = {
+      name: 'read_file',
+      description: 'Read a file. '.repeat(2000),
+      inputSchema: {
+        type: 'object',
+        properties: { path: { type: 'string' } },
+        required: ['path'],
+        additionalProperties: false,
+      },
+      risk: 'ReadOnly',
+      origin: { kind: 'BuiltIn' },
+    };
+    const seenTools: number[] = [];
+    const recordingProvider: LlmProvider = {
+      async *streamChat(req: { tools: readonly unknown[] }) {
+        seenTools.push(req.tools.length);
+        yield { type: 'Finished', reason: 'Complete' as const, usage: null };
+      },
+    };
+    const repository = new InMemoryConversationRepository();
+    const events = new EventLog();
+    const tiny = {
+      ...request,
+      toolsEnabled: true,
+      context: {
+        maxTokens: 900,
+        reservedOutputTokens: 128,
+        safetyMarginRatio: 0.1,
+        maxToolOutputCharacters: 8000,
+      },
+    };
+    const outcome = await new ChatAgent(recordingProvider, repository, new TokenCounter(), {
+      definitions: () => [fatDefinition],
+      execute: vi.fn(async (call) => ({
+        callId: call.id,
+        toolName: call.name,
+        status: 'Success' as const,
+        output: 'ok',
+        error: null,
+        omittedCharacters: 0,
+        durationMs: 0,
+      })),
+    }).run(tiny, new CancellationSource(), events);
+    expect(outcome.status).not.toBe('Failed');
+    expect(seenTools).toEqual([0]);
+    const contextEvents = events.events.filter((event) => event.type === 'ContextUpdated');
+    const evictions = contextEvents.flatMap((event) =>
+      event.type === 'ContextUpdated' ? event.usage.evictions : [],
+    );
+    expect(evictions).toContainEqual({ label: 'tool definitions', action: 'Disabled' });
+  });
+});
