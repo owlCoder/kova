@@ -35,7 +35,18 @@ export class OllamaLlmProvider implements LlmProvider {
               }
             : message.role === 'tool'
               ? { role: 'tool', tool_name: message.toolName, content: message.content }
-              : { role: message.role, content: message.content },
+              : Array.isArray(message.content)
+                ? {
+                    role: message.role,
+                    content: message.content
+                      .filter((part) => part.type === 'text')
+                      .map((part) => part.text)
+                      .join('\n'),
+                    images: message.content
+                      .filter((part) => part.type === 'image_url')
+                      .map((part) => part.image_url.url.replace(/^data:[^;]+;base64,/, '')),
+                  }
+                : { role: message.role, content: message.content },
         ),
         ...(request.tools.length
           ? {

@@ -22,6 +22,7 @@ describe('captured attachment presentation', () => {
       label: 'src/example.ts',
       source: 'ExplicitFile',
       characters: captured.content.length,
+      image: null,
     });
     expect(JSON.stringify(views)).not.toContain('untrusted');
     const preview = previewContext(conversationId, [captured], {
@@ -33,7 +34,12 @@ describe('captured attachment presentation', () => {
     });
     expect(preview.content).toHaveLength(50_000);
     expect(preview.content).toBe(captured.content.slice(0, 50_000));
-    expect(preview).toMatchObject({ truncated: true, characters: captured.content.length });
+    expect(preview).toMatchObject({
+      truncated: true,
+      characters: captured.content.length,
+      image: null,
+      imageDataUrl: null,
+    });
     expect(captured.content.length).toBeGreaterThan(preview.content.length);
   });
   it('rejects stale conversation/attachment references and injected file paths or content', () => {

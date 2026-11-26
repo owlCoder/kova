@@ -100,6 +100,28 @@ export function ChatFooter({
       setMentionFiles([]);
     }
   };
+  const attachImageFile = (file: File) => {
+    if (!/^image\/(png|jpeg|webp|gif)$/.test(file.type)) return;
+    if (file.size > 5_000_000) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = String(reader.result ?? '');
+      send({
+        type: 'AttachImage',
+        name: file.name || 'pasted-image',
+        mimeType: file.type,
+        dataUrl,
+      });
+    };
+    reader.readAsDataURL(file);
+  };
+  const imageFiles = (event: {
+    clipboardData?: DataTransfer | null;
+    dataTransfer?: DataTransfer | null;
+  }) => {
+    const dt = event.clipboardData ?? event.dataTransfer;
+    return dt ? [...dt.files].filter((file) => file.type.startsWith('image/')) : [];
+  };
   const pickMention = (path: string) => {
     if (!mention) return;
     const end = mention.start + 1 + mention.query.length;
@@ -246,6 +268,23 @@ export function ChatFooter({
           onClick={(event) =>
             updateMention(event.currentTarget.value, event.currentTarget.selectionStart)
           }
+          onPaste={(event) => {
+            for (const file of imageFiles(event)) {
+              event.preventDefault();
+              attachImageFile(file);
+            }
+          }}
+          onDragOver={(event) => {
+            if (event.dataTransfer?.types.includes('Files')) event.preventDefault();
+          }}
+          onDrop={(event) => {
+            const files = imageFiles(event);
+            if (files.length) {
+              event.preventDefault();
+              for (const file of files) attachImageFile(file);
+            }
+          }}
+          title={t('Paste or drop an image to attach it')}
           onKeyDown={(event) => {
             if (event.nativeEvent.isComposing) return;
             if (mentionOpen && mentionFiles.length) {

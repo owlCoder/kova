@@ -7,6 +7,7 @@ export class OpenAiCompatibleModelCatalog {
     private readonly connection: OpenAiCompatibleConnection,
     private readonly tools: CapabilitySupport,
     private readonly thinking: CapabilitySupport,
+    private readonly vision: CapabilitySupport = 'Unknown',
   ) {}
 
   async listAvailable(cancellation: CancellationToken): Promise<readonly ModelInfo[]> {
@@ -23,6 +24,7 @@ export class OpenAiCompatibleModelCatalog {
           displayName: typeof record.name === 'string' ? record.name : record.id,
           sizeBytes: null,
           tools: this.tools,
+          vision: this.vision,
           thinking: this.thinking,
           maxContextTokens:
             typeof record.context_window === 'number' && record.context_window > 0

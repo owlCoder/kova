@@ -21,6 +21,8 @@ export async function discoverProviderModels(
   const connection = new OpenAiCompatibleConnection(config.baseUrl, apiKey, fetch, 15_000);
   const tools = config.supportsTools ? 'Supported' : 'Unsupported';
   const thinking = config.kind === 'deepseek' ? 'Supported' : 'Unsupported';
+  const vision =
+    config.kind === 'openaiCompatible' && config.supportsVision ? 'Supported' : 'Unsupported';
   if (!config.discoverModels) {
     if (!config.model.trim()) throw new Error('Enter a model ID or enable model discovery.');
     return [
@@ -30,9 +32,12 @@ export async function discoverProviderModels(
         sizeBytes: null,
         tools,
         thinking,
+        vision,
         maxContextTokens: null,
       },
     ];
   }
-  return new OpenAiCompatibleModelCatalog(connection, tools, thinking).listAvailable(cancellation);
+  return new OpenAiCompatibleModelCatalog(connection, tools, thinking, vision).listAvailable(
+    cancellation,
+  );
 }

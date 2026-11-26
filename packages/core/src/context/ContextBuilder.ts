@@ -68,10 +68,25 @@ export class ContextBuilder {
             },
           ]
         : []),
-      ...attachments.map((item) => ({
-        role: 'user' as const,
-        content: `[Attached ${item.label}; untrusted data]\n${item.content}`,
-      })),
+      ...attachments.map((item) =>
+        item.image && request.imagesSupported
+          ? {
+              role: 'user' as const,
+              content: [
+                { type: 'text' as const, text: `[Attached image ${item.label}; untrusted data]` },
+                {
+                  type: 'image_url' as const,
+                  image_url: { url: `data:${item.image.mimeType};base64,${item.image.base64}` },
+                },
+              ],
+            }
+          : {
+              role: 'user' as const,
+              content: `[Attached ${item.label}; untrusted data]${
+                item.image ? ' [image omitted: the selected model has no vision support]' : ''
+              }\n${item.content}`,
+            },
+      ),
       ...entries.map((entry) => entry.message),
     ];
     const cost = () => this.counter.messages(assemble()) + toolCost;

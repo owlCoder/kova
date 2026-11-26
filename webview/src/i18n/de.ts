@@ -185,6 +185,7 @@ export const de: Readonly<Record<string, string>> = {
   'New terminal': 'Neues Terminal',
   'No analytics or telemetry.': 'Keine Analytik oder Telemetrie.',
   'No matching commands or sessions.': 'Keine passenden Befehle oder Sitzungen.',
+  'Paste or drop an image to attach it': 'Bild einfügen oder ablegen, um es anzuhängen',
   'This run changed {count} files': 'Dieser Lauf hat {count} Dateien geändert',
   'Revert run changes': 'Lauf-Änderungen zurücksetzen',
   'Analyze the workspace and write AGENTS.md': 'Arbeitsbereich analysieren und AGENTS.md schreiben',

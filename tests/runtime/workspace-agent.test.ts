@@ -19,6 +19,7 @@ import type { LlmProvider } from '../../packages/core/src/providers/LlmProvider.
 import type { ToolCallCandidate } from '../../packages/core/src/tools/ToolCallCandidate.js';
 import { NodeWorkspaceRuntime } from '../../packages/runtime/src/adapters/NodeWorkspaceRuntime.js';
 import { CancellationSource, EventLog } from './helpers.js';
+import { chatText } from '../../packages/core/src/providers/chatText.js';
 
 let parent: string, root: string;
 beforeEach(async () => {
@@ -87,6 +88,7 @@ function makeRequest(mode: AgentMode, prompt: string): AgentRequest {
     thinkingEnabled: false,
     keepAliveSeconds: 0,
     toolsEnabled: true,
+    imagesSupported: true,
     maxToolIterations: 10,
     commandAllowlist: [],
   };
@@ -162,7 +164,7 @@ describe('workspace agent end to end', () => {
     const results = await toolResults(repository);
     expect(results).toHaveLength(2);
     for (const result of results) {
-      const content = JSON.parse(result.message.content) as { status: string };
+      const content = JSON.parse(chatText(result.message.content)) as { status: string };
       expect(content.status).toBe('Success');
     }
     expect(events.events.some((event: AgentEvent) => event.type === 'ToolRequested')).toBe(true);
@@ -220,7 +222,7 @@ describe('workspace agent end to end', () => {
     );
     expect(await readFile(join(root, 'Notes', 'todo.md'), 'utf8')).toBe('# todo\n');
     const results = await toolResults(repository);
-    expect(JSON.parse(results[0]!.message.content).status).toBe('Success');
+    expect(JSON.parse(chatText(results[0]!.message.content)).status).toBe('Success');
   });
 
   it('writes nothing when the approval is rejected in Manual mode', async () => {
@@ -235,7 +237,7 @@ describe('workspace agent end to end', () => {
     expect(events.events.some((event: AgentEvent) => event.type === 'ToolDenied')).toBe(true);
     await expect(readFile(join(root, 'Notes', 'todo.md'), 'utf8')).rejects.toThrow();
     const results = await toolResults(repository);
-    expect(JSON.parse(results[0]!.message.content).status).toBe('Denied');
+    expect(JSON.parse(chatText(results[0]!.message.content)).status).toBe('Denied');
   });
 
   it('refuses writes outside the workspace root even in Edit mode', async () => {
@@ -249,7 +251,7 @@ describe('workspace agent end to end', () => {
     expect(approval.requests).toHaveLength(0);
     await expect(readFile(join(parent, 'evil.txt'), 'utf8')).rejects.toThrow();
     const results = await toolResults(repository);
-    expect(JSON.parse(results[0]!.message.content).status).toBe('Error');
+    expect(JSON.parse(chatText(results[0]!.message.content)).status).toBe('Error');
   });
 
   it('exposes only read tools in Plan mode', async () => {
@@ -271,6 +273,8 @@ describe('workspace agent end to end', () => {
       entry.id.endsWith('-repair'),
     );
     expect(repairs).toHaveLength(1);
-    expect(JSON.parse(repairs[0]!.message.content).toolError.code).toBe('InvalidArguments');
+    expect(JSON.parse(chatText(repairs[0]!.message.content)).toolError.code).toBe(
+      'InvalidArguments',
+    );
   });
 });

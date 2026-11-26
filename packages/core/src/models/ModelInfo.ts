@@ -6,6 +6,7 @@ export interface ModelInfo {
   readonly displayName: string;
   readonly sizeBytes: number | null;
   readonly tools: CapabilitySupport;
+  readonly vision: CapabilitySupport;
   readonly thinking: CapabilitySupport;
   readonly maxContextTokens: number | null;
 }

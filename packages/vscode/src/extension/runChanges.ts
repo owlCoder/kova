@@ -95,13 +95,27 @@ export class RunChangeTracker {
   /** Reverts one run's changes after user confirmation; returns a summary. */
   async revert(
     runId: string,
-    confirm: (files: readonly RunFileChange[]) => Promise<boolean>,
+    confirm?: (files: readonly RunFileChange[]) => Promise<boolean>,
   ): Promise<string> {
     const root = this.root();
     if (!root) throw new Error('Open a workspace to revert changes.');
     const files = this.filesFor(runId);
     if (!files.length) throw new Error('No recorded file changes for this run.');
-    if (!(await confirm(files))) return 'Revert cancelled.';
+    const agreed = confirm
+      ? await confirm(files)
+      : await (async () => {
+          const list = files
+            .slice(0, 10)
+            .map((file) => file.path)
+            .join(', ');
+          const choice = await vscode.window.showWarningMessage(
+            `Revert ${files.length} file change(s) from this run? ${list}`,
+            { modal: true },
+            'Revert',
+          );
+          return choice === 'Revert';
+        })();
+    if (!agreed) return 'Revert cancelled.';
     const guard = new NodeWorkspacePathGuard(root);
     const cancellation = new CancellationSource();
     const checkout: string[] = [];

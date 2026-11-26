@@ -5,10 +5,11 @@ import type { ContextAttachmentView } from '../../../protocol/src/ContextAttachm
 export function contextAttachmentViews(
   items: readonly ContextAttachment[],
 ): readonly ContextAttachmentView[] {
-  return items.map(({ id, label, source, content }) => ({
+  return items.map(({ id, label, source, content, image }) => ({
     id,
     label,
     source,
     characters: content.length,
+    image: image ? { mimeType: image.mimeType } : null,
   }));
 }

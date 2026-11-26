@@ -1374,3 +1374,12 @@ body.editor .extension-frame .welcome-mark .kova-mark img {
   background: color-mix(in srgb, var(--bad) 12%, transparent);
   border-color: var(--bad);
 }
+
+/* Image attachment preview. */
+.context-preview-image {
+  max-width: 100%;
+  max-height: 320px;
+  border-radius: 8px;
+  border: 1px solid var(--border-soft);
+  object-fit: contain;
+}

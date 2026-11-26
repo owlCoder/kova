@@ -28,6 +28,7 @@ export function validateMessage(raw: unknown): WebviewMessage {
     SelectSkill: ['skillId'],
     AddContext: ['source'],
     AttachPath: ['path'],
+    AttachImage: ['name', 'mimeType', 'dataUrl'],
     ListWorkspaceFiles: ['query'],
     RemoveContext: ['attachmentId'],
     PreviewContext: ['conversationId', 'attachmentId'],
@@ -130,6 +131,18 @@ export function validateMessage(raw: unknown): WebviewMessage {
       value.path.includes('\0'))
   )
     throw new Error('Invalid file path.');
+  if (
+    value.type === 'AttachImage' &&
+    (typeof value.name !== 'string' ||
+      !value.name.trim() ||
+      value.name.length > 120 ||
+      typeof value.mimeType !== 'string' ||
+      !['image/png', 'image/jpeg', 'image/webp', 'image/gif'].includes(value.mimeType) ||
+      typeof value.dataUrl !== 'string' ||
+      value.dataUrl.length > 8_000_000 ||
+      !/^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(value.dataUrl))
+  )
+    throw new Error('Invalid image attachment.');
   if (
     value.type === 'ListWorkspaceFiles' &&
     (typeof value.query !== 'string' || value.query.length > 100 || value.query.includes('\0'))

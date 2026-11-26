@@ -16,6 +16,7 @@ export interface AgentRequest {
   readonly thinkingEnabled: boolean;
   readonly keepAliveSeconds: number;
   readonly toolsEnabled: boolean;
+  readonly imagesSupported: boolean;
   readonly maxToolIterations: number;
   readonly commandAllowlist: readonly string[];
 }

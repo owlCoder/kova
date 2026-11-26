@@ -32,6 +32,12 @@ export type WebviewMessage = {
   | { readonly type: 'SelectSkill'; readonly skillId: string | null }
   | { readonly type: 'AddContext'; readonly source: 'Selection' | 'CurrentFile' | 'PickFiles' }
   | { readonly type: 'AttachPath'; readonly path: string }
+  | {
+      readonly type: 'AttachImage';
+      readonly name: string;
+      readonly mimeType: string;
+      readonly dataUrl: string;
+    }
   | { readonly type: 'ListWorkspaceFiles'; readonly query: string }
   | { readonly type: 'RemoveContext'; readonly attachmentId: string }
   | {

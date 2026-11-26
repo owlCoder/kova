@@ -38,6 +38,24 @@ export class ContextAttachmentManager {
     this.revision++;
   }
 
+  /** Attaches a pasted/dropped image; bounded to 5 MB decoded. */
+  async addImage(name: string, mimeType: string, dataUrl: string): Promise<void> {
+    if (!this.editable()) throw new Error('Wait until generation stops.');
+    const base64 = dataUrl.slice(dataUrl.indexOf(',') + 1);
+    if (Math.floor((base64.length * 3) / 4) > 5_000_000)
+      throw new Error('Images up to 5 MB can be attached.');
+    this.attachments = mergeContextAttachments(this.attachments, [
+      {
+        id: randomUUID(),
+        source: 'ExplicitFile',
+        label: name.trim().slice(0, 120) || 'image',
+        content: '',
+        image: { mimeType, base64 },
+      },
+    ]);
+    this.revision++;
+  }
+
   /** Attaches one workspace file chosen by a root-relative path (the @mention flow). */
   async addPath(relativePath: string): Promise<void> {
     if (!this.editable()) throw new Error('Wait until generation stops.');

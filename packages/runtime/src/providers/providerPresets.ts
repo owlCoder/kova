@@ -7,6 +7,7 @@ export const providerPresets: readonly (ProviderConfiguration & { description: s
     baseUrl: 'http://127.0.0.1:11434',
     model: '',
     supportsTools: true,
+    supportsVision: true,
     discoverModels: true,
     description: 'Local · install and start Ollama first',
   },
@@ -16,6 +17,7 @@ export const providerPresets: readonly (ProviderConfiguration & { description: s
     baseUrl: 'https://api.deepseek.com',
     model: 'deepseek-flash',
     supportsTools: true,
+    supportsVision: true,
     discoverModels: true,
     description: 'Cloud · API key required',
   },
@@ -41,6 +43,7 @@ export const providerPresets: readonly (ProviderConfiguration & { description: s
     description: description!,
     model: '',
     supportsTools: true,
+    supportsVision: true,
     discoverModels: true,
   })),
 ];

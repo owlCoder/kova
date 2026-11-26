@@ -41,6 +41,39 @@ async function collect(provider: OpenAiCompatibleLlmProvider, input: ChatRequest
 }
 
 describe('OpenAI-compatible provider', () => {
+  it('passes vision content parts through to the chat body', async () => {
+    const bodies: Record<string, unknown>[] = [];
+    const fetcher = vi.fn<typeof fetch>(async (_url, init) => {
+      bodies.push(JSON.parse(String(init?.body)) as Record<string, unknown>);
+      return stream([
+        { choices: [{ delta: { content: 'ok' }, finish_reason: null }] },
+        { choices: [{ delta: {}, finish_reason: 'stop' }] },
+      ]);
+    });
+    const provider = new OpenAiCompatibleLlmProvider(
+      new OpenAiCompatibleConnection('http://x/v1', undefined, fetcher, 5000),
+      'standard',
+    );
+    await collect(provider, {
+      ...request,
+      thinkingEnabled: false,
+      messages: [
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: 'What is this?' },
+            { type: 'image_url', image_url: { url: 'data:image/png;base64,aGVsbG8=' } },
+          ],
+        },
+      ],
+    });
+    const messages = bodies[0]?.['messages'] as Record<string, unknown>[];
+    expect(messages[0]?.['content']).toEqual([
+      { type: 'text', text: 'What is this?' },
+      { type: 'image_url', image_url: { url: 'data:image/png;base64,aGVsbG8=' } },
+    ]);
+  });
+
   it('uses the OpenAI output limit field while retaining compatible endpoints max_tokens', async () => {
     for (const dialect of ['openai', 'standard'] as const) {
       const fetcher = vi.fn<typeof fetch>(async () =>
@@ -222,6 +255,7 @@ describe('OpenAI-compatible provider', () => {
         sizeBytes: null,
         tools: 'Supported',
         thinking: 'Supported',
+        vision: 'Unknown',
         maxContextTokens: 1_048_576,
       },
     ]);

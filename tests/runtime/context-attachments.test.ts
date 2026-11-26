@@ -68,3 +68,16 @@ describe('native editor attachment capture', () => {
     expect(manager.list()).toEqual([]);
   });
 });
+
+describe('image attachments', () => {
+  it('stores a bounded image and rejects oversized payloads', async () => {
+    const manager = new ContextAttachmentManager(() => directory);
+    const small = `data:image/png;base64,${'A'.repeat(1000)}`;
+    await manager.addImage('shot.png', 'image/png', small);
+    expect(manager.list()).toHaveLength(1);
+    expect(manager.list()[0]?.image?.mimeType).toBe('image/png');
+    expect(manager.list()[0]?.content).toBe('');
+    const huge = `data:image/png;base64,${'A'.repeat(7_000_000)}`;
+    await expect(manager.addImage('big.png', 'image/png', huge)).rejects.toThrow('5 MB');
+  });
+});

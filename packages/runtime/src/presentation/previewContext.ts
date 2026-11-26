@@ -17,7 +17,9 @@ export function previewContext(
     label: item.label,
     source: item.source,
     characters: item.content.length,
+    image: item.image ? { mimeType: item.image.mimeType } : null,
     content: item.content.slice(0, 50_000),
     truncated: item.content.length > 50_000,
+    imageDataUrl: item.image ? `data:${item.image.mimeType};base64,${item.image.base64}` : null,
   };
 }

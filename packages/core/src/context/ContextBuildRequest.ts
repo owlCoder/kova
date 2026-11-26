@@ -14,5 +14,7 @@ export interface ContextBuildRequest {
   readonly currentStepId: string | null;
   readonly conversation: Conversation;
   readonly attachments: readonly ContextAttachment[];
+  /** False when the selected model cannot consume images; they become a text note. */
+  readonly imagesSupported: boolean;
   readonly settings: ContextSettings;
 }

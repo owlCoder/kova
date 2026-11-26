@@ -156,6 +156,11 @@
           "default": true,
           "description": "Whether the configured endpoint/model supports OpenAI-style function tool calls."
         },
+        "kova.openaiCompatible.supportsVision": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether the configured endpoint/model accepts image inputs (vision). Pasted images are sent as image_url content."
+        },
         "kova.context.maxTokens": {
           "type": "integer",
           "default": 200000,

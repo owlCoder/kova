@@ -144,6 +144,7 @@ try {
       maxToolIterations: 10,
       commandAllowlist: [],
       toolsEnabled: true,
+      imagesSupported: true,
     },
     source,
     events,

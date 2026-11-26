@@ -12,6 +12,7 @@ export function modelChoices(
     id: current,
     displayName: current,
     tools: 'Unknown',
+    vision: 'Unknown',
     thinking: 'Unknown',
     sizeBytes: null,
     maxContextTokens: null,

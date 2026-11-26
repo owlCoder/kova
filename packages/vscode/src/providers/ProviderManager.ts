@@ -36,6 +36,8 @@ export class ProviderManager {
       model: this.defaultModelId(),
       supportsTools:
         kind !== 'openaiCompatible' || config.get('openaiCompatible.supportsTools', true),
+      supportsVision:
+        kind !== 'openaiCompatible' || config.get('openaiCompatible.supportsVision', true),
       discoverModels:
         kind !== 'openaiCompatible' || config.get('openaiCompatible.discoverModels', true),
     };

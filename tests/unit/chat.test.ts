@@ -27,9 +27,59 @@ const request: AgentRequest = {
   thinkingEnabled: true,
   keepAliveSeconds: 300,
   toolsEnabled: false,
+  imagesSupported: true,
   maxToolIterations: 10,
   commandAllowlist: [],
 };
+
+describe('image attachments in context', () => {
+  it('sends image parts when the model supports vision and a text note otherwise', () => {
+    const builder = new ContextBuilder(new TokenCounter());
+    const attachment = {
+      id: 'a1',
+      source: 'ExplicitFile' as const,
+      label: 'shot.png',
+      content: '',
+      image: { mimeType: 'image/png', base64: 'aGVsbG8=' },
+    };
+    const base = {
+      systemInstructions: 'SYS',
+      projectInstructions: null,
+      tools: [],
+      activeSkill: null,
+      currentUserMessageId: 'u',
+      currentStepId: null,
+      settings: {
+        maxTokens: 32768,
+        reservedOutputTokens: 1024,
+        safetyMarginRatio: 0.1,
+        maxToolOutputCharacters: 8000,
+      },
+      conversation: { id: 'x', workspaceId: '', entries: [], summary: null },
+    };
+    const withVision = builder.build({
+      ...base,
+      attachments: [attachment],
+      imagesSupported: true,
+    });
+    expect(withVision.status).toBe('Ready');
+    const user =
+      withVision.status === 'Ready' ? withVision.messages.find((m) => m.role === 'user') : null;
+    expect(Array.isArray(user?.content)).toBe(true);
+    if (user && Array.isArray(user.content)) {
+      const imagePart = user.content.find((part) => part.type === 'image_url');
+      expect(imagePart).toMatchObject({
+        type: 'image_url',
+        image_url: { url: 'data:image/png;base64,aGVsbG8=' },
+      });
+    }
+    const noVision = builder.build({ ...base, attachments: [attachment], imagesSupported: false });
+    const note =
+      noVision.status === 'Ready' ? noVision.messages.find((m) => m.role === 'user') : null;
+    expect(typeof note?.content).toBe('string');
+    expect(String(note?.content)).toContain('no vision support');
+  });
+});
 
 describe('chat application', () => {
   it('streams events, passes explicit generation settings and reconciles usage without retaining thinking', async () => {
@@ -160,6 +210,7 @@ describe('context and token accounting', () => {
       activeSkill: null,
       currentUserMessageId: 'current',
       currentStepId: null,
+      imagesSupported: true,
       settings: request.context,
       attachments: [],
       conversation: {

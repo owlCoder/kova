@@ -84,6 +84,24 @@ describe('host message validation and projection', () => {
     ])
       expect(() => validateMessage(bad)).toThrow();
   });
+  it('validates AttachImage with whitelisted mime and bounded base64', () => {
+    const ok = {
+      protocolVersion: 1,
+      requestId: 'x',
+      type: 'AttachImage',
+      name: 'shot.png',
+      mimeType: 'image/png',
+      dataUrl: 'data:image/png;base64,aGVsbG8=',
+    };
+    expect(validateMessage(ok).type).toBe('AttachImage');
+    for (const bad of [
+      { ...ok, mimeType: 'image/svg+xml' },
+      { ...ok, dataUrl: 'data:image/png;base64,not base64!!' },
+      { ...ok, dataUrl: `data:image/png;base64,${'A'.repeat(8_000_001)}` },
+      { ...ok, name: '' },
+    ])
+      expect(() => validateMessage(bad)).toThrow();
+  });
   it('accepts valid prompt and requires exact approval identity fields', () => {
     expect(
       validateMessage({

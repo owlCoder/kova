@@ -25,6 +25,32 @@ async function collect(
 }
 
 describe('Ollama wire adapter', () => {
+  it('maps vision parts to ollama images with base64 payload', async () => {
+    const fetcher = vi.fn<typeof fetch>(
+      async () =>
+        new Response(
+          `${JSON.stringify({ message: { content: 'ok' }, done: true, prompt_eval_count: 1, eval_count: 1 })}\n`,
+          { headers: { 'Content-Type': 'application/x-ndjson' } },
+        ),
+    );
+    const provider = new OllamaLlmProvider(new OllamaConnection('http://x', fetcher, 5000));
+    await collect(provider, {
+      ...request,
+      messages: [
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: 'What is this?' },
+            { type: 'image_url', image_url: { url: 'data:image/png;base64,aGVsbG8=' } },
+          ],
+        },
+      ],
+    });
+    const payload = JSON.parse(fetcher.mock.calls[0]?.[1]?.body as string);
+    expect(payload.messages[0].content).toBe('What is this?');
+    expect(payload.messages[0].images).toEqual(['aGVsbG8=']);
+  });
+
   it('maps explicit num_ctx, num_predict, think and keep_alive, parses fragmented UTF8 NDJSON and final usage', async () => {
     const bytes = new TextEncoder().encode(
       JSON.stringify({ message: { content: 'Čao' }, done: false }) +

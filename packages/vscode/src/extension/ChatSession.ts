@@ -190,20 +190,11 @@ export class ChatSession {
         this.skillId = id;
       },
       activeRunId: () => this.activeRun?.id ?? null,
+      attachImage: (name, mimeType, dataUrl) =>
+        this.contextAttachments.addImage(name, mimeType, dataUrl),
       revertRun: async (runId) => {
         if (this.activeRun) throw new Error('Wait until generation stops.');
-        const summary = await this.changes.revert(runId, async (files) => {
-          const list = files
-            .slice(0, 10)
-            .map((file) => file.path)
-            .join(', ');
-          const choice = await vscode.window.showWarningMessage(
-            `Revert ${files.length} file change(s) from this run? ${list}`,
-            { modal: true },
-            'Revert',
-          );
-          return choice === 'Revert';
-        });
+        const summary = await this.changes.revert(runId);
         this.deliver({ ...this.envelope(), type: 'Notice', message: summary });
         await this.snapshot('reverted');
       },
@@ -414,6 +405,7 @@ export class ChatSession {
         attachments: this.contextAttachments.selected(message.attachmentIds),
         maxToolIterations: 10,
         toolsEnabled: Boolean(this.roots.current && model.tools === 'Supported'),
+        imagesSupported: model.vision !== 'Unsupported',
       };
       const provider = await this.providers.forConversation(this.conversationId);
       if (this.providerRefreshPending)

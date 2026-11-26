@@ -27,6 +27,7 @@ export interface ChatMessageHost {
   activeRunId(): string | null;
   cancelRun(runId: string): void;
   revertRun(runId: string): Promise<void>;
+  attachImage(name: string, mimeType: string, dataUrl: string): Promise<void>;
   resolveApproval(
     runId: string,
     approvalId: string,
@@ -72,6 +73,12 @@ export async function handleChatMessage(
     }))
   )
     return;
+  if (message.type === 'AttachImage') {
+    if (host.isRunning()) throw new Error('Cannot change context during a run.');
+    await host.attachImage(message.name, message.mimeType, message.dataUrl);
+    await host.snapshot(message.requestId);
+    return;
+  }
   if (message.type === 'AttachPath' || message.type === 'ListWorkspaceFiles') {
     await handleWorkspaceContextMessage(host.workspace, message);
     return;

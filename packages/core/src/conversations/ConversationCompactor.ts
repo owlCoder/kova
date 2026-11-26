@@ -1,4 +1,5 @@
 import type { ConversationEntry } from './Conversation.js';
+import { chatText } from '../providers/chatText.js';
 import type { ConversationSummary } from './ConversationSummary.js';
 import { TokenCounter } from '../context/TokenCounter.js';
 
@@ -42,12 +43,14 @@ export class ConversationCompactor {
       );
     let summary: ConversationSummary = {
       goal:
-        previous?.goal || users[0]?.message.content.slice(0, 500) || 'Continue the conversation.',
+        previous?.goal ||
+        chatText(users[0]?.message.content ?? '').slice(0, 500) ||
+        'Continue the conversation.',
       filesInspected: [...new Set([...(previous?.filesInspected ?? []), ...inspected])].slice(-12),
       changes: [...(previous?.changes ?? []), ...changes].slice(-8),
       outstanding: [
         ...(previous?.outstanding ?? []),
-        ...users.slice(-2).map((entry) => entry.message.content.slice(0, 300)),
+        ...users.slice(-2).map((entry) => chatText(entry.message.content).slice(0, 300)),
       ].slice(-4),
       throughTurnId: entries.at(-1)?.turnId ?? previous?.throughTurnId ?? '',
     };

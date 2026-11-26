@@ -4,6 +4,7 @@ import type {
   ConversationEntry,
 } from '../../../core/src/conversations/Conversation.js';
 import type { ConversationRepository } from '../../../core/src/conversations/ConversationRepository.js';
+import { chatText } from '../../../core/src/providers/chatText.js';
 import type { ConversationSummary } from '../../../core/src/conversations/ConversationSummary.js';
 
 const STORAGE_KEY = 'kova.conversations';
@@ -30,7 +31,9 @@ interface StoredShape {
 
 /** First user message becomes the history title, like the chat header. */
 function deriveTitle(entries: readonly ConversationEntry[]): string {
-  const first = entries.find((entry) => entry.message.role === 'user')?.message.content.trim();
+  const first = chatText(
+    entries.find((entry) => entry.message.role === 'user')?.message.content ?? '',
+  ).trim();
   if (!first) return 'New conversation';
   const line = first.split('\n')[0]!;
   return line.length > 60 ? `${line.slice(0, 57)}…` : line;

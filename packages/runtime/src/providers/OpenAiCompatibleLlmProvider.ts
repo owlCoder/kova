@@ -217,6 +217,7 @@ export class OpenAiCompatibleLlmProvider implements LlmProvider {
       }
       if (message.role === 'tool')
         return { role: 'tool', tool_call_id: message.callId, content: message.content };
+      // User content may be text or vision parts; other roles are always text.
       return { role: message.role, content: message.content };
     });
   }

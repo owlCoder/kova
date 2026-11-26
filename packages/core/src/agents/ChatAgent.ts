@@ -99,6 +99,7 @@ export class ChatAgent implements Agent {
           currentStepId: stepId,
           conversation,
           attachments: request.attachments,
+          imagesSupported: request.imagesSupported,
           settings: request.context,
         });
         if (built.status === 'Overflow') throw new Error(`${built.code}: ${built.suggestion}`);

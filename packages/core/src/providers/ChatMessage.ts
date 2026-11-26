@@ -3,7 +3,15 @@ import type { ToolCall } from '../tools/ToolCall.js';
 /** Thinking is intentionally absent from durable/provider conversation messages. */
 export type ChatMessage =
   | { readonly role: 'system'; readonly content: string }
-  | { readonly role: 'user'; readonly content: string }
+  | {
+      readonly role: 'user';
+      readonly content:
+        | string
+        | readonly (
+            | { readonly type: 'text'; readonly text: string }
+            | { readonly type: 'image_url'; readonly image_url: { readonly url: string } }
+          )[];
+    }
   | {
       readonly role: 'assistant';
       readonly content: string;
