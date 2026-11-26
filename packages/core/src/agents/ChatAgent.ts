@@ -47,20 +47,22 @@ export class ChatAgent implements Agent {
       summary: null,
     };
     const userId = `${request.runId}-user`;
-    conversation = {
-      ...conversation,
-      entries: [
-        ...conversation.entries,
-        {
-          id: userId,
-          turnId: request.runId,
-          stepId: null,
-          message: { role: 'user', content: request.prompt },
-          toolResultOrigin: null,
-          omitted: false,
-        },
-      ],
-    };
+    // The host may have persisted this entry before its started-snapshot; never duplicate it.
+    if (!conversation.entries.some((entry) => entry.id === userId))
+      conversation = {
+        ...conversation,
+        entries: [
+          ...conversation.entries,
+          {
+            id: userId,
+            turnId: request.runId,
+            stepId: null,
+            message: { role: 'user', content: request.prompt },
+            toolResultOrigin: null,
+            omitted: false,
+          },
+        ],
+      };
     let stepId: string | null = null;
     const iterationLimit = Math.min(10, Math.max(1, request.maxToolIterations));
     let attempts = 0;

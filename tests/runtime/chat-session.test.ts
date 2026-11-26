@@ -202,6 +202,21 @@ describe('shared chat session synchronization', () => {
     await expect(session.handle({ ...exportRequest, requestId: 'export-stale' })).rejects.toThrow();
   });
 
+  it('includes the user message in the started snapshot so the transcript never renders empty', async () => {
+    await session.initialize();
+    await beginStream();
+    const started = messages.find(
+      (message) => message.type === 'Snapshot' && message.requestId.startsWith('started-'),
+    );
+    expect(started).toBeTruthy();
+    if (started?.type === 'Snapshot')
+      expect(started.snapshot.messages).toEqual([
+        expect.objectContaining({ role: 'user', content: 'A public test prompt' }),
+      ]);
+    send({ message: { content: 'Done' } });
+    await finish();
+  });
+
   it('persists onboarding dismissal and serializes configuration against submission', async () => {
     await session.initialize();
     await session.handle({ protocolVersion: 1, requestId: 'setup-state', type: 'Ready' });

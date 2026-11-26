@@ -132,6 +132,32 @@ export async function submitRun(
     run.task = (async () => {
       try {
         host.changes().onRunStarted(runId);
+        // Persist the user entry first so the started snapshot never renders an
+        // empty transcript; ChatAgent skips it because the id already exists.
+        const conversationId = host.conversationId();
+        const existing = await host.repository().get(conversationId);
+        const base = existing ?? {
+          id: conversationId,
+          workspaceId: host.rootsCurrent() ?? '',
+          entries: [],
+          summary: null,
+        };
+        const userId = `${runId}-user`;
+        if (!base.entries.some((entry) => entry.id === userId))
+          await host.repository().save({
+            ...base,
+            entries: [
+              ...base.entries,
+              {
+                id: userId,
+                turnId: runId,
+                stepId: null,
+                message: { role: 'user' as const, content: request.prompt },
+                toolResultOrigin: null,
+                omitted: false,
+              },
+            ],
+          });
         await host.snapshot(`started-${runId}`);
         await host.runtime()?.initialize(cancellation);
         await agent.run(request, cancellation, { emit: (event) => host.emit(event) });

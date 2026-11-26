@@ -185,6 +185,32 @@ const writeDefinition: ToolDefinition = {
 };
 
 describe('agent-loop repair/repeat/iteration safety', () => {
+  it('does not duplicate the user entry when the host already persisted it', async () => {
+    const repository = new InMemoryConversationRepository();
+    await repository.save({
+      id: 'chat',
+      workspaceId: 'workspace',
+      entries: [
+        {
+          id: 'run-user',
+          turnId: 'run',
+          stepId: null,
+          message: { role: 'user', content: request.prompt },
+          toolResultOrigin: null,
+          omitted: false,
+        },
+      ],
+      summary: null,
+    });
+    await new ChatAgent(provider([[]]), repository, new TokenCounter(), runtime()).run(
+      request,
+      new CancellationSource(),
+      new EventLog(),
+    );
+    const entries = (await repository.get('chat'))!.entries;
+    expect(entries.filter((entry) => entry.id === 'run-user')).toHaveLength(1);
+    expect(entries.filter((entry) => entry.message.role === 'user')).toHaveLength(1);
+  });
   it('three identical schema failures stop as MalformedToolCall without executing any tool', async () => {
     const implementation = runtime(),
       repository = new InMemoryConversationRepository(),
