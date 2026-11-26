@@ -4,7 +4,7 @@ Status: **Accepted**.
 
 `LlmProvider.streamChat(ChatRequest, CancellationToken)` is the Core boundary. It streams `TextDelta`, `ThinkingDelta`, complete `ToolCallReady` candidates, localized `MalformedToolCall` diagnostics and one final `Finished` event with normalized usage. Providers never execute tools. Model discovery remains separate from generation.
 
-The shared runtime composes providers for the desktop and VS Code hosts. Each host supplies its own credential store. Core has no HTTP, credential-storage or vendor SDK dependency.
+The runtime composes providers for the VS Code host, which supplies the credential store. Core has no HTTP, credential-storage or vendor SDK dependency.
 
 ## Supported providers
 
@@ -14,7 +14,7 @@ Kova supports three provider modes:
 - **DeepSeek** discovers models through the OpenAI-compatible `/models` endpoint and streams `/chat/completions` SSE with DeepSeek's thinking extension. Credentials live in VS Code `SecretStorage`.
 - **OpenAI-compatible** uses `/chat/completions` SSE and optional `/models` discovery, and accepts an optional bearer token from `SecretStorage`.
 
-Ollama remains the local-first default (`qwen3:4b`). Selecting an API provider is explicit; Kova never silently sends workspace context to a cloud endpoint.
+Ollama remains the local-first default; the model is chosen during setup, not preselected. Selecting an API provider is explicit; Kova never silently sends workspace context to a cloud endpoint.
 
 ## Core normalization
 
@@ -50,7 +50,7 @@ Preset references: [OpenAI Chat Completions](https://developers.openai.com/api/r
 
 ## Credentials
 
-The extension stores API keys through VS Code `SecretStorage`. Desktop uses Electron OS encryption and falls back to in-memory storage if secure encryption is unavailable, including Linux `basic_text`. See [desktop credentials](DESKTOP.md#local-data-and-keys).
+The extension stores API keys through VS Code `SecretStorage`.
 
 Keys are scoped by provider kind and a hash of the endpoint. Legacy provider keys migrate to the current endpoint on first use. A setup draft never includes a saved key in Webview messages or snapshots; native password inputs keep that value inside the extension host.
 

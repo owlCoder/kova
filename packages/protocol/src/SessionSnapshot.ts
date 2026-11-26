@@ -4,12 +4,10 @@ import type { ContextUsage } from './ContextUsage.js';
 import type { ModelInfo } from './ModelInfo.js';
 import type { SkillMetadata } from './SkillMetadata.js';
 import type { ApprovalView } from './ApprovalView.js';
-import type { DesktopState } from './DesktopState.js';
 import type { ContextAttachmentView } from './ContextAttachmentView.js';
 
 /** Presentation history is bounded and excludes model thinking. */
 export interface SessionSnapshot {
-  readonly desktop?: DesktopState;
   readonly language?: 'en' | 'sr' | 'de';
   readonly textSize?: 'standard' | 'large' | 'larger';
   readonly conversationId: string;
@@ -27,6 +25,11 @@ export interface SessionSnapshot {
   readonly skills: readonly SkillMetadata[];
   readonly activeSkillId: string | null;
   readonly usage: ContextUsage | null;
+  readonly usageTotals: {
+    readonly inputTokens: number;
+    readonly outputTokens: number;
+    readonly runs: number;
+  } | null;
   readonly messages: readonly {
     readonly id: string;
     readonly role: 'user' | 'assistant';
@@ -35,6 +38,11 @@ export interface SessionSnapshot {
   }[];
   readonly contextAttachments: readonly ContextAttachmentView[];
   readonly pendingApproval: ApprovalView | null;
+  /** Files changed by the latest completed run, revertible via RevertRun. */
+  readonly revertibleRun: {
+    readonly runId: string;
+    readonly files: readonly { readonly path: string; readonly created: boolean }[];
+  } | null;
   readonly thinkingEnabled: boolean;
   readonly contextMaxTokens: number;
 }

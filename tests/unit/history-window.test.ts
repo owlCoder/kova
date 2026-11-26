@@ -19,6 +19,7 @@ const snapshot: SessionSnapshot = {
   skills: [],
   activeSkillId: null,
   usage: null,
+  usageTotals: null,
   messages: Array.from({ length: 1000 }, (_, i) => ({
     id: `${i}`,
     role: i % 2 ? 'assistant' : 'user',
@@ -27,6 +28,7 @@ const snapshot: SessionSnapshot = {
   })),
   contextAttachments: [],
   pendingApproval: null,
+  revertibleRun: null,
   thinkingEnabled: false,
   contextMaxTokens: 32768,
 };
@@ -35,7 +37,8 @@ const render = (searching: boolean) =>
     createElement(Conversation, {
       snapshot,
       thinking: {},
-      activities: [],
+      timeline: [],
+      runStartedAt: null,
       busy: false,
       onReuse: () => {},
       onSavePrompt: () => {},

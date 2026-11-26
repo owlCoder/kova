@@ -20,7 +20,7 @@ afterEach(async () => {
 describe('native editor attachment capture', () => {
   it('captures bounded text, refreshes it in place and clears attachments for a new conversation', async () => {
     picker.choose.mockResolvedValue([{ fsPath: join(directory, 'one.txt') }]);
-    const manager = new ContextAttachmentManager(directory);
+    const manager = new ContextAttachmentManager(() => directory);
     await manager.add('PickFiles');
     const firstId = manager.list()[0]?.id;
     await writeFile(join(directory, 'one.txt'), 'updated text');
@@ -31,7 +31,7 @@ describe('native editor attachment capture', () => {
     expect(manager.list()).toEqual([]);
   });
   it('does not retain a partial batch when a later file is binary or exceeds the byte limit', async () => {
-    const manager = new ContextAttachmentManager(directory);
+    const manager = new ContextAttachmentManager(() => directory);
     await writeFile(join(directory, 'binary'), Buffer.from([0, 1, 2]));
     picker.choose.mockResolvedValue([
       { fsPath: join(directory, 'one.txt') },
@@ -53,7 +53,10 @@ describe('native editor attachment capture', () => {
         }),
     );
     let editable = true;
-    const manager = new ContextAttachmentManager(directory, () => editable);
+    const manager = new ContextAttachmentManager(
+      () => directory,
+      () => editable,
+    );
     const first = manager.add('PickFiles');
     manager.clear();
     finish([{ fsPath: join(directory, 'one.txt') }]);
@@ -63,5 +66,18 @@ describe('native editor attachment capture', () => {
     finish([{ fsPath: join(directory, 'one.txt') }]);
     await expect(second).rejects.toThrow('Context changed');
     expect(manager.list()).toEqual([]);
+  });
+});
+
+describe('image attachments', () => {
+  it('stores a bounded image and rejects oversized payloads', async () => {
+    const manager = new ContextAttachmentManager(() => directory);
+    const small = `data:image/png;base64,${'A'.repeat(1000)}`;
+    await manager.addImage('shot.png', 'image/png', small);
+    expect(manager.list()).toHaveLength(1);
+    expect(manager.list()[0]?.image?.mimeType).toBe('image/png');
+    expect(manager.list()[0]?.content).toBe('');
+    const huge = `data:image/png;base64,${'A'.repeat(7_000_000)}`;
+    await expect(manager.addImage('big.png', 'image/png', huge)).rejects.toThrow('5 MB');
   });
 });

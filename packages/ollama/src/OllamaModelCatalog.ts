@@ -60,6 +60,7 @@ export class OllamaModelCatalog implements ModelCatalog {
         displayName: item.name,
         sizeBytes: item.size,
         tools: support('tools'),
+        vision: support('vision'),
         thinking: support('thinking'),
         maxContextTokens:
           lengths[0] ??

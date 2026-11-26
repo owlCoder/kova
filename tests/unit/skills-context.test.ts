@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { chatText } from '../../packages/core/src/providers/chatText.js';
 import { SkillLoader } from '../../packages/core/src/skills/SkillLoader.js';
 import { CancellationSource } from '../../packages/core/src/common/CancellationSource.js';
 import { ChatAgent } from '../../packages/core/src/agents/ChatAgent.js';
@@ -77,6 +78,7 @@ describe('explicit safe skills', () => {
         maxToolOutputCharacters: 8000,
       },
       attachments: [],
+      imagesSupported: true,
       thinkingEnabled: false,
       keepAliveSeconds: 300,
       maxToolIterations: 10,
@@ -128,6 +130,7 @@ describe('explicit safe skills', () => {
         maxToolOutputCharacters: 8000,
       },
       attachments: [],
+      imagesSupported: true,
       thinkingEnabled: false,
       keepAliveSeconds: 300,
       maxToolIterations: 10,
@@ -142,7 +145,7 @@ describe('explicit safe skills', () => {
       new CancellationSource(),
       events,
     );
-    const system = captured[0]?.messages[0]?.content ?? '';
+    const system = chatText(captured[0]?.messages[0]?.content ?? '') as string;
     expect(captured[0]?.messages[0]?.role).toBe('system');
     expect(system.indexOf('PROJECT RULES')).toBeGreaterThan(0);
     expect(system.indexOf('PROJECT RULES')).toBeLessThan(system.indexOf('SELECTED PROCEDURE'));
@@ -163,6 +166,7 @@ const baseline: ContextBuildRequest = {
   activeSkill: null,
   currentUserMessageId: 'current',
   currentStepId: 'step',
+  imagesSupported: true,
   settings: {
     maxTokens: 2048,
     reservedOutputTokens: 256,

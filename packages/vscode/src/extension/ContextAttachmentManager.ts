@@ -12,7 +12,7 @@ export class ContextAttachmentManager {
   private revision = 0;
 
   constructor(
-    private readonly root: string | null,
+    private readonly root: () => string | null,
     private readonly editable = () => true,
   ) {}
 
@@ -38,22 +38,62 @@ export class ContextAttachmentManager {
     this.revision++;
   }
 
-  async add(source: 'Selection' | 'CurrentFile' | 'PickFiles'): Promise<void> {
+  /** Attaches a pasted/dropped image; bounded to 5 MB decoded. */
+  async addImage(name: string, mimeType: string, dataUrl: string): Promise<void> {
     if (!this.editable()) throw new Error('Wait until generation stops.');
-    if (!this.root) throw new Error('Open a workspace to attach context.');
+    const base64 = dataUrl.slice(dataUrl.indexOf(',') + 1);
+    if (Math.floor((base64.length * 3) / 4) > 5_000_000)
+      throw new Error('Images up to 5 MB can be attached.');
+    this.attachments = mergeContextAttachments(this.attachments, [
+      {
+        id: randomUUID(),
+        source: 'ExplicitFile',
+        label: name.trim().slice(0, 120) || 'image',
+        content: '',
+        image: { mimeType, base64 },
+      },
+    ]);
+    this.revision++;
+  }
+
+  /** Attaches one workspace file chosen by a root-relative path (the @mention flow). */
+  async addPath(relativePath: string): Promise<void> {
+    if (!this.editable()) throw new Error('Wait until generation stops.');
+    const root = this.root();
+    if (!root) throw new Error('Open a workspace to attach context.');
+    const cancellation = new CancellationSource();
+    const guard = new NodeWorkspacePathGuard(root);
+    const path = await guard.resolve(root, relativePath, 'Read', cancellation);
+    const { content } = await new BoundedTextFile().read(path.canonicalPath, cancellation, 100_000);
+    this.attachments = mergeContextAttachments(this.attachments, [
+      { id: randomUUID(), source: 'ExplicitFile', label: path.relativePath, content },
+    ]);
+    this.revision++;
+  }
+
+  /** `uris` comes from an Explorer selection; without it PickFiles shows a file dialog. */
+  async add(
+    source: 'Selection' | 'CurrentFile' | 'PickFiles',
+    uris?: readonly vscode.Uri[],
+  ): Promise<void> {
+    if (!this.editable()) throw new Error('Wait until generation stops.');
+    const root = this.root();
+    if (!root) throw new Error('Open a workspace to attach context.');
     const revision = this.revision;
     const captured: ContextAttachment[] = [];
-    const guard = new NodeWorkspacePathGuard(this.root);
+    const guard = new NodeWorkspacePathGuard(root);
     if (source === 'PickFiles') {
-      const files = await vscode.window.showOpenDialog({
-        canSelectMany: true,
-        canSelectFiles: true,
-        canSelectFolders: false,
-      });
+      const files =
+        uris ??
+        (await vscode.window.showOpenDialog({
+          canSelectMany: true,
+          canSelectFiles: true,
+          canSelectFolders: false,
+        }));
       if ((files?.length ?? 0) > 10) throw new Error('Choose up to 10 files at a time.');
       for (const uri of files ?? []) {
         const cancellation = new CancellationSource();
-        const path = await guard.resolve(this.root, uri.fsPath, 'Read', cancellation);
+        const path = await guard.resolve(root, uri.fsPath, 'Read', cancellation);
         const { content } = await new BoundedTextFile().read(
           path.canonicalPath,
           cancellation,
@@ -72,7 +112,7 @@ export class ContextAttachmentManager {
       if (!editor || editor.document.uri.scheme !== 'file' || editor.document.isClosed)
         throw new Error('Open a text file first.');
       const path = await guard.resolve(
-        this.root,
+        root,
         editor.document.uri.fsPath,
         'Read',
         new CancellationSource(),

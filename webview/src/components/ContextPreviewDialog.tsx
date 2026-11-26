@@ -73,9 +73,17 @@ export function ContextPreviewDialog({
             {t('Preview shows the first 50,000 characters. The attachment itself is unchanged.')}
           </div>
         )}
-        <pre className="context-preview-content" tabIndex={0} aria-label={t('Attachment content')}>
-          {preview.content}
-        </pre>
+        {preview.imageDataUrl ? (
+          <img className="context-preview-image" src={preview.imageDataUrl} alt={preview.label} />
+        ) : (
+          <pre
+            className="context-preview-content"
+            tabIndex={0}
+            aria-label={t('Attachment content')}
+          >
+            {preview.content}
+          </pre>
+        )}
         <footer>
           <button
             disabled={busy}

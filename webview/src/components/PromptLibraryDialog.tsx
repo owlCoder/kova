@@ -2,7 +2,6 @@ import { useDeferredValue, useId, useLayoutEffect, useMemo, useRef, useState } f
 import type { SavedPrompt } from '../../../packages/protocol/src/PromptLibrary.js';
 import type { SessionSnapshot } from '../../../packages/protocol/src/SessionSnapshot.js';
 import { useI18n } from '../i18n/I18n.js';
-import { isDesktop } from '../messaging/bridge.js';
 import { recentPrompts } from '../state/recentPrompts.js';
 import { usePromptLibrary } from '../state/usePromptLibrary.js';
 import type { PromptEdit } from '../state/PromptEdit.js';
@@ -126,13 +125,7 @@ export function PromptLibraryDialog({
             <Icon name="close" />
           </button>
         </header>
-        <p className="library-intro">
-          {t(
-            isDesktop
-              ? 'Saved on this device, across your desktop projects.'
-              : 'Saved locally in this VS Code workspace.',
-          )}
-        </p>
+        <p className="library-intro">{t('Saved locally in this VS Code workspace.')}</p>
         {store.error && (
           <div className="library-error" role="alert">
             <Icon name="warning" size={15} />

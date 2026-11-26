@@ -14,6 +14,7 @@ Status: **Implemented**. Deterministic runtime tests cover the permission, prepa
 | get_git_diff   | optional `staged: boolean`, `path: string`                           | ReadOnly; default unstaged, optional root-contained path; fixed Git argv or Git extension API                            |
 | write_file     | `path: string`, `content: string`                                    | WorkspaceWrite; create or full replacement with current before/after preview                                             |
 | edit_file      | `path: string`, `old_string: nonempty string`, `new_string: string`  | WorkspaceWrite; exactly one literal match required                                                                       |
+| apply_patch    | `patch: nonempty unified diff string`                                | WorkspaceWrite; multi-file git-style patch, strict hunk matching, no whole-file deletion; bounded files/hunks/lines      |
 | run_command    | `command: nonempty string`                                           | Dynamic ProcessExecution/Destructive; fixed active-root cwd, bounded cancellable execution                               |
 
 Paths may be root-relative or inside-root absolute paths on the current platform. No arbitrary cwd input, file deletion tool, unified patches, regex replacement or catch-all tool. For search, validate every match's actual resolved path before reading it; globs cannot escape the workspace. Skills/config reads and attached files also use WorkspacePathGuard.

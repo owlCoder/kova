@@ -1,8 +1,8 @@
 {
   "name": "kova",
-  "version": "0.9.0",
+  "version": "1.27.0",
   "private": true,
-  "description": "Local-first AI coding workspace for desktop and VS Code",
+  "description": "Local-first AI coding agent for VS Code",
   "type": "module",
   "workspaces": [
     "packages/*",
@@ -26,13 +26,7 @@
     "smoke:vscode": "node scripts/smoke-vscode.mjs",
     "smoke:ers": "node scripts/smoke-ers.mjs",
     "verify:package": "node scripts/verify-package.mjs",
-    "smoke:vsix": "node scripts/smoke-vscode.mjs --vsix",
-    "desktop:build": "node scripts/desktop/build.mjs",
-    "desktop:dev": "node scripts/desktop/dev.mjs",
-    "desktop:start": "electron dist/desktop",
-    "desktop:package": "npm run desktop:build && electron-builder --config electron-builder.yml --publish never",
-    "desktop:verify": "node scripts/desktop/verify.mjs",
-    "desktop:smoke": "node scripts/desktop/smoke.mjs --verify"
+    "smoke:vsix": "node scripts/smoke-vscode.mjs --vsix"
   },
   "devDependencies": {
     "@types/node": "24.19.2",
@@ -41,8 +35,6 @@
     "@types/vscode": "1.140.0",
     "@vscode/test-electron": "3.1.0",
     "@vscode/vsce": "4.0.0",
-    "electron": "44.8.0",
-    "electron-builder": "26.15.3",
     "esbuild": "0.28.2",
     "eslint": "10.13.0",
     "prettier": "3.9.10",
@@ -53,7 +45,6 @@
   },
   "license": "MIT",
   "overrides": {
-    "@electron/get": "5.1.0",
     "source-map-js": "^1.2.2"
   }
 }

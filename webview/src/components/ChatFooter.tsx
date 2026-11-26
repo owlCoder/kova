@@ -1,17 +1,24 @@
 import { useI18n } from '../i18n/I18n.js';
-import { useLayoutEffect, useRef, type RefObject } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react';
 import type { AgentMode } from '../../../packages/protocol/src/AgentMode.js';
 import type { SessionSnapshot } from '../../../packages/protocol/src/SessionSnapshot.js';
-import { inHost, isDesktop, send } from '../messaging/bridge.js';
+import { inHost, send, subscribe } from '../messaging/bridge.js';
 import { Icon } from './Icon.js';
 import { ModelPicker } from './ModelPicker.js';
-import { PromptPicker } from './PromptPicker.js';
+import { PromptMenu } from './PromptMenu.js';
 import { ContextAttachments } from './ContextAttachments.js';
+import { ContextMeter } from './ContextMeter.js';
+import { ModeMenu, modeOrder } from './ModeMenu.js';
+import { ProviderBanner } from './ProviderBanner.js';
+import { usePopover } from './usePopover.js';
+import { menuKeydown } from './menuKeydown.js';
+import { matchSlashCommands, type SlashCommand } from './slashCommands.js';
 
 type Props = {
   snapshot: SessionSnapshot | null;
   busy: boolean;
   error: string;
+  providerIssue: string;
   prompt: string;
   model: string;
   mode: AgentMode;
@@ -19,9 +26,13 @@ type Props = {
   onDismissError(): void;
   onPromptChange(value: string): void;
   onSubmit(): void;
+  onSubmitText(text: string): void;
   onModelChange(value: string): void;
   onModeChange(value: AgentMode): void;
   onOpenLibrary(): void;
+  onOpenSettings(): void;
+  onOpenPalette(): void;
+  onInsertPrompt(text: string): void;
   onPreviewContext(id: string): void;
 };
 
@@ -29,6 +40,7 @@ export function ChatFooter({
   snapshot,
   busy,
   error,
+  providerIssue,
   prompt,
   model,
   mode,
@@ -36,59 +48,197 @@ export function ChatFooter({
   onDismissError,
   onPromptChange,
   onSubmit,
+  onSubmitText,
   onModelChange,
   onModeChange,
   onOpenLibrary,
+  onOpenSettings,
+  onOpenPalette,
+  onInsertPrompt,
   onPreviewContext,
 }: Props) {
   const { t } = useI18n();
-  const contextMenu = useRef<HTMLDetailsElement>(null);
+  const attachMenu = usePopover({ disabled: busy, minimumWidth: 190 });
+  const [slashIndex, setSlashIndex] = useState(0);
+  const [slashDismissed, setSlashDismissed] = useState(false);
+  const slashMatches = matchSlashCommands(prompt);
+  const slashOpen = prompt.startsWith('/') && !slashDismissed;
+  // @mention: a "@query" fragment right before the caret opens the file menu.
+  const [mention, setMention] = useState<{ query: string; start: number } | null>(null);
+  const [mentionDismissed, setMentionDismissed] = useState(false);
+  const [mentionFiles, setMentionFiles] = useState<readonly string[]>([]);
+  const [mentionTruncated, setMentionTruncated] = useState(false);
+  const [mentionIndex, setMentionIndex] = useState(0);
+  const mentionRequest = useRef<string | null>(null);
+  const mentionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () =>
+      subscribe((message) => {
+        if (message.type === 'WorkspaceFiles' && message.requestId === mentionRequest.current) {
+          setMentionFiles(message.files);
+          setMentionTruncated(message.truncated);
+          setMentionIndex(0);
+        }
+      }),
+    [],
+  );
+  const mentionOpen =
+    !slashOpen && !mentionDismissed && mention !== null && Boolean(snapshot?.toolsEnabled);
+  const updateMention = (value: string, caret: number) => {
+    const before = value.slice(0, caret);
+    const match = /(?:^|\s)@([^\s@]{0,80})$/.exec(before);
+    if (match) {
+      const next = { query: match[1] ?? '', start: before.length - match[0].length };
+      setMention(next);
+      setMentionDismissed(false);
+      if (mentionTimer.current) clearTimeout(mentionTimer.current);
+      mentionTimer.current = setTimeout(() => {
+        mentionRequest.current = send({ type: 'ListWorkspaceFiles', query: next.query });
+      }, 120);
+    } else {
+      setMention(null);
+      setMentionFiles([]);
+    }
+  };
+  const attachImageFile = (file: File) => {
+    if (!/^image\/(png|jpeg|webp|gif)$/.test(file.type)) return;
+    if (file.size > 5_000_000) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = String(reader.result ?? '');
+      send({
+        type: 'AttachImage',
+        name: file.name || 'pasted-image',
+        mimeType: file.type,
+        dataUrl,
+      });
+    };
+    reader.readAsDataURL(file);
+  };
+  const imageFiles = (event: {
+    clipboardData?: DataTransfer | null;
+    dataTransfer?: DataTransfer | null;
+  }) => {
+    const dt = event.clipboardData ?? event.dataTransfer;
+    return dt ? [...dt.files].filter((file) => file.type.startsWith('image/')) : [];
+  };
+  const pickMention = (path: string) => {
+    if (!mention) return;
+    const end = mention.start + 1 + mention.query.length;
+    onPromptChange(`${prompt.slice(0, mention.start)}@${path} ${prompt.slice(end)}`);
+    setMention(null);
+    setMentionFiles([]);
+    send({ type: 'AttachPath', path });
+    inputRef.current?.focus();
+  };
   useLayoutEffect(() => {
     const resize = () => {
       const field = inputRef.current;
       if (!field) return;
       field.style.height = 'auto';
-      field.style.height = `${Math.min(field.scrollHeight, 240)}px`;
+      field.style.height = `${Math.min(field.scrollHeight, 260)}px`;
     };
     resize();
     window.addEventListener('resize', resize);
     return () => window.removeEventListener('resize', resize);
-  }, [prompt, inputRef, snapshot?.desktop?.textSize, snapshot?.textSize]);
-  const usage = snapshot?.usage;
-  const used = usage
-    ? (usage.actualInputTokens ?? usage.estimatedInputTokens) + (usage.actualOutputTokens ?? 0)
-    : 0;
-  const max = usage?.maxTokens ?? snapshot?.contextMaxTokens ?? 32768;
+  }, [prompt, inputRef, snapshot?.textSize]);
   const attach = (source: 'Selection' | 'CurrentFile' | 'PickFiles') => {
     send({ type: 'AddContext', source });
-    if (contextMenu.current) contextMenu.current.open = false;
+    attachMenu.hide();
+  };
+  const nextMode = () => modeOrder[(modeOrder.indexOf(mode) + 1) % modeOrder.length]!;
+  const disabled = !inHost || !snapshot || snapshot.configuringProvider;
+  const runSlashCommand = (command: SlashCommand) => {
+    onPromptChange('');
+    setSlashDismissed(false);
+    setSlashIndex(0);
+    if (command.action.type === 'message') {
+      send({ type: command.action.message });
+    } else if (command.action.type === 'submit') {
+      onSubmitText(command.action.prompt);
+    } else if (command.action.type === 'export') {
+      if (snapshot)
+        send({
+          type: 'ExportConversation',
+          conversationId: snapshot.conversationId,
+          action: command.action.action,
+        });
+    } else {
+      const target = command.action.target;
+      if (target === 'settings') onOpenSettings();
+      else if (target === 'library') onOpenLibrary();
+      else if (target === 'palette') onOpenPalette();
+      else {
+        // Open the matching composer popover: model picker, mode menu or context ring.
+        const selector =
+          target === 'model'
+            ? '.model-trigger'
+            : target === 'mode'
+              ? '.mode-toggle'
+              : '.context-trigger';
+        document.querySelector<HTMLButtonElement>(selector)?.click();
+      }
+    }
   };
   return (
     <footer className="chat-footer">
       {error && (
         <div className="error-banner" role="alert">
-          <Icon name="warning" size={15} />
+          <Icon name="warning" size={14} />
           <span>{error}</span>
           <button aria-label={t('Dismiss error')} onClick={onDismissError}>
-            <Icon name="close" size={14} />
+            <Icon name="close" size={13} />
           </button>
         </div>
       )}
       {snapshot && snapshot.providerStatus !== 'Available' && (
-        <div className="connection">
-          <span className="status-dot" />
-          <span>
-            {snapshot.providerStatus === 'ModelMissing'
-              ? t('Choose an available model')
-              : t('Connect an AI provider to get started')}
-          </span>
-          <button disabled={busy} onClick={() => send({ type: 'OpenProviderSetup' })}>
-            {t('Connect')}
-            <Icon name="arrow" size={13} />
-          </button>
-        </div>
+        <ProviderBanner snapshot={snapshot} issue={providerIssue} busy={busy} />
       )}
-      <div className={`composer ${busy ? 'busy' : ''}`}>
+      <div className={`composer ${busy ? 'busy' : ''} mode-${mode.toLowerCase()}`}>
+        {slashOpen && (
+          <div className="slash-menu" role="menu" aria-label={t('Slash commands')}>
+            {slashMatches.length ? (
+              slashMatches.map((command, index) => (
+                <button
+                  key={command.id}
+                  role="menuitemradio"
+                  aria-checked={index === slashIndex}
+                  className={index === slashIndex ? 'active' : ''}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => runSlashCommand(command)}
+                  onMouseEnter={() => setSlashIndex(index)}
+                >
+                  <strong>{command.command}</strong>
+                  <small>{t(command.hintKey)}</small>
+                </button>
+              ))
+            ) : (
+              <p className="slash-empty">{t('No matching commands.')}</p>
+            )}
+          </div>
+        )}
+        {mentionOpen && (
+          <div className="slash-menu mention-menu" role="menu" aria-label={t('Mention a file')}>
+            {mentionFiles.length ? (
+              mentionFiles.map((path, index) => (
+                <button
+                  key={path}
+                  role="menuitemradio"
+                  aria-checked={index === mentionIndex}
+                  className={index === mentionIndex ? 'active' : ''}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => pickMention(path)}
+                  onMouseEnter={() => setMentionIndex(index)}
+                >
+                  <strong>@{path}</strong>
+                </button>
+              ))
+            ) : (
+              <p className="slash-empty">{t('No matching files.')}</p>
+            )}
+            {mentionTruncated && <p className="slash-empty">{t('Showing first matches only.')}</p>}
+          </div>
+        )}
         <ContextAttachments
           items={snapshot?.contextAttachments ?? []}
           busy={busy}
@@ -96,69 +246,146 @@ export function ChatFooter({
         />
         <textarea
           aria-label={t('Ask Kova')}
-          placeholder={t('Ask anything, or describe what you want to build…')}
+          placeholder={
+            busy
+              ? t('Kova is working… Esc to interrupt')
+              : t('Ask Kova to explain, edit or test your code, or type / for commands')
+          }
           value={prompt}
           ref={inputRef}
-          disabled={!inHost || !snapshot || snapshot.configuringProvider}
+          disabled={disabled}
           maxLength={16000}
-          rows={3}
-          onChange={(event) => onPromptChange(event.target.value)}
+          rows={1}
+          onChange={(event) => {
+            onPromptChange(event.target.value);
+            setSlashIndex(0);
+            setSlashDismissed(false);
+            updateMention(event.target.value, event.target.selectionStart);
+          }}
+          onKeyUp={(event) =>
+            updateMention(event.currentTarget.value, event.currentTarget.selectionStart)
+          }
+          onClick={(event) =>
+            updateMention(event.currentTarget.value, event.currentTarget.selectionStart)
+          }
+          onPaste={(event) => {
+            for (const file of imageFiles(event)) {
+              event.preventDefault();
+              attachImageFile(file);
+            }
+          }}
+          onDragOver={(event) => {
+            if (event.dataTransfer?.types.includes('Files')) event.preventDefault();
+          }}
+          onDrop={(event) => {
+            const files = imageFiles(event);
+            if (files.length) {
+              event.preventDefault();
+              for (const file of files) attachImageFile(file);
+            }
+          }}
+          title={t('Paste or drop an image to attach it')}
           onKeyDown={(event) => {
-            if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
+            if (event.nativeEvent.isComposing) return;
+            if (mentionOpen && mentionFiles.length) {
+              if (event.key === 'Escape') {
+                event.preventDefault();
+                event.stopPropagation();
+                setMentionDismissed(true);
+                return;
+              }
+              if (['ArrowDown', 'ArrowUp'].includes(event.key)) {
+                event.preventDefault();
+                setMentionIndex(
+                  (index) =>
+                    (index + (event.key === 'ArrowDown' ? 1 : -1) + mentionFiles.length) %
+                    mentionFiles.length,
+                );
+                return;
+              }
+              if ((event.key === 'Enter' || event.key === 'Tab') && !event.shiftKey) {
+                event.preventDefault();
+                pickMention(mentionFiles[Math.min(mentionIndex, mentionFiles.length - 1)]!);
+                return;
+              }
+            }
+            if (slashOpen && event.key === 'Escape') {
+              event.preventDefault();
+              event.stopPropagation();
+              setSlashDismissed(true);
+              return;
+            }
+            if (slashOpen && ['ArrowDown', 'ArrowUp'].includes(event.key)) {
+              event.preventDefault();
+              setSlashIndex(
+                (index) =>
+                  (index + (event.key === 'ArrowDown' ? 1 : -1) + slashMatches.length) %
+                  Math.max(1, slashMatches.length),
+              );
+              return;
+            }
+            if (slashOpen && event.key === 'Enter' && !event.shiftKey && slashMatches.length) {
+              event.preventDefault();
+              runSlashCommand(slashMatches[Math.min(slashIndex, slashMatches.length - 1)]!);
+              return;
+            }
+            if (event.key === 'Enter' && !event.shiftKey) {
               event.preventDefault();
               onSubmit();
+            } else if (event.key === 'Tab' && event.shiftKey && !busy) {
+              event.preventDefault();
+              onModeChange(nextMode());
             }
           }}
         />
-        <div className="composer-actions">
+        <div className="composer-bar">
           <div className="composer-tools">
-            <details className="attach-menu" ref={contextMenu}>
-              <summary title={t('Add context')} aria-label={t('Add context')}>
-                <Icon name="plus" />
-              </summary>
-              <div className="floating-menu">
-                {!isDesktop && (
-                  <button disabled={busy} onClick={() => attach('Selection')}>
-                    <Icon name="code" size={14} />
-                    {t('Selection')}
-                  </button>
-                )}
+            <ModeMenu mode={mode} disabled={busy} onChange={onModeChange} />
+            <div className="attach-menu" ref={attachMenu.root}>
+              <button
+                ref={(node) => {
+                  attachMenu.trigger.current = node;
+                }}
+                type="button"
+                className="icon-button"
+                disabled={busy}
+                title={t('Add context')}
+                aria-label={t('Add context')}
+                aria-haspopup="menu"
+                aria-expanded={attachMenu.open}
+                onClick={() => (attachMenu.open ? attachMenu.hide() : attachMenu.show())}
+              >
+                <Icon name="paperclip" size={14} />
+              </button>
+              <div
+                ref={attachMenu.panel}
+                popover="auto"
+                role="menu"
+                aria-label={t('Add context')}
+                className="floating-menu"
+                style={attachMenu.position}
+                onKeyDown={(event) => menuKeydown(event, () => attachMenu.hide(true))}
+              >
+                <button disabled={busy} onClick={() => attach('Selection')}>
+                  <Icon name="code" size={14} />
+                  {t('Selection')}
+                </button>
                 <button disabled={busy} onClick={() => attach('CurrentFile')}>
                   <Icon name="file" size={14} />
-                  {isDesktop ? t('Current preview') : t('Current file')}
+                  {t('Current file')}
                 </button>
                 <button disabled={busy} onClick={() => attach('PickFiles')}>
                   <Icon name="folderOpen" size={14} />
                   {t('Choose files…')}
                 </button>
               </div>
-            </details>
-            <PromptPicker
-              disabled={!inHost || !snapshot || Boolean(snapshot.configuringProvider)}
-              onOpen={onOpenLibrary}
+            </div>
+            <PromptMenu
+              messages={snapshot?.messages}
+              disabled={disabled}
+              onChoose={onInsertPrompt}
+              onManage={onOpenLibrary}
             />
-            <label className="mode-control">
-              <Icon name={mode === 'Plan' ? 'plan' : mode === 'Auto' ? 'zap' : 'code'} size={14} />
-              <select
-                aria-label={t('Agent mode')}
-                title={t(
-                  {
-                    Manual: 'Manual · approve changes',
-                    Plan: 'Plan · read only',
-                    Edit: 'Edit · approve commands',
-                    Auto: 'Auto · allowlisted commands',
-                  }[mode],
-                )}
-                value={mode}
-                disabled={busy}
-                onChange={(event) => onModeChange(event.target.value as AgentMode)}
-              >
-                <option value="Manual">{t('Manual · approve changes')}</option>
-                <option value="Plan">{t('Plan · read only')}</option>
-                <option value="Edit">{t('Edit · approve commands')}</option>
-                <option value="Auto">{t('Auto · allowlisted commands')}</option>
-              </select>
-            </label>
             {!!snapshot?.skills.length && (
               <select
                 className="skill-picker"
@@ -178,89 +405,40 @@ export function ChatFooter({
               </select>
             )}
           </div>
-          {busy && !snapshot?.configuringProvider ? (
-            <button
-              className="send stop"
-              title={t('Stop generation')}
-              aria-label={t('Stop generation')}
-              onClick={() =>
-                snapshot?.activeRunId && send({ type: 'CancelRun', runId: snapshot.activeRunId })
-              }
-            >
-              <Icon name="stop" size={13} />
-            </button>
-          ) : (
-            <button
-              className="send"
-              title={t('Send message')}
-              aria-label={t('Send')}
-              disabled={
-                busy || !prompt.trim() || !snapshot?.models.some((item) => item.id === model)
-              }
-              onClick={onSubmit}
-            >
-              <Icon name="send" size={17} />
-            </button>
-          )}
-        </div>
-      </div>
-      <div className="composer-meta">
-        <div className="provider-control">
-          <button
-            title={t('Configure AI provider')}
-            disabled={busy}
-            onClick={() => send({ type: 'OpenProviderSetup' })}
-          >
-            <Icon name="sparkles" size={13} />
-            <span>{snapshot?.providerLabel ?? t('AI provider')}</span>
-          </button>
-          <span className="meta-divider">/</span>
-          <ModelPicker
-            models={snapshot?.models}
-            model={model}
-            busy={busy}
-            onChange={onModelChange}
-          />
-        </div>
-        <details className="context">
-          <summary title={t('Context usage')}>
-            <span className="context-ring">◔</span>
-            <span>
-              {Math.round(used / 100) / 10}k / {Math.round(max / 100) / 10}k
-            </span>
-          </summary>
-          <div className="context-details">
-            <strong>{t('Context window')}</strong>
-            <progress value={Math.min(used, max)} max={max} />
-            <span>
-              {t('Input')}
-              <b>{usage?.actualInputTokens ?? usage?.estimatedInputTokens ?? 0}</b>
-            </span>
-            <span>
-              {t('Output')}
-              <b>{usage?.actualOutputTokens ?? '—'}</b>
-            </span>
-            <span>
-              {t('Tool definitions')}
-              <b>{usage?.toolDefinitionTokens ?? 0}</b>
-            </span>
+          <div className="composer-send">
+            <ModelPicker
+              models={snapshot?.models}
+              model={model}
+              busy={busy}
+              onChange={onModelChange}
+            />
+            <ContextMeter snapshot={snapshot} />
+            {busy && !snapshot?.configuringProvider ? (
+              <button
+                className="send stop"
+                title={t('Stop generation')}
+                aria-label={t('Stop generation')}
+                onClick={() =>
+                  snapshot?.activeRunId && send({ type: 'CancelRun', runId: snapshot.activeRunId })
+                }
+              >
+                <Icon name="stop" size={12} />
+              </button>
+            ) : (
+              <button
+                className="send"
+                title={t('Send message')}
+                aria-label={t('Send')}
+                disabled={
+                  busy || !prompt.trim() || !snapshot?.models.some((item) => item.id === model)
+                }
+                onClick={onSubmit}
+              >
+                <Icon name="up" size={15} />
+              </button>
+            )}
           </div>
-        </details>
-      </div>
-      <div className="footer-note">
-        <span
-          className={`status-dot ${snapshot?.providerStatus === 'Available' ? 'online' : ''}`}
-        />
-        {snapshot?.toolsEnabled ? t('Workspace tools ready') : t('Chat mode')}
-        <span>
-          {prompt ? (
-            <>
-              <Icon name="pencil" size={11} /> {t('Draft')}
-            </>
-          ) : (
-            t('Shift + Enter for a new line')
-          )}
-        </span>
+        </div>
       </div>
     </footer>
   );

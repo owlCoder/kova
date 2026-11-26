@@ -33,7 +33,8 @@
   --code: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
   --text-scale: 1;
 }
-:root[data-theme='light'] {
+/* VS Code marks the webview <body> with vscode-light / vscode-high-contrast-light. */
+:is(:root[data-theme='light'], body.vscode-light, body.vscode-high-contrast-light) {
   color-scheme: light;
   --bg: #f8f7f3;
   --sidebar: #eeeee8;
@@ -57,4 +58,9 @@
   --shadow-dialog: 0 24px 80px #1d2b3826, 0 0 0 1px #ffffff80;
   --shadow-float: 0 12px 36px #1d2b3820, 0 2px 8px #1d2b3810;
   --backdrop: #18232955;
+}
+/* High-contrast themes need visible structure lines. */
+body.vscode-high-contrast {
+  --border: var(--vscode-contrastBorder, #ffffff);
+  --border-soft: var(--vscode-contrastBorder, #ffffff);
 }

@@ -44,6 +44,7 @@ export async function run() {
     thinkingEnabled: false,
     keepAliveSeconds: 300,
     toolsEnabled: false,
+    imagesSupported: true,
     maxToolIterations: 10,
     commandAllowlist: [],
   };

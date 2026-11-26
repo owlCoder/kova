@@ -13,11 +13,13 @@ import type { ToolCall } from '../../../core/src/tools/ToolCall.js';
 import type { ToolDefinition } from '../../../core/src/tools/ToolDefinition.js';
 import type { ToolResult } from '../../../core/src/tools/ToolResult.js';
 import { StdioMcpClient } from '../../../mcp/src/StdioMcpClient.js';
+import { ApplyPatchTool } from '../tools/ApplyPatchTool.js';
 import { EditFileTool } from '../tools/EditFileTool.js';
 import { GetGitDiffTool } from '../tools/GetGitDiffTool.js';
 import { ListDirectoryTool } from '../tools/ListDirectoryTool.js';
 import { ReadFileTool } from '../tools/ReadFileTool.js';
 import { RunCommandTool } from '../tools/RunCommandTool.js';
+import { UpdateTodosTool } from '../tools/UpdateTodosTool.js';
 import { SearchFilesTool } from '../tools/SearchFilesTool.js';
 import { WriteFileTool } from '../tools/WriteFileTool.js';
 import { CommandHook } from '../adapters/CommandHook.js';
@@ -66,7 +68,9 @@ export class NodeWorkspaceRuntime implements ToolRuntime {
       new GetGitDiffTool(new NodeGitReader(this.runner, guard), guard),
       new WriteFileTool(guard, reader, writer),
       new EditFileTool(guard, reader, writer),
-      new RunCommandTool(guard, this.runner),
+      new ApplyPatchTool(guard, reader, writer),
+      new RunCommandTool(guard, this.runner, events),
+      new UpdateTodosTool(events),
     ])
       this.registry.register(tool);
     this.runtime = this.compose(new HookPipeline());

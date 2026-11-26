@@ -4,11 +4,11 @@ Open the project folder in VS Code, then run **Kova: Open Chat**. Skills, tools,
 
 ## Context and thinking
 
-The defaults are 32,768 context tokens, 4,096 reserved output tokens and a 10% safety margin. Change them through **Kova: Open Settings** or VS Code settings JSON:
+The default context budget is 200,000 tokens (capped to the selected model's window, and to 32,768 for local Ollama), with 4,096 reserved output tokens and a 10% safety margin. Change them in the **Kova settings** dialog (**Kova: Open Settings**, or Cmd/Ctrl+, in the chat) or through VS Code settings JSON:
 
 ```json
 {
-  "kova.context.maxTokens": 32768,
+  "kova.context.maxTokens": 200000,
   "kova.context.reservedOutputTokens": 4096,
   "kova.context.safetyMarginRatio": 0.1,
   "kova.ollama.think": true
@@ -80,6 +80,16 @@ At the next run, Kova loads the configuration, starts changed servers and discov
 
 The full [ERS walkthrough](../examples/ers/README.md) includes the review skill, MCP config and hooks. Remote HTTP/SSE transports are not supported.
 
+## Workspace files
+
+With a folder open, Kova's agent works directly in it, like a CLI harness: it lists, searches and reads files, then creates or edits them with `write_file`/`edit_file`/`apply_patch` (unified diffs, multi-file, strict hunk matching) and can run commands such as `dotnet build` with the workspace root as the working directory. Every path is resolved and re-checked against the workspace root, so tools cannot touch files outside it; `.git`, `.vscode` and Kova's own config stay protected and always require approval. Tool calls and their results appear as rows in the transcript, `run_command` streams its output live, and pending changes ask for approval with a diff preview (or run directly in **Edit**/**Auto**). The session follows the opened folder live: adding, removing or switching workspace folders rebuilds the tool runtime once the current run finishes, and with no folder open the chat still answers but file tools stay disabled (the welcome screen says so).
+
+Type `@` in the composer to mention a workspace file (debounced search, inserts `@path` and attaches the file), or paste/drop an image to attach it for vision-capable models (`kova.openaiCompatible.supportsVision`, Ollama reports the `vision` capability). Multi-step runs can publish a live plan via the `update_todos` checklist in the transcript. `/init` asks the agent to inspect the workspace and write `AGENTS.md`. After a run that changed files, a **Revert run changes** bar under the transcript restores tracked files with `git checkout` and deletes files the run created (after a modal confirmation). The context meter popover also shows cumulative token usage for the conversation.
+
+## Workspace files (legacy)
+
+With a folder open, Kova's agent works directly in it, like a CLI harness: it lists, searches and reads files, then creates or edits them with `write_file`/`edit_file` (for example `Domain/User.cs`) and can run commands such as `dotnet build` with the workspace root as the working directory. Every path is resolved and re-checked against the workspace root, so tools cannot touch files outside it; `.git`, `.vscode` and Kova's own config stay protected and always require approval. Tool calls and their results appear as rows in the transcript, and pending changes ask for approval with a diff preview (or run directly in **Edit**/**Auto**). The session follows the opened folder live: adding, removing or switching workspace folders rebuilds the tool runtime once the current run finishes, and with no folder open the chat still answers but file tools stay disabled (the welcome screen says so).
+
 ## Modes and hooks
 
 - **Plan:** read-only tools; no edits or commands.
@@ -99,6 +109,10 @@ Click an attachment to preview its captured text, source and character count. Th
 
 The interface initially renders the latest 40 saved messages. Load earlier messages in batches of 40 while keeping your reading position, or choose Show recent to return to the end. Find in conversation loads the saved messages in the current snapshot, including those initially outside the rendered window. Closing Find keeps those messages available until you choose Show recent or change conversations. Rendering limits do not change the agent's context-compaction policy.
 
+## Chat history
+
+Conversations are saved in VS Code workspace storage after each turn, so they survive a window reload. The Activity Bar launcher lists them under **Conversations**, newest first, titled by the first prompt; click one to reopen it in the chat. The list keeps at most 50 conversations per workspace, stores at most the newest 200 messages each and drops the oldest entries beyond a 3 MB total, so storage stays bounded on disk.
+
 ## Personal prompt library
 
 Open **Prompt library** from the composer or command palette. **Saved** contains your own reusable prompts; **Templates** has six translated starting points; **Recent** shows up to 12 distinct user messages from the current conversation. Search the selected collection by title or content.
@@ -108,6 +122,6 @@ Open **Prompt library** from the composer or command palette. **Saved** contains
 - Click a prompt to insert it at the composer caret. Existing text and the selected mode remain; nothing is sent automatically.
 - Edit or remove a saved prompt. If another view changes the library while you edit, reopen the saved prompt or choose **Save a copy** to retain your draft without overwriting that view’s changes. **Undo removal** restores the latest removed prompt while the library remains open. Closing it ends that undo opportunity.
 
-Desktop libraries belong to the local app profile and remain available across projects. VS Code libraries use local workspace storage and are shared by that workspace's sidebar and chat tab. Starting a new conversation keeps saved prompts. No library text enters routine conversation snapshots or model requests automatically. Local prompt storage is ordinary application data, separate from credentials; libraries are not synchronized between desktop and VS Code.
+Prompt libraries use local workspace storage and are shared by that workspace's sidebar and chat tab. Starting a new conversation keeps saved prompts. No library text enters routine conversation snapshots or model requests automatically. Local prompt storage is ordinary application data, separate from credentials.
 
 Clipboard controls show **Copied** only after the host confirms a successful write. Messages/code over the 60,000-character clipboard limit have a selection-copy hint; select a smaller portion for native copy.

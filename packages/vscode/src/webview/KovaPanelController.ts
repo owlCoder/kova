@@ -14,7 +14,11 @@ export class KovaPanelController implements vscode.Disposable {
       this.panel.reveal(this.panel.viewColumn, false);
       return;
     }
-    const panel = vscode.window.createWebviewPanel('kova.chat', 'Kova', vscode.ViewColumn.Active, {
+    // Like an agent tab: beside the file being edited, so the Explorer stays free.
+    const column = vscode.window.activeTextEditor
+      ? vscode.ViewColumn.Beside
+      : vscode.ViewColumn.Active;
+    const panel = vscode.window.createWebviewPanel('kova.chat', 'Kova', column, {
       retainContextWhenHidden: true,
     });
     this.panel = panel;

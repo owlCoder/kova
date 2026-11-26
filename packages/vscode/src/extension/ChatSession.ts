@@ -1,7 +1,5 @@
 import type { ActiveChatRun } from './ActiveChatRun.js';
 import { ChatResources } from './ChatResources.js';
-import { handlePresentationAction, presentationActions } from './handlePresentationAction.js';
-import { readUiPreferences } from './readUiPreferences.js';
 import { randomUUID } from 'node:crypto';
 import * as vscode from 'vscode';
 import { ChatAgent } from '../../../core/src/agents/ChatAgent.js';
@@ -12,7 +10,9 @@ import { CancellationSource } from '../../../core/src/common/CancellationSource.
 import type { ContextUsage } from '../../../core/src/context/ContextUsage.js';
 import { TokenCounter } from '../../../core/src/context/TokenCounter.js';
 import { InMemoryConversationRepository } from '../../../core/src/conversations/InMemoryConversationRepository.js';
-import type { ModelInfo } from '../../../core/src/models/ModelInfo.js';
+import type { Conversation } from '../../../core/src/conversations/Conversation.js';
+import type { ConversationRepository } from '../../../core/src/conversations/ConversationRepository.js';
+import type { WorkspaceConversationRepository } from './conversationStore.js';
 import type { SkillMetadata } from '../../../core/src/skills/Skill.js';
 import { SkillLoader } from '../../../core/src/skills/SkillLoader.js';
 import type { HostMessage } from '../../../protocol/src/HostMessage.js';
@@ -24,17 +24,28 @@ import { ProviderManager } from '../providers/ProviderManager.js';
 import type { WorkspaceSkillRepository } from '../../../runtime/src/skills/WorkspaceSkillRepository.js';
 import type { WorkspaceProjectInstructions } from '../../../runtime/src/adapters/WorkspaceProjectInstructions.js';
 import { WebviewApprovalPort } from '../webview/WebviewApprovalPort.js';
-import { approvalView, projectEvent } from '../../../runtime/src/presentation/projectEvent.js';
+import { projectEvent } from '../../../runtime/src/presentation/projectEvent.js';
 import { ContextAttachmentManager } from './ContextAttachmentManager.js';
-import { projectConversationMessages } from '../../../runtime/src/presentation/projectConversationMessages.js';
 import { nextStreamingMessage } from '../../../runtime/src/presentation/nextStreamingMessage.js';
-import { contextAttachmentViews } from '../../../runtime/src/presentation/contextAttachmentViews.js';
+import { composeSnapshot } from './sessionSnapshot.js';
 import { StreamEventBuffer } from '../../../runtime/src/presentation/StreamEventBuffer.js';
 import { logAgentEvent } from './logAgentEvent.js';
 import { readRunSettings } from './readRunSettings.js';
 import { createWorkspaceServices } from './createWorkspaceServices.js';
+import { WorkspaceRootController } from './WorkspaceRootController.js';
+import { ModelDiscovery } from './modelDiscovery.js';
+import type { WorkspaceContextHost } from './workspaceContext.js';
+import { SessionInitializer } from './sessionInitializer.js';
+import {
+  openStoredConversation,
+  resetConversation,
+  type ConversationLifecycleHost,
+} from './conversationLifecycle.js';
+import { handleChatMessage, type ChatMessageHost } from './handleChatMessage.js';
+import { RunChangeTracker } from './runChanges.js';
 export class ChatSession {
   readonly hostSessionId = randomUUID();
+  readonly currentConversationId = (): string => this.conversationId;
   readonly approval = new WebviewApprovalPort();
   private sequence = 0;
   private readonly resources: ChatResources;
@@ -48,26 +59,21 @@ export class ChatSession {
       event: projectEvent(event),
     }),
   );
-  private readonly repository = new InMemoryConversationRepository();
   private readonly counters = new Map<string, TokenCounter>();
   private readonly providers: ProviderManager;
+  private readonly discovery: ModelDiscovery;
   private readonly contextAttachments: ContextAttachmentManager;
   private conversationId = randomUUID();
   private activeRun: ActiveChatRun | null = null;
   private preparingRun: CancellationSource | null = null;
   private streamingResponse: SessionSnapshot['messages'][number] | null = null;
-  private modelDiscovery: CancellationSource | null = null;
-  private initialization: Promise<void> | null = null;
-  private initializationCancellation: CancellationSource | null = null;
+  private readonly initializer: SessionInitializer;
+  private readonly workspaceHost: WorkspaceContextHost;
   private runtime: WorkspaceRuntime | null = null;
   private skillsRepository: WorkspaceSkillRepository | null = null;
   private projectInstructions: WorkspaceProjectInstructions | null = null;
-  private models: readonly ModelInfo[] = [];
   private skills: readonly SkillMetadata[] = [];
   private skillId: string | null = null;
-  private selectedModel = '';
-  private providerFingerprint = '';
-  private providerStatus: 'Available' | 'Unavailable' | 'ModelMissing' = 'Unavailable';
   private state: AgentState = 'Idle';
   private mode: AgentMode = 'Manual';
   private usage: ContextUsage | null = null;
@@ -75,23 +81,152 @@ export class ChatSession {
   private disposed = false;
   private readonly listeners = new Set<(message: HostMessage) => void>();
   private readonly requests = new Set<string>();
+  private readonly roots: WorkspaceRootController;
   constructor(
     private readonly context: vscode.ExtensionContext,
-    private readonly root: string | null,
+    root: string | null,
     private readonly output: vscode.OutputChannel,
     providers?: ProviderManager,
+    private readonly repository: ConversationRepository = new InMemoryConversationRepository(),
   ) {
     this.providers =
       providers ?? new ProviderManager(new ProviderApiKeyStore(this.context.secrets));
+    this.discovery = new ModelDiscovery(
+      this.providers,
+      (message) =>
+        this.emit({
+          type: 'ErrorOccurred',
+          code: 'ProviderUnavailable',
+          message,
+          recoverable: true,
+        }),
+      () => this.disposed,
+    );
+    this.roots = new WorkspaceRootController(root, {
+      busy: () => Boolean(this.activeRun || this.preparingRun || this.configuring),
+      disposed: () => this.disposed,
+      reset: () => this.resetWorkspace(),
+      reinitialize: () => this.initialize().catch(() => {}),
+      notify: () => this.snapshot('workspace-root'),
+    });
     this.contextAttachments = new ContextAttachmentManager(
-      root,
+      () => this.roots.current,
       () => !this.activeRun && !this.preparingRun && !this.configuring && !this.disposed,
     );
+    this.initializer = new SessionInitializer({
+      root: () => this.roots.current,
+      busy: () => Boolean(this.activeRun || this.preparingRun || this.disposed),
+      disposed: () => this.disposed,
+      hasRuntime: () => this.runtime !== null,
+      createServices: (root, cancellation) =>
+        createWorkspaceServices(
+          root,
+          this.approval,
+          { emit: (event) => this.emit(event) },
+          cancellation,
+        ),
+      setServices: (services) => {
+        this.runtime = services.runtime;
+        this.skillsRepository = services.skills;
+        this.projectInstructions = services.instructions;
+      },
+      initializeRuntime: (cancellation) =>
+        this.runtime?.initialize(cancellation) ?? Promise.resolve(),
+      discoverSkills: (root, cancellation) =>
+        this.skillsRepository?.discover(root, cancellation) ?? Promise.resolve([]),
+      setSkills: (skills) => {
+        this.skills = skills;
+      },
+      refreshModels: () => this.refreshModels(),
+    });
+    this.workspaceHost = {
+      root: () => this.roots.current,
+      runActive: () => Boolean(this.activeRun),
+      attachments: this.contextAttachments,
+      deliver: (message) => this.deliver(message),
+      envelope: () => this.envelope(),
+      snapshot: (requestId) => this.snapshot(requestId),
+    };
+    this.lifecycle = {
+      activeRun: () => this.activeRun,
+      conversationId: () => this.conversationId,
+      cancelRun: () => this.cancelActiveRun(),
+      forgetConversation: (id) => this.providers.forgetConversation(id),
+      clearAttachments: () => this.contextAttachments.clear(),
+      clearDraft: () => this.resources.draft.set(''),
+      resetTransientState: () => {
+        this.state = 'Idle';
+        this.usage = null;
+        this.partial = false;
+        this.streamingResponse = null;
+      },
+      setConversationId: (id) => {
+        this.conversationId = id as typeof this.conversationId;
+      },
+      hasConversation: async (id) => Boolean(await this.repository.get(id)),
+      snapshot: (requestId) => this.snapshot(requestId),
+    };
     this.resources = new ChatResources(
       context,
+      this.repository,
       () => ({ conversationId: this.conversationId, attachments: this.contextAttachments.list() }),
       (payload) => this.deliver({ ...this.envelope(), ...payload } as HostMessage),
     );
+    this.messageHost = {
+      context: this.context,
+      resources: this.resources,
+      workspace: this.workspaceHost,
+      attachments: this.contextAttachments,
+      approval: this.approval,
+      requests: this.requests,
+      isRunning: () => Boolean(this.activeRun || this.preparingRun),
+      isConfiguring: () => this.configuring,
+      isCurrentConversation: (id) => id === this.conversationId,
+      partial: () => this.partial,
+      providerLabel: () => this.providers.label(),
+      selectedModel: () => this.discovery.selectedModel,
+      knownSkill: (id) => this.skills.some((skill) => skill.id === id),
+      selectSkill: (id) => {
+        this.skillId = id;
+      },
+      activeRunId: () => this.activeRun?.id ?? null,
+      attachImage: (name, mimeType, dataUrl) =>
+        this.contextAttachments.addImage(name, mimeType, dataUrl),
+      revertRun: async (runId) => {
+        if (this.activeRun) throw new Error('Wait until generation stops.');
+        const summary = await this.changes.revert(runId);
+        this.deliver({ ...this.envelope(), type: 'Notice', message: summary });
+        await this.snapshot('reverted');
+      },
+      cancelRun: (runId) => {
+        if (runId !== this.activeRun?.id) throw new Error('Run is no longer active.');
+        this.activeRun.cancellation.cancel();
+      },
+      resolveApproval: (runId, approvalId, preparationKey, decision) => {
+        if (runId !== this.activeRun?.id) throw new Error('Stale run approval.');
+        this.approval.resolve({ approvalId, preparationKey, decision }, runId);
+      },
+      openDiff: (approvalId) => this.approval.openDiff(approvalId),
+      completeSetup: async () => {
+        await this.context.globalState?.update('kova.setupCompleted', true);
+      },
+      snapshot: (requestId) => this.snapshot(requestId),
+      refreshModels: (force) => this.refreshModels(force),
+      newConversation: () => this.newConversation(),
+      openConversation: (id) => this.openConversation(id),
+      renameConversation: async (id, title) => {
+        const repository = this.repository as Partial<WorkspaceConversationRepository>;
+        if (typeof repository.rename !== 'function') throw new Error('History is unavailable.');
+        await repository.rename(id, title);
+        await this.snapshot('history-changed');
+      },
+      submit: (message) => this.submit(message),
+      accept: (requestId, runId) => this.accept(requestId, runId),
+      notify: (text) => this.deliver({ ...this.envelope(), type: 'Notice', message: text }),
+      clipboardCopied: (requestId) =>
+        this.deliver({ ...this.envelope(), type: 'ClipboardCopied', requestId }),
+      readConversation: (id) => this.repository.get(id) as Promise<Conversation | null>,
+    };
   }
   connect(deliver: (message: HostMessage) => void): () => void {
     this.listeners.add(deliver);
@@ -105,24 +240,28 @@ export class ChatSession {
     this.activeRun?.cancellation.cancel();
   }
   private deliver(message: HostMessage): void {
-    for (const listener of this.listeners) {
+    for (const listener of this.listeners)
       try {
         listener(message);
       } catch {
         this.output.appendLine('[WebviewDeliveryFailed]');
       }
-    }
   }
   private envelope() {
     return {
       protocolVersion: 1 as const,
       hostSessionId: this.hostSessionId,
       sequence: ++this.sequence,
-      workspaceId: this.root,
+      workspaceId: this.roots.current,
     };
   }
   private emit(event: AgentEvent): void {
     if (this.disposed) return;
+    const runId = this.activeRun?.id ?? null;
+    if (runId && event.type === 'ToolRequested')
+      this.changes.onToolRequested(runId, event.call.id, event.call.name, event.call.arguments);
+    else if (runId && event.type === 'ToolCompleted')
+      this.changes.onToolCompleted(runId, event.callId, event.result.status === 'Success');
     if (event.type === 'StateChanged') {
       this.state = event.state;
       if (event.state === 'Failed') this.partial = this.streamingResponse?.partial ?? false;
@@ -139,15 +278,16 @@ export class ChatSession {
     this.configuring = true;
     await this.snapshot('setup-started');
     try {
-      await this.initialization;
+      await this.initializer.pending;
       if (await setup()) {
-        this.selectedModel = '';
+        this.discovery.selectedModel = '';
         this.providerRefreshPending = true;
       }
     } finally {
       this.configuring = false;
       if (this.providerRefreshPending) await this.configurationChanged();
       else await this.snapshot('setup-closed');
+      await this.applyPendingRoot();
     }
   }
   async configurationChanged(): Promise<void> {
@@ -157,214 +297,74 @@ export class ChatSession {
     await this.refreshModels(true);
     await this.snapshot('provider-configuration');
   }
-  initialize(): Promise<void> {
-    if (this.activeRun) return Promise.resolve();
-    if (this.initialization) return this.initialization;
-    if (this.preparingRun || this.disposed) return Promise.resolve();
-    const cancellation = new CancellationSource();
-    this.initializationCancellation = cancellation;
-    const task = this.initializeSession(cancellation);
-    this.initialization = task;
-    void task
-      .finally(() => {
-        if (this.initialization === task) {
-          this.initialization = null;
-          this.initializationCancellation = null;
-        }
-      })
-      .catch(() => {});
-    return task;
+  /** Follows the opened workspace folder; queued while a run or setup is in flight. */
+  async setRoot(root: string | null): Promise<void> {
+    await this.roots.setRoot(root);
   }
-  private async initializeSession(source: CancellationSource): Promise<void> {
-    if (this.root && !this.runtime) {
-      const services = await createWorkspaceServices(
-        this.root,
-        this.approval,
-        { emit: (event) => this.emit(event) },
-        source,
-      );
-      this.runtime = services.runtime;
-      this.skillsRepository = services.skills;
-      this.projectInstructions = services.instructions;
-    }
-    await this.runtime?.initialize(source);
-    this.skills = (await this.skillsRepository?.discover(this.root ?? '', source)) ?? [];
-    await this.refreshModels();
+  private async applyPendingRoot(): Promise<void> {
+    await this.roots.applyPending();
+  }
+  private async resetWorkspace(): Promise<void> {
+    this.initializer.cancel();
+    await this.initializer.pending?.catch(() => {});
+    await this.runtime?.dispose();
+    this.runtime = null;
+    this.skillsRepository = null;
+    this.projectInstructions = null;
+    this.skills = [];
+    this.skillId = null;
+    this.contextAttachments.clear();
+    this.usage = null;
+  }
+  initialize(): Promise<void> {
+    return this.initializer.initialize();
   }
   async refreshModels(force = false): Promise<void> {
-    if (this.disposed) return;
-    this.modelDiscovery?.cancel();
-    const source = new CancellationSource();
-    this.modelDiscovery = source;
-    try {
-      const discovered = await this.providers.discover(source, force);
-      if (this.disposed || this.modelDiscovery !== source || source.isCancellationRequested) return;
-      const changedProvider = this.providerFingerprint !== discovered.fingerprint;
-      this.providerFingerprint = discovered.fingerprint;
-      this.models = discovered.models;
-      if (!this.selectedModel || changedProvider) this.selectedModel = discovered.defaultModelId;
-      this.providerStatus = this.models.some((model) => model.id === this.selectedModel)
-        ? 'Available'
-        : 'ModelMissing';
-    } catch (error) {
-      if (!source.isCancellationRequested) {
-        this.models = [];
-        this.providerStatus = 'Unavailable';
-        this.emit({
-          type: 'ErrorOccurred',
-          code: 'ProviderUnavailable',
-          message: `${this.providers.label()} is unavailable. ${
-            error instanceof Error ? error.message : 'Check provider configuration.'
-          }`,
-          recoverable: true,
-        });
-      }
-    }
+    await this.discovery.refresh(force);
+  }
+  async attachFiles(uris: readonly vscode.Uri[]): Promise<void> {
+    await this.contextAttachments.add('PickFiles', uris);
+    await this.snapshot('explorer-context');
   }
   async snapshot(requestId: string): Promise<void> {
     const conversationId = this.conversationId;
-    const conversation = await this.repository.get(conversationId);
-    if (this.disposed) return;
-    if (conversationId !== this.conversationId) return this.snapshot(requestId);
-    const activeRun = this.activeRun;
-    const selected = this.models.find((model) => model.id === this.selectedModel);
-    const settings = vscode.workspace.getConfiguration('kova');
-    const messages = projectConversationMessages(
-      conversation?.entries ?? [],
-      this.partial,
-      activeRun,
-      this.streamingResponse,
-    );
-    const snapshot: SessionSnapshot = {
-      ...readUiPreferences(),
-      conversationId: this.conversationId,
+    const snapshot = await composeSnapshot({
+      context: this.context,
+      repository: this.repository,
+      providers: this.providers,
+      conversationId,
       draft: this.resources.draft.text,
-      activeRunId: activeRun?.id ?? null,
+      activeRun: this.activeRun,
       state: this.state,
       mode: this.mode,
-      selectedModelId: this.selectedModel || this.providers.defaultModelId(),
-      models: this.models.map((model) => ({ ...model })),
-      providerStatus: this.providerStatus,
-      providerLabel: this.providers.label(),
-      setupCompleted: this.context.globalState?.get<boolean>('kova.setupCompleted', false) ?? false,
-      configuringProvider: this.configuring,
-      toolsEnabled: Boolean(this.root && selected?.tools === 'Supported'),
-      skills: this.skills.map((skill) => ({ ...skill })),
-      activeSkillId: this.skillId,
-      usage: this.usage ? structuredClone(this.usage) : null,
-      messages,
-      contextAttachments: contextAttachmentViews(this.contextAttachments.list()),
-      pendingApproval: this.approval.requestPending
-        ? approvalView(this.approval.requestPending)
-        : null,
-      thinkingEnabled: activeRun?.thinkingEnabled ?? this.providers.thinkingEnabled(),
-      contextMaxTokens: activeRun?.contextMaxTokens ?? settings.get('context.maxTokens', 32768),
-    };
+      selectedModel: this.discovery.selectedModel,
+      models: this.discovery.models,
+      providerStatus: this.discovery.status,
+      configuring: this.configuring,
+      root: this.roots.current,
+      skills: this.skills,
+      skillId: this.skillId,
+      usage: this.usage,
+      partial: this.partial,
+      streamingResponse: this.streamingResponse,
+      attachments: this.contextAttachments.list(),
+      pendingApproval: this.approval.requestPending,
+      revertibleRun: this.changes.latest(),
+    });
+    if (this.disposed) return;
+    if (conversationId !== this.conversationId) return this.snapshot(requestId);
     this.events.flush();
     this.deliver({ ...this.envelope(), type: 'Snapshot', requestId, snapshot });
   }
   async handle(message: WebviewMessage): Promise<void> {
-    if (this.requests.has(message.requestId)) throw new Error('Duplicate request ID.');
-    this.requests.add(message.requestId);
-    if (this.requests.size > 200) this.requests.delete(this.requests.values().next().value!);
-    if (this.resources.handles(message.type)) {
-      await this.resources.handle(message);
-      return;
-    }
-    if (
-      presentationActions.has(message.type) &&
-      (await handlePresentationAction(message, this.context, {
-        read: (id) => this.repository.get(id),
-        current: (id) =>
-          id === this.conversationId && !this.activeRun && !this.preparingRun && !this.configuring,
-        partial: this.partial,
-        provider: this.providers.label(),
-        model: this.selectedModel,
-        notify: (message) => this.deliver({ ...this.envelope(), type: 'Notice', message }),
-        copied: (requestId) =>
-          this.deliver({ ...this.envelope(), type: 'ClipboardCopied', requestId }),
-      }))
-    )
-      return;
-    switch (message.type) {
-      case 'Ready':
-        await this.snapshot(message.requestId);
-        return;
-      case 'RetryProvider':
-        if (this.activeRun || this.preparingRun || this.configuring)
-          throw new Error('Wait until generation stops.');
-        await this.refreshModels(true);
-        await this.snapshot(message.requestId);
-        return;
-      case 'SubmitPrompt': {
-        const runId = await this.submit(message);
-        this.deliver({
-          ...this.envelope(),
-          type: 'Accepted',
-          requestId: message.requestId,
-          runId,
-        });
-        return;
-      }
-      case 'CancelRun':
-        if (message.runId !== this.activeRun?.id) throw new Error('Run is no longer active.');
-        this.activeRun.cancellation.cancel();
-        break;
-      case 'NewConversation':
-        await this.newConversation();
-        await this.snapshot(message.requestId);
-        return;
-      case 'SelectSkill':
-        if (this.activeRun) throw new Error('Cannot change skill during a run.');
-        if (message.skillId && !this.skills.some((skill) => skill.id === message.skillId))
-          throw new Error('Unknown skill.');
-        this.skillId = message.skillId;
-        await this.snapshot(message.requestId);
-        return;
-      case 'AddContext':
-        if (this.activeRun) throw new Error('Cannot change context during a run.');
-        await this.contextAttachments.add(message.source);
-        await this.snapshot(message.requestId);
-        return;
-      case 'RemoveContext':
-        if (this.activeRun) throw new Error('Cannot change context during a run.');
-        this.contextAttachments.remove(message.attachmentId);
-        await this.snapshot(message.requestId);
-        return;
-      case 'ResolveApproval':
-        if (message.runId !== this.activeRun?.id) throw new Error('Stale run approval.');
-        this.approval.resolve(
-          {
-            approvalId: message.approvalId,
-            preparationKey: message.preparationKey,
-            decision: message.decision,
-          },
-          message.runId,
-        );
-        break;
-      case 'OpenDiffPreview':
-        await this.approval.openDiff(message.approvalId);
-        break;
-      case 'CompleteSetup':
-        await this.context.globalState?.update('kova.setupCompleted', true);
-        await this.snapshot(message.requestId);
-        return;
-    }
-    this.deliver({
-      ...this.envelope(),
-      type: 'Accepted',
-      requestId: message.requestId,
-      runId: this.activeRun?.id ?? null,
-    });
+    await handleChatMessage(this.messageHost, message);
+  }
+  private accept(requestId: string, runId: string | null): void {
+    this.deliver({ ...this.envelope(), type: 'Accepted', requestId, runId });
   }
   reject(requestId: string, message: string): void {
-    this.deliver({
-      ...this.envelope(),
-      type: 'Rejected',
-      requestId,
-      code: 'InvalidRequest',
-      message,
-    });
+    const envelope = this.envelope();
+    this.deliver({ ...envelope, type: 'Rejected', requestId, code: 'InvalidRequest', message });
   }
   private async submit(
     message: Extract<WebviewMessage, { type: 'SubmitPrompt' }>,
@@ -374,19 +374,19 @@ export class ChatSession {
     const cancellation = new CancellationSource();
     this.preparingRun = cancellation;
     try {
-      await this.initialization;
+      await this.initializer.pending;
       cancellation.throwIfCancellationRequested();
       if (this.disposed) throw new Error('Kova session is closed.');
       if (message.attachmentIds.some((id) => !this.contextAttachments.has(id)))
         throw new Error('Unknown context attachment.');
       if (message.skillId && !this.skills.some((skill) => skill.id === message.skillId))
         throw new Error('Unknown selected skill.');
-      const model = this.models.find((item) => item.id === message.modelId);
+      const model = this.discovery.models.find((item) => item.id === message.modelId);
       if (!model) throw new Error('Selected model is unavailable. Retry model discovery.');
       const runSettings = readRunSettings(this.providers, model);
       const runId = randomUUID();
-      this.selectedModel = model.id;
-      this.providerStatus = 'Available';
+      this.discovery.selectedModel = model.id;
+      this.discovery.status = 'Available';
       this.mode = message.mode;
       this.skillId = message.skillId;
       this.partial = false;
@@ -396,7 +396,7 @@ export class ChatSession {
       const request = {
         runId,
         conversationId: this.conversationId,
-        workspaceId: this.root ?? '',
+        workspaceId: this.roots.current ?? '',
         prompt: message.prompt,
         modelId: model.id,
         mode: message.mode,
@@ -404,7 +404,8 @@ export class ChatSession {
         ...runSettings,
         attachments: this.contextAttachments.selected(message.attachmentIds),
         maxToolIterations: 10,
-        toolsEnabled: Boolean(this.root && model.tools === 'Supported'),
+        toolsEnabled: Boolean(this.roots.current && model.tools === 'Supported'),
+        imagesSupported: model.vision !== 'Unsupported',
       };
       const provider = await this.providers.forConversation(this.conversationId);
       if (this.providerRefreshPending)
@@ -448,41 +449,39 @@ export class ChatSession {
             this.emit({ type: 'StateChanged', state: 'Failed' });
           }
         } finally {
+          this.changes.onRunFinished(runId);
           if (this.activeRun?.id === runId) this.activeRun = null;
           if (this.providerRefreshPending) await this.configurationChanged();
           await this.snapshot(`completed-${runId}`);
           if (!this.activeRun) this.streamingResponse = null;
+          await this.applyPendingRoot();
         }
       })();
       return runId;
     } finally {
       if (this.preparingRun === cancellation) this.preparingRun = null;
       if (this.providerRefreshPending && !this.activeRun) await this.configurationChanged();
+      await this.applyPendingRoot();
     }
   }
+  private readonly lifecycle: ConversationLifecycleHost;
+  private readonly messageHost: ChatMessageHost;
+  private readonly changes = new RunChangeTracker(() => this.roots.current);
   async newConversation(): Promise<void> {
-    const active = this.activeRun;
-    this.cancelActiveRun();
-    await active?.task;
-    const previousConversationId = this.conversationId;
-    await this.repository.remove(previousConversationId);
-    this.providers.forgetConversation(previousConversationId);
-    this.conversationId = randomUUID();
-    this.contextAttachments.clear();
-    await this.resources.draft.set('');
-    this.state = 'Idle';
-    this.usage = null;
-    this.partial = false;
-    this.streamingResponse = null;
+    await resetConversation(this.lifecycle);
+  }
+  /** Reopens a stored conversation; the next snapshot shows its messages. */
+  async openConversation(id: string): Promise<void> {
+    await openStoredConversation(this.lifecycle, id);
   }
   async dispose(): Promise<void> {
     this.disposed = true;
     this.events.dispose();
-    this.modelDiscovery?.cancel();
-    this.initializationCancellation?.cancel();
+    this.discovery.cancel();
+    this.initializer.cancel();
     this.cancelActiveRun();
     await this.activeRun?.task;
-    await this.initialization?.catch(() => {});
+    await this.initializer.pending?.catch(() => {});
     this.approval.dispose();
     await this.runtime?.dispose();
     await this.resources.flush();

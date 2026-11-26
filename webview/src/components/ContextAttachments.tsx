@@ -34,7 +34,10 @@ export function ContextAttachments({
               aria-label={t('Preview {name}', { name: item.label })}
               onClick={() => onPreview(item.id)}
             >
-              <Icon name={item.source === 'Selection' ? 'code' : 'file'} size={13} />
+              <Icon
+                name={item.image ? 'image' : item.source === 'Selection' ? 'code' : 'file'}
+                size={13}
+              />
               <span>{item.label}</span>
             </button>
             <button

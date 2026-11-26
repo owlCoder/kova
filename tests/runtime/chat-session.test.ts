@@ -1,3 +1,6 @@
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type * as vscode from 'vscode';
 import type { HostMessage } from '../../packages/protocol/src/HostMessage.js';
@@ -15,6 +18,8 @@ const fixture = vi.hoisted(() => ({
   drafts: new Map<string, unknown>(),
   clipboard: [] as string[],
   clipboardWrite: null as Promise<void> | null,
+  runtimeRoots: [] as string[],
+  runtimeDisposals: 0,
 }));
 
 vi.mock('vscode', () => ({
@@ -34,6 +39,9 @@ vi.mock('vscode', () => ({
 }));
 vi.mock('../../packages/vscode/src/adapters/WorkspaceRuntime.js', () => ({
   WorkspaceRuntime: class {
+    constructor(root: string) {
+      fixture.runtimeRoots.push(root);
+    }
     async initialize(cancellation: { throwIfCancellationRequested(): void }) {
       fixture.initializationCount++;
       fixture.concurrentInitializations++;
@@ -51,7 +59,9 @@ vi.mock('../../packages/vscode/src/adapters/WorkspaceRuntime.js', () => ({
     definitions() {
       return [];
     }
-    async dispose() {}
+    async dispose() {
+      fixture.runtimeDisposals++;
+    }
   },
 }));
 
@@ -72,6 +82,8 @@ beforeEach(() => {
   fixture.drafts.clear();
   fixture.clipboard = [];
   fixture.clipboardWrite = null;
+  fixture.runtimeRoots = [];
+  fixture.runtimeDisposals = 0;
   vi.stubGlobal(
     'fetch',
     vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
@@ -411,5 +423,99 @@ describe('shared chat session synchronization', () => {
     ).rejects.toThrow('Clipboard unavailable');
     expect(fixture.clipboard).toEqual(['Copied text']);
     expect(messages.filter((message) => message.type === 'ClipboardCopied')).toHaveLength(1);
+  });
+});
+
+describe('@mention workspace files', () => {
+  it('lists matching files and attaches a root-relative path, rejecting escapes', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'kova-mention-'));
+    try {
+      await mkdir(join(dir, 'Domain'));
+      await writeFile(join(dir, 'User.cs'), 'class User {}');
+      await writeFile(join(dir, 'Domain', 'Order.cs'), 'class Order {}');
+      const local = new ChatSession(
+        {
+          workspaceState: { get: () => undefined, update: async () => {} },
+          globalState: { get: () => false, update: async () => {} },
+        } as unknown as vscode.ExtensionContext,
+        dir,
+        { appendLine: () => {} } as unknown as vscode.OutputChannel,
+      );
+      const received: HostMessage[] = [];
+      local.connect((message) => received.push(message));
+      await local.handle({
+        protocolVersion: 1,
+        requestId: 'q1',
+        type: 'ListWorkspaceFiles',
+        query: 'user',
+      });
+      const files = received.find((message) => message.type === 'WorkspaceFiles');
+      expect(files?.type).toBe('WorkspaceFiles');
+      if (files?.type === 'WorkspaceFiles') {
+        expect(files.requestId).toBe('q1');
+        expect(files.files).toContain('User.cs');
+        expect(files.files).not.toContain('Domain/Order.cs');
+      }
+      await local.handle({
+        protocolVersion: 1,
+        requestId: 'a1',
+        type: 'AttachPath',
+        path: 'Domain/Order.cs',
+      });
+      const snapshot = received.filter((m) => m.type === 'Snapshot').at(-1);
+      expect(snapshot?.type).toBe('Snapshot');
+      if (snapshot?.type === 'Snapshot')
+        expect(
+          snapshot.snapshot.contextAttachments.some((item) => item.label === 'Domain/Order.cs'),
+        ).toBe(true);
+      await expect(
+        local.handle({
+          protocolVersion: 1,
+          requestId: 'a2',
+          type: 'AttachPath',
+          path: '../outside.cs',
+        }),
+      ).rejects.toThrow();
+      await local.dispose();
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('workspace root switching', () => {
+  it('rebuilds the tool runtime when the folder changes while idle and disables tools without one', async () => {
+    await session.initialize();
+    await session.snapshot('root-start');
+    expect(latestSnapshot().toolsEnabled).toBe(true);
+    expect(fixture.runtimeRoots).toEqual(['/fixture-workspace']);
+    await session.setRoot('/other-workspace');
+    expect(fixture.runtimeDisposals).toBe(1);
+    expect(fixture.runtimeRoots).toEqual(['/fixture-workspace', '/other-workspace']);
+    expect(
+      messages.some(
+        (message) => message.type === 'Snapshot' && message.requestId === 'workspace-root',
+      ),
+    ).toBe(true);
+    await session.setRoot('/other-workspace');
+    expect(fixture.runtimeRoots).toHaveLength(2);
+    await session.setRoot(null);
+    expect(fixture.runtimeRoots).toHaveLength(2);
+    await session.snapshot('root-null');
+    expect(latestSnapshot().toolsEnabled).toBe(false);
+    await session.setRoot('/fixture-workspace');
+    await session.snapshot('root-back');
+    expect(latestSnapshot().toolsEnabled).toBe(true);
+  });
+
+  it('queues a folder change during a run and applies it once the run completes', async () => {
+    await session.initialize();
+    await beginStream();
+    await session.setRoot('/pending-workspace');
+    expect(fixture.runtimeRoots).toEqual(['/fixture-workspace']);
+    send({ message: { content: 'Done' } });
+    await finish();
+    await vi.waitFor(() => expect(fixture.runtimeRoots).toContain('/pending-workspace'));
+    expect(fixture.runtimeDisposals).toBe(1);
   });
 });

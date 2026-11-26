@@ -1,7 +1,6 @@
 import { useI18n } from '../i18n/I18n.js';
 import type { SessionSnapshot } from '../../../packages/protocol/src/SessionSnapshot.js';
 import { BrandMark } from './BrandMark.js';
-import { isDesktop, send } from '../messaging/bridge.js';
 import { Icon } from './Icon.js';
 import { promptTemplates } from './promptTemplates.js';
 
@@ -13,7 +12,6 @@ export function Welcome({
   onChoose(value: string): void;
 }) {
   const { t } = useI18n();
-  const project = snapshot?.desktop?.workspaceName;
   return (
     <section className="welcome">
       <div className="welcome-mark">
@@ -25,26 +23,8 @@ export function Welcome({
       </div>
       <h1>{t('What are we working on?')}</h1>
       <p>
-        {project && snapshot?.desktop?.workspacePath
-          ? t(
-              'You’re working in {project}. Ask a question, explore your code, or make something new.',
-              { project },
-            )
-          : t('A focused space to think, build, and ship. Connect your AI and make it yours.')}
+        {t('Ask about your code, plan a change, or let Kova edit and test it with your approval.')}
       </p>
-      {isDesktop && !snapshot?.desktop?.workspacePath && (
-        <button
-          className="primary open-project-hero"
-          onClick={() => send({ type: 'OpenWorkspace' })}
-        >
-          <Icon name="folderOpen" />
-          {t('Open a project')}
-          <kbd>
-            {snapshot?.desktop?.platform === 'darwin' ? '⌘' : t('Ctrl')}
-            {t('O')}
-          </kbd>
-        </button>
-      )}
       <div className="suggestions">
         {promptTemplates.slice(0, 3).map((item, index) => (
           <button key={item.id} disabled={!snapshot} onClick={() => onChoose(t(item.text))}>
@@ -62,6 +42,12 @@ export function Welcome({
         <Icon name="shield" size={13} />
         {t('Your code. Your models. Your workspace.')}
       </div>
+      {snapshot && !snapshot.toolsEnabled && (
+        <div className="welcome-note">
+          <Icon name="folder" size={13} />
+          {t('Open a folder in VS Code to let Kova read, edit and test its files.')}
+        </div>
+      )}
     </section>
   );
 }

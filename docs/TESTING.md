@@ -63,15 +63,9 @@ Editing: approve/reject a computed diff, observe editor undo and Git, verify sta
 
 ERS: requires the real example project and its MCP/guardrail API. Record exact commands/model, observed tool names, review output and blocked destructive request. Reverify name availability/trademark before public Marketplace publishing; no publishing is part of these checks.
 
-## Desktop checks
+## Panel checks
 
-`tests/runtime/desktop.test.ts` covers atomic/stale file writes, symlink containment, bounded filename search, cancellation, lazy indexed history, settings validation, renaming/archiving, interrupted response restoration, strict IPC validation and an actual shared-agent approval/edit/continuation loop. `desktop-keys.test.ts` verifies encrypted endpoint-scoped storage, deletion and memory-only fallback with a mocked OS encryption service.
-
-Run `npm run desktop:build` and `npm run desktop:verify` to check packaged CSP, preload/main isolation, assets and dependency notices. Run `npm run desktop:smoke` for an isolated native UI fixture using a synthetic local Ollama server. Send a prompt; test Markdown/code copy, provider discovery/save, file search/preview/context, proposed diff and Allow once, Stop, session switching and appearance. Quit to verify the actual file and persisted session. No external AI service is required.
-
-The Desktop builds workflow runs checks and creates installers on macOS, Windows and Linux. A successful installer build is not evidence of native UI behavior; each OS still needs the manual workflow before claiming native interaction verification. Cloud-provider tests use fixture responses; live cloud credentials are not available in deterministic CI. Unsigned artifacts are for development/review until release signing is configured.
-
-Terminal regression tests start a real PTY on the native runner, wait for PowerShell’s initial prompt before sending commands on Windows, verify project cwd and TTY status, resize, reattach, Ctrl+C and shell cleanup on project changes. Localization tests check matching Serbian/German catalogs, interpolation, English fallback, preference migration and invalid terminal/window/language requests. Native interface smoke checks cover all three languages, large typography, About content and actual terminal execution; repeat against the packaged app to verify native binaries outside ASAR.
+`tests/unit/transcript-timeline.test.ts` covers tool-row lifecycles (request, approval, denial, cancellation, errors), bounded retention, tool naming and transcript ordering with the inline permission prompt. Localization tests check matching Serbian/German catalogs, interpolation and English fallback. Review UI changes in dark, light and high-contrast VS Code themes, with keyboard navigation (Shift+Tab, Esc, 1/2) and larger text.
 
 ## Conversation tools and draft recovery
 

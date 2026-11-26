@@ -4,7 +4,7 @@ Extension: `owlcoder.kova-local`, version `0.5.0`, MIT. The package name remains
 
 Kova is local-first rather than Ollama-only. Marketplace copy must make the provider boundary explicit:
 
-- Ollama remains the default and requires no account or API key; the default demo model is `qwen3:4b`.
+- Ollama remains the default and requires no account or API key; setup helps you pick an installed model (for example `qwen3:4b`).
 - DeepSeek is optional and uses an API key stored in VS Code `SecretStorage`.
 - OpenAI-compatible endpoints are optional and may use a bearer key or run locally without authentication.
 - Selecting an API provider sends the request context needed by that run to the endpoint configured by the user. Kova does not silently switch away from Ollama.

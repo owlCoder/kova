@@ -1,13 +1,22 @@
 import type { ExtensionContext } from 'vscode';
 import type { ContextAttachment } from '../../../core/src/context/ContextAttachment.js';
+import type { ConversationRepository } from '../../../core/src/conversations/ConversationRepository.js';
 import type { HostMessage } from '../../../protocol/src/HostMessage.js';
 import type { WebviewMessage } from '../../../protocol/src/WebviewMessage.js';
 import { PromptLibraryService } from '../../../runtime/src/presentation/PromptLibraryService.js';
 import { previewContext } from '../../../runtime/src/presentation/previewContext.js';
+import { compactConversation } from './compactConversation.js';
+import { KovaSettings } from './kovaSettings.js';
 import { WorkspaceDraft } from './WorkspaceDraft.js';
 
 type ResourcePayload = HostMessage extends infer M
-  ? M extends Extract<HostMessage, { type: 'PromptLibrary' | 'ContextPreview' }>
+  ? M extends Extract<
+      HostMessage,
+      {
+        type:
+          'PromptLibrary' | 'ContextPreview' | 'Settings' | 'Notice' | 'OpenSettings' | 'Compacted';
+      }
+    >
     ? Omit<M, 'protocolVersion' | 'hostSessionId' | 'sequence' | 'workspaceId'>
     : never
   : never;
@@ -17,14 +26,20 @@ const actions = new Set([
   'DeletePrompt',
   'PreviewContext',
   'UpdateDraft',
+  'GetSettings',
+  'UpdateSettings',
+  'OpenSettings',
+  'CompactConversation',
 ]);
 
 /** Explicit UI resources stay outside model snapshots and generation preparation. */
 export class ChatResources {
   readonly draft: WorkspaceDraft;
   private readonly library: PromptLibraryService;
+  private readonly settings: KovaSettings;
   constructor(
     context: ExtensionContext,
+    private readonly repository: ConversationRepository,
     private readonly current: () => {
       conversationId: string;
       attachments: readonly ContextAttachment[];
@@ -32,6 +47,7 @@ export class ChatResources {
     private readonly deliver: (payload: ResourcePayload) => void,
   ) {
     this.draft = new WorkspaceDraft(context.workspaceState);
+    this.settings = new KovaSettings();
     this.library = new PromptLibraryService({
       read: async () => context.workspaceState?.get<unknown>('kova.promptLibrary'),
       write: async (library) => {
@@ -66,6 +82,38 @@ export class ChatResources {
       case 'UpdateDraft':
         if (message.conversationId === this.current().conversationId)
           await this.draft.set(message.prompt);
+        return;
+      case 'GetSettings':
+        this.deliver({
+          type: 'Settings',
+          requestId: message.requestId,
+          settings: this.settings.read(),
+        });
+        return;
+      case 'UpdateSettings':
+        await this.settings.apply(message.values);
+        this.deliver({
+          type: 'Settings',
+          requestId: message.requestId,
+          settings: this.settings.read(),
+        });
+        this.deliver({ type: 'Notice', message: 'Settings saved.' });
+        return;
+      case 'OpenSettings':
+        // The launcher's settings action: the chat opens its own settings dialog.
+        this.deliver({ type: 'OpenSettings' });
+        return;
+      case 'CompactConversation': {
+        const conversationId = this.current().conversationId;
+        const changed = await compactConversation(this.repository, conversationId);
+        this.deliver({
+          type: 'Notice',
+          message: changed ? 'Conversation compacted into a summary.' : 'Nothing to compact yet.',
+        });
+        // The webview re-requests a snapshot when it sees this, after the compact finished.
+        this.deliver({ type: 'Compacted', conversationId });
+        return;
+      }
     }
   }
   async flush(): Promise<void> {

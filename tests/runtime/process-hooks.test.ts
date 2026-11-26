@@ -102,7 +102,7 @@ describe('bounded cancellable process runner', () => {
     expect(result.stdout).toBe('data');
   });
   it('run_command prepares risk and handles a nonzero exit as a structured error', async () => {
-    const tool = new RunCommandTool(new NodeWorkspacePathGuard(root), runner);
+    const tool = new RunCommandTool(new NodeWorkspacePathGuard(root), runner, { emit: () => {} });
     const prepared = await tool.prepare(
       { id: 'c', name: 'run_command', arguments: { command: 'exit 4' } },
       root,
@@ -213,5 +213,47 @@ describe('command hooks', () => {
     );
     expect(report.outcome).toBe('Failed');
     expect(report.message).toContain('timed out');
+  });
+});
+
+describe('run_command output streaming', () => {
+  it('emits CommandOutput chunks while the process runs and a bounded final result', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'kova-stream-'));
+    try {
+      const emitted: string[] = [];
+      const runner: ProcessRunner = {
+        run: async (request) => {
+          request.onOutput?.('building…\n');
+          request.onOutput?.('done\n');
+          return {
+            exitCode: 0,
+            stdout: 'building…\ndone\n',
+            stderr: '',
+            omittedCharacters: 0,
+            cancelled: false,
+            timedOut: false,
+          };
+        },
+      };
+      const tool = new RunCommandTool(new NodeWorkspacePathGuard(root), runner, {
+        emit: (event) => {
+          if (event.type === 'CommandOutput') emitted.push(event.text);
+        },
+      });
+      const prepared = await tool.prepare(
+        { id: 'c9', name: 'run_command', arguments: { command: 'make' } },
+        root,
+        new CancellationSource(),
+      );
+      expect(prepared.status).toBe('Ready');
+      if (prepared.status === 'Ready') {
+        const result = await tool.execute(prepared.prepared, new CancellationSource());
+        expect(result.status).toBe('Success');
+        expect(result.output).toContain('done');
+      }
+      expect(emitted).toEqual(['building…\n', 'done\n']);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
   });
 });

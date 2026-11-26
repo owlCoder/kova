@@ -1,5 +1,47 @@
 # Changelog
 
+## 1.27.0
+
+- Work in the opened workspace folder like a CLI harness: the agent knows the workspace root and follows folder changes live (adding/removing folders rebuilds the tool runtime after the current run). With no folder open the welcome screen says file tools are disabled.
+- Add the `apply_patch` tool: multi-file unified diffs with strict hunk matching, bounded size, and the usual path containment, protected-path and approval pipeline.
+- Add the `update_todos` tool and a live plan checklist in the transcript (Plan header, per-step status) for multi-step runs.
+- Type `@` in the composer to mention workspace files (debounced search, inserts `@path` and attaches the file).
+- Add `/init`: scans the workspace and writes or updates `AGENTS.md` through the normal tool/approval flow.
+- Chat history rows can be renamed (right-click → Rename) and filtered with a search box in the launcher.
+- Add a **Revert run changes** action after a run that touched files: modal confirmation, then `git checkout` for tracked files and deletion of files the run created.
+- Stream `run_command` output live into the tool row while the command runs.
+- Paste or drop images into the composer to attach them for vision-capable models (Ollama `vision` capability, `kova.openaiCompatible.supportsVision`); shown as a chip and rendered in the preview dialog.
+- Show cumulative token usage (input/output/runs) for the conversation in the context meter popover.
+
+## 1.26.11
+
+- Open Kova as an editor tab beside the current file by default, like other agent tabs, so the Explorer stays free. **Kova: Open Chat** (Cmd+Alt+K / Ctrl+Alt+K) and a Kova button in the editor title bar open it; `kova.chat.openIn` switches back to the Activity Bar sidebar, or run **Kova: Open Chat in Sidebar**, which switches that setting.
+- The Activity Bar icon now shows a small launcher (connection, actions, shortcuts) and opens the conversation as an editor tab. The editor tab uses a centered layout: title in the middle, a minimal empty state, a narrow reading column and a framed composer with a model chip and accent send button.
+- Open the prompt library as a quick menu above the composer (saved prompts, templates, recent messages, search); the full editor stays under **Manage…**.
+- Show provider connection problems as a banner above the composer, as wide as the input, with Retry and Set up provider instead of a raw error code.
+- Add **Add to Kova Context** to the Explorer and editor tab context menus for the selected files.
+- Raise the default context budget to 200,000 tokens. It is capped to the selected model's reported window instead of refusing to run, and the output reservation stays within a quarter of that window. Local Ollama keeps a 32,768-token cap (`kova.ollama.maxContextTokens`) because Ollama reserves memory for the full window.
+- Translate the transcript's lifecycle notes (project rules, hooks, MCP servers, guardrails, skill loads, interruptions, token-limit and stop reasons) into Serbian Latin and German with the rest of the interface.
+- Polish the chat surfaces: light and high-contrast themes now cover the transcript, menus, banner and launcher; the mode, prompt, model, context and attach menus float above the composer instead of over its text; and the composer bar fits a narrow sidebar with an icon-only mode toggle and a truncated model name.
+- Hide the header title until the first prompt names the conversation; only the Kova mark shows in the empty state.
+- Make every composer menu a native auto popover: clicking empty space or pressing Esc closes it, and opening one closes the others, so at most one menu is open at a time.
+- Add a Kova-styled settings dialog (header gear, Cmd/Ctrl+,, command palette, launcher action) covering interface language, text size, chat placement, context budget, Ollama options and the Auto-mode command allowlist, instead of the generic VS Code settings editor. Values are validated against a host-side allowlist before they are written to the global configuration.
+- Remove the Kova mark from the chat header (the editor tab and view already carry the icon) and center a larger mark on the empty page.
+- Do not preselect a default Ollama model: `kova.ollama.model` starts empty and is filled when you choose a model in setup or the chat; the model picker shows "Choose model" until then.
+- Add slash commands in the composer: typing `/` opens a menu with `/clear`, `/compact` (folds older messages into a bounded summary via the existing compactor, keeping the last messages visible), `/export`, `/copy`, `/model`, `/mode`, `/context`, `/prompts`, `/settings` and `/help`; arrow keys and Enter run a command, Esc dismisses the menu.
+- Highlight generated code blocks locally with theme-aware colors for dark, light and high-contrast: C#, TS/JS, Python, Bash, SQL, JSON, YAML, XML/HTML, diff, plus Rust, Go, Java, Kotlin, Swift, C, C++, PHP, Ruby, Lua, R, Scala, Dart and CSS (preprocessor lines, `$variables`, `:symbols`, at-rules and hex colors included). Tokens are rendered as React text spans, so the webview CSP is untouched and no remote highlighter is loaded. Code blocks get a restyled toolbar (uppercase language tag, hover copy button), softer border, subtle shadow and tighter code padding.
+- Persist conversations in workspace storage and list them in the Activity Bar launcher under **Conversations** (newest first, titled by the first prompt, active one highlighted); clicking a row reopens that conversation in the chat. Storage is bounded to 50 conversations, 200 messages each and 3 MB total, dropping the oldest first.
+
+## 0.10.0
+
+- Kova is now a VS Code extension only. Remove the Electron desktop app, its installers, integrated terminal, session browser, file inspector, desktop preferences, protocol messages, scripts and workflow. Releases contain the VSIX and checksums.
+- Redesign the panel as an agent transcript that follows VS Code's theme, fonts and colors. Tool calls appear inline at the point where Kova acted, one line each with a status dot, arguments and a folded result; rules, hooks, MCP, guardrails, interruptions and errors appear as short notes.
+- Ask for permission inline: open the diff or read the exact command, then press 1 to allow once, 2 or Esc to reject.
+- Show an animated working line with elapsed time while a task runs; Esc interrupts it from anywhere in the panel.
+- Replace the composer with one rounded input: permission mode toggle (Shift+Tab cycles Ask before changes, Accept edits, Auto mode and Plan mode), context attachments, prompt library, model picker, context ring and send/stop.
+- Use the first prompt as the conversation title in a compact view toolbar.
+- Remove about 35 KB of unused desktop styles and the Electron, electron-builder and xterm dependencies.
+
 ## 0.9.0
 
 - Add a personal prompt library in desktop and VS Code with searchable Saved, Templates and Recent collections. Create and edit reusable prompts, save drafts or user messages, adapt templates, and undo the latest removal while the library is open.

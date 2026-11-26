@@ -1,8 +1,8 @@
 {
   "name": "kova-local",
-  "displayName": "Kova — AI Coding Workspace",
+  "displayName": "Kova \u2014 AI Coding Workspace",
   "description": "Modern local-first coding workspace with guided setup, Ollama, DeepSeek and configurable AI providers",
-  "version": "0.9.0",
+  "version": "1.27.0",
   "publisher": "owlcoder",
   "license": "MIT",
   "engines": {
@@ -26,7 +26,9 @@
     "onCommand:kova.setProviderApiKey",
     "onCommand:kova.clearProviderApiKey",
     "onView:kova.chat",
-    "onCommand:kova.setup"
+    "onCommand:kova.setup",
+    "onCommand:kova.openInSidebar",
+    "onCommand:kova.addToContext"
   ],
   "capabilities": {
     "untrustedWorkspaces": {
@@ -58,11 +60,16 @@
     "commands": [
       {
         "command": "kova.open",
-        "title": "Kova: Open Chat"
+        "title": "Kova: Open Chat",
+        "icon": "media/activity-icon.svg"
       },
       {
         "command": "kova.openInEditor",
         "title": "Kova: Open Chat in Editor"
+      },
+      {
+        "command": "kova.openInSidebar",
+        "title": "Kova: Open Chat in Sidebar"
       },
       {
         "command": "kova.newConversation",
@@ -83,6 +90,10 @@
       {
         "command": "kova.setup",
         "title": "Kova: Set Up AI Provider"
+      },
+      {
+        "command": "kova.addToContext",
+        "title": "Add to Kova Context"
       }
     ],
     "configuration": {
@@ -101,7 +112,8 @@
         },
         "kova.ollama.model": {
           "type": "string",
-          "default": "qwen3:4b"
+          "default": "",
+          "description": "Default Ollama model. Stays empty until you choose a model in Kova setup or the chat."
         },
         "kova.ollama.think": {
           "type": "boolean",
@@ -144,11 +156,17 @@
           "default": true,
           "description": "Whether the configured endpoint/model supports OpenAI-style function tool calls."
         },
+        "kova.openaiCompatible.supportsVision": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether the configured endpoint/model accepts image inputs (vision). Pasted images are sent as image_url content."
+        },
         "kova.context.maxTokens": {
           "type": "integer",
-          "default": 32768,
+          "default": 200000,
           "minimum": 512,
-          "maximum": 1048576
+          "maximum": 1048576,
+          "description": "Context budget in tokens. Capped automatically to the selected model's window (and to kova.ollama.maxContextTokens for local Ollama)."
         },
         "kova.context.reservedOutputTokens": {
           "type": "integer",
@@ -211,9 +229,62 @@
           "enumDescriptions": ["Comfortable", "Large", "Extra large"],
           "default": "standard",
           "description": "Text size for the Kova interface."
+        },
+        "kova.chat.openIn": {
+          "type": "string",
+          "enum": ["editor", "sidebar"],
+          "default": "editor",
+          "enumDescriptions": [
+            "Open Kova as an editor tab beside your code.",
+            "Open Kova in its Activity Bar sidebar."
+          ],
+          "description": "Where Kova: Open Chat opens the conversation."
+        },
+        "kova.ollama.maxContextTokens": {
+          "type": "integer",
+          "default": 32768,
+          "minimum": 512,
+          "maximum": 1048576,
+          "description": "Upper context limit for local Ollama models. Ollama reserves memory for the whole window, so raise it only when your machine has the RAM."
         }
       }
-    }
+    },
+    "menus": {
+      "editor/title": [
+        {
+          "command": "kova.open",
+          "group": "navigation@100",
+          "when": "resourceScheme == file"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "kova.addToContext",
+          "group": "kova@1",
+          "when": "!explorerResourceIsFolder"
+        }
+      ],
+      "editor/title/context": [
+        {
+          "command": "kova.addToContext",
+          "group": "kova@1",
+          "when": "resourceScheme == file"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "kova.addToContext",
+          "when": "false"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "kova.open",
+        "key": "ctrl+alt+k",
+        "mac": "cmd+alt+k"
+      }
+    ]
   },
   "icon": "media/logo.png",
   "keywords": [

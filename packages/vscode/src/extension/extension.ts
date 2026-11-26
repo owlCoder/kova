@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { randomUUID } from 'node:crypto';
 import { ProviderApiKeyStore } from '../providers/ProviderApiKeyStore.js';
 import { ProviderManager } from '../providers/ProviderManager.js';
 import { ProviderSetupWizard } from '../providers/ProviderSetupWizard.js';
@@ -6,12 +7,15 @@ import { editProviderCredential } from '../providers/editProviderCredential.js';
 import { KovaPanelController } from '../webview/KovaPanelController.js';
 import { KovaViewProvider } from '../webview/KovaViewProvider.js';
 import { ChatSession } from './ChatSession.js';
+import { WorkspaceConversationRepository } from './conversationStore.js';
 
 let session: ChatSession | undefined;
 
 export function activate(context: vscode.ExtensionContext) {
   const output = vscode.window.createOutputChannel('Kova');
-  const root =
+  // The agent's tool runtime is rooted at the active editor's folder, falling
+  // back to the first workspace folder; it follows folder changes live.
+  const currentRoot = (): string | null =>
     (vscode.window.activeTextEditor
       ? vscode.workspace.getWorkspaceFolder(vscode.window.activeTextEditor.document.uri)
       : undefined
@@ -20,9 +24,10 @@ export function activate(context: vscode.ExtensionContext) {
     null;
   const apiKeys = new ProviderApiKeyStore(context.secrets);
   const providers = new ProviderManager(apiKeys);
-  session = new ChatSession(context, root, output, providers);
+  const conversations = new WorkspaceConversationRepository(context.workspaceState);
+  session = new ChatSession(context, currentRoot(), output, providers, conversations);
   const panels = new KovaPanelController(context, session);
-  const sidebar = new KovaViewProvider(context, session);
+  const sidebar = new KovaViewProvider(context, session, () => panels.show(), conversations);
   session.captureEditor(vscode.window.activeTextEditor);
 
   const configure = async (action: () => Promise<boolean>) => {
@@ -39,8 +44,19 @@ export function activate(context: vscode.ExtensionContext) {
     output,
     panels,
     sidebar,
-    vscode.window.onDidChangeActiveTextEditor((editor) => session?.captureEditor(editor)),
+    vscode.window.onDidChangeActiveTextEditor((editor) => {
+      session?.captureEditor(editor);
+      void session
+        ?.setRoot(currentRoot())
+        .catch(() => output.appendLine('[WorkspaceRootUpdateFailed]'));
+    }),
+    vscode.workspace.onDidChangeWorkspaceFolders(() => {
+      void session
+        ?.setRoot(currentRoot())
+        .catch(() => output.appendLine('[WorkspaceRootUpdateFailed]'));
+    }),
     vscode.workspace.onDidChangeConfiguration((event) => {
+      if (event.affectsConfiguration('kova')) void sidebar.render();
       if (event.affectsConfiguration('kova'))
         void session
           ?.configurationChanged()
@@ -51,11 +67,35 @@ export function activate(context: vscode.ExtensionContext) {
       webviewOptions: { retainContextWhenHidden: true },
     }),
     vscode.commands.registerCommand('kova.open', async () => {
+      const where = vscode.workspace.getConfiguration('kova').get<string>('chat.openIn', 'editor');
+      await vscode.commands.executeCommand(
+        where === 'sidebar' ? 'kova.openInSidebar' : 'kova.openInEditor',
+      );
+    }),
+    vscode.commands.registerCommand('kova.openInEditor', () => panels.show()),
+    vscode.commands.registerCommand('kova.openInSidebar', async () => {
       session?.captureEditor(vscode.window.activeTextEditor);
+      // Choosing the sidebar explicitly makes it the chat's home until changed back.
+      await vscode.workspace
+        .getConfiguration('kova')
+        .update('chat.openIn', 'sidebar', vscode.ConfigurationTarget.Global);
       await vscode.commands.executeCommand('workbench.view.extension.kova');
       sidebar.show();
     }),
-    vscode.commands.registerCommand('kova.openInEditor', () => panels.show()),
+    vscode.commands.registerCommand(
+      'kova.addToContext',
+      async (uri?: vscode.Uri, selection?: vscode.Uri[]) => {
+        const uris = selection?.length ? selection : uri ? [uri] : [];
+        try {
+          if (uris.length) await session?.attachFiles(uris);
+          await vscode.commands.executeCommand('kova.open');
+        } catch (error) {
+          await vscode.window.showErrorMessage(
+            error instanceof Error ? error.message : 'Could not add the files to Kova.',
+          );
+        }
+      },
+    ),
     vscode.commands.registerCommand('kova.setup', () =>
       configure(() => new ProviderSetupWizard(providers, apiKeys).run()),
     ),
@@ -64,12 +104,18 @@ export function activate(context: vscode.ExtensionContext) {
       await session?.snapshot('new-chat');
       await vscode.commands.executeCommand('kova.open');
     }),
-    vscode.commands.registerCommand('kova.settings', () =>
-      vscode.commands.executeCommand(
-        'workbench.action.openSettings',
-        `@ext:${context.extension.id}`,
-      ),
-    ),
+    vscode.commands.registerCommand('kova.settings', async () => {
+      // Open the chat and let it show its own settings dialog.
+      await vscode.commands.executeCommand('kova.open');
+      if (session)
+        await session
+          .handle({
+            protocolVersion: 1,
+            requestId: randomUUID(),
+            type: 'OpenSettings',
+          })
+          .catch(() => {});
+    }),
     vscode.commands.registerCommand('kova.setProviderApiKey', () =>
       configure(() => editProviderCredential(providers, apiKeys, false)),
     ),

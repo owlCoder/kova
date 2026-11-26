@@ -7,83 +7,64 @@ import { Onboarding } from './components/Onboarding.js';
 import { Welcome } from './components/Welcome.js';
 import { Conversation } from './components/Conversation.js';
 import { CommandPalette } from './components/CommandPalette.js';
-
-import { isDesktop, send } from './messaging/bridge.js';
-import { WindowTitlebar } from './desktop/WindowTitlebar.js';
+import { ContextPreviewDialog } from './components/ContextPreviewDialog.js';
+import { send } from './messaging/bridge.js';
 import { I18nProvider, useI18n } from './i18n/I18n.js';
-import { subscribe } from './messaging/bridge.js';
 import { useChat } from './state/useChat.js';
+import { useNotice } from './state/useNotice.js';
 import { insertComposerText } from './state/insertComposerText.js';
-import { useHostResources } from './state/useHostResources.js';
 import { useContextPreview } from './state/useContextPreview.js';
 import { usePromptWorkbench } from './state/usePromptWorkbench.js';
-import { ContextPreviewDialog } from './components/ContextPreviewDialog.js';
 
-const ProviderPreferences = lazy(() =>
-  import('./desktop/ProviderPreferences.js').then((module) => ({
-    default: module.ProviderPreferences,
-  })),
-);
 const PromptLibraryDialog = lazy(() =>
   import('./components/PromptLibraryDialog.js').then((module) => ({
     default: module.PromptLibraryDialog,
   })),
 );
-const TerminalPanel = lazy(() => import('./desktop/TerminalPanel.js'));
-const Sidebar = lazy(() =>
-  import('./desktop/Sidebar.js').then((module) => ({ default: module.Sidebar })),
+
+const SettingsDialog = lazy(() =>
+  import('./components/SettingsDialog.js').then((module) => ({
+    default: module.SettingsDialog,
+  })),
 );
-const Inspector = lazy(() =>
-  import('./desktop/Inspector.js').then((module) => ({ default: module.Inspector })),
-);
+
 export function App() {
   const chat = useChat();
   return (
-    <I18nProvider language={chat.snapshot?.desktop?.language ?? chat.snapshot?.language ?? 'en'}>
+    <I18nProvider language={chat.snapshot?.language ?? 'en'}>
       <Workspace chat={chat} />
     </I18nProvider>
   );
 }
+
+/** First line of the opening prompt, like a conversation title. */
+function conversationTitle(messages: readonly { role: string; content: string }[]) {
+  const first = messages.find((message) => message.role === 'user')?.content.trim();
+  if (!first) return null;
+  const line = first.split('\n')[0]!;
+  return line.length > 60 ? `${line.slice(0, 57)}…` : line;
+}
+
 function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
   const { t } = useI18n();
-  const [terminalOpen, setTerminalOpen] = useState(false);
-  const [terminalMounted, setTerminalMounted] = useState(false);
-  const toggleTerminal = useCallback(() => {
-    setTerminalMounted(true);
-    setTerminalOpen((open) => !open);
-  }, []);
-  const hideTerminal = useCallback(() => setTerminalOpen(false), []);
-  useEffect(
-    () =>
-      subscribe((message) => {
-        if (message.type === 'ToggleTerminal') toggleTerminal();
-      }),
-    [toggleTerminal],
-  );
   useEffect(() => {
+    const size = chat.snapshot?.textSize;
     document.documentElement.style.setProperty(
       '--text-scale',
-      (chat.snapshot?.desktop?.textSize ?? chat.snapshot?.textSize) === 'larger'
-        ? '1.24'
-        : (chat.snapshot?.desktop?.textSize ?? chat.snapshot?.textSize) === 'large'
-          ? '1.12'
-          : '1',
+      size === 'larger' ? '1.24' : size === 'large' ? '1.12' : '1',
     );
-  }, [chat.snapshot?.desktop?.textSize, chat.snapshot?.textSize]);
+  }, [chat.snapshot?.textSize]);
   const { snapshot, busy } = chat;
-  const resources = useHostResources(snapshot);
+  const { notice, setNotice } = useNotice();
   const [setupOpen, setSetupOpen] = useState(false);
   const [setupDismissed, setSetupDismissed] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
-  const {
-    library,
-    open: openLibrary,
-    close: closeLibrary,
-  } = usePromptWorkbench(resources.preferences || paletteOpen);
-  const context = useContextPreview(
-    snapshot,
-    resources.preferences || paletteOpen || Boolean(library),
-  );
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  useEffect(() => {
+    if (chat.settingsRequest > 0) setSettingsOpen(true);
+  }, [chat.settingsRequest]);
+  const { library, open: openLibrary, close: closeLibrary } = usePromptWorkbench(paletteOpen);
+  const context = useContextPreview(snapshot, paletteOpen || Boolean(library));
   const [findOpen, setFindOpen] = useState(false);
   const openFind = useCallback(() => {
     setSetupOpen(false);
@@ -93,7 +74,6 @@ function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
       document.querySelector<HTMLInputElement>('.conversation-search input')?.focus(),
     );
   }, []);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [showLatest, setShowLatest] = useState(false);
   const scroller = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLTextAreaElement>(null);
@@ -103,7 +83,7 @@ function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
       if (!field || field.disabled) return;
       const next = insertComposerText(field.value, text, field.selectionEnd);
       if (!next) {
-        resources.setNotice('This prompt would exceed the 16,000 character draft limit.');
+        setNotice('This prompt would exceed the 16,000 character draft limit.');
         field.focus({ preventScroll: true });
         return;
       }
@@ -113,7 +93,7 @@ function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
         field.setSelectionRange(next.caret, next.caret);
       });
     },
-    [chat.setPrompt, resources.setNotice],
+    [chat.setPrompt, setNotice],
   );
   const nearBottom = useRef(true);
   const showSetup = Boolean(
@@ -121,21 +101,9 @@ function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
     !snapshot.activeRunId &&
     (setupOpen || (!snapshot.setupCompleted && !setupDismissed)),
   );
-  const title =
-    snapshot?.desktop?.sessions.find((session) => session.id === snapshot.conversationId)?.title ??
-    t('New session');
-  const preferences = useCallback(() => {
-    if (isDesktop) {
-      resources.setPreferencesTab('provider');
-      resources.setPreferences(true);
-    } else send({ type: 'OpenSettings' });
-  }, [resources.setPreferences, resources.setPreferencesTab]);
-  const openPalette = useCallback(() => setPaletteOpen(true), []);
-  const closeInspector = useCallback(
-    () => resources.setInspectorOpen(false),
-    [resources.setInspectorOpen],
-  );
-  const closePreview = useCallback(() => resources.setPreview(null), [resources.setPreview]);
+  // A fresh conversation has no title yet; the header shows just the mark.
+  const title = conversationTitle(snapshot?.messages ?? []);
+  const dialogOpen = paletteOpen || settingsOpen || Boolean(context.preview) || Boolean(library);
   useLayoutEffect(() => {
     nearBottom.current = true;
     setShowLatest(false);
@@ -151,94 +119,41 @@ function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
     ) {
       scroller.current.scrollTop = scroller.current.scrollHeight;
     }
-  }, [snapshot?.messages, chat.activities, showSetup, findOpen]);
+  }, [snapshot?.messages, snapshot?.pendingApproval, chat.timeline, showSetup, findOpen]);
   useEffect(() => {
     if (!showSetup) input.current?.focus();
   }, [showSetup]);
   useEffect(() => {
-    if (!isDesktop) return;
-    const theme = snapshot?.desktop?.theme ?? 'dark';
-    const media = window.matchMedia('(prefers-color-scheme: dark)');
-    const apply = () => {
-      document.documentElement.dataset.theme =
-        theme === 'system' ? (media.matches ? 'dark' : 'light') : theme;
-    };
-    apply();
-    media.addEventListener('change', apply);
-    return () => media.removeEventListener('change', apply);
-  }, [snapshot?.desktop?.theme]);
-  useEffect(() => {
     const keyboard = (event: KeyboardEvent) => {
-      if (!(event.metaKey || event.ctrlKey)) return;
-      if (resources.preferences || context.preview || library) return;
-      if (paletteOpen) {
-        if (event.key.toLowerCase() === 'k') {
-          event.preventDefault();
-          setPaletteOpen(false);
-        }
-        return;
-      }
-      if (
-        isDesktop &&
-        ((event.shiftKey && event.code === 'KeyT') || (event.ctrlKey && event.code === 'Backquote'))
-      ) {
+      // Escape interrupts the active run, as in a terminal agent session.
+      if (event.key === 'Escape' && !dialogOpen && !findOpen && snapshot?.activeRunId) {
         event.preventDefault();
-        toggleTerminal();
-      }
-      if (
-        event.target instanceof Element &&
-        event.target.closest('.xterm') &&
-        event.ctrlKey &&
-        !event.metaKey &&
-        !event.shiftKey
-      )
+        send({ type: 'CancelRun', runId: snapshot.activeRunId });
         return;
-      if (event.key.toLowerCase() === 'k') {
+      }
+      if (!(event.metaKey || event.ctrlKey) || context.preview || library) return;
+      const key = event.key.toLowerCase();
+      if (key === 'k') {
         event.preventDefault();
         setPaletteOpen((open) => !open);
-      }
-      if (
-        event.key.toLowerCase() === 'f' &&
-        snapshot?.messages.length &&
-        !showSetup &&
-        !(event.target instanceof Element && event.target.closest('.xterm'))
-      ) {
+      } else if (!paletteOpen && key === 'f' && snapshot?.messages.length && !showSetup) {
         event.preventDefault();
         openFind();
-      }
-      if (event.key === ',') {
+      } else if (!paletteOpen && event.key === ',') {
         event.preventDefault();
-        preferences();
-      }
-      if (isDesktop && event.key.toLowerCase() === 'b') {
-        event.preventDefault();
-        setSidebarOpen((open) => !open);
-      }
-      if (isDesktop && event.key.toLowerCase() === 'p') {
-        event.preventDefault();
-        resources.setInspectorOpen(true);
-        resources.setInspectorTab('files');
-        requestAnimationFrame(() =>
-          document.querySelector<HTMLInputElement>('[data-file-search]')?.focus(),
-        );
-      }
-      if (isDesktop && event.key.toLowerCase() === 'j') {
-        event.preventDefault();
-        resources.setInspectorOpen((open) => !open);
+        setSettingsOpen(true);
       }
     };
     window.addEventListener('keydown', keyboard);
     return () => window.removeEventListener('keydown', keyboard);
   }, [
-    preferences,
-    resources.preferences,
     context.preview,
     library,
     paletteOpen,
-    resources.setInspectorOpen,
-    resources.setInspectorTab,
-    toggleTerminal,
+    dialogOpen,
+    findOpen,
     openFind,
+    snapshot?.activeRunId,
     snapshot?.messages.length,
     showSetup,
   ]);
@@ -247,51 +162,20 @@ function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
     setSetupDismissed(true);
   };
   return (
-    <div className={isDesktop ? 'desktop-frame' : 'extension-frame'}>
-      {isDesktop && (
-        <WindowTitlebar
-          desktop={snapshot?.desktop}
-          terminalOpen={terminalOpen}
-          inert={
-            resources.preferences || paletteOpen || Boolean(context.preview) || Boolean(library)
-          }
-          onTerminal={toggleTerminal}
-          onCommands={openPalette}
-        />
-      )}
-      <main
-        className={`workspace ${isDesktop ? 'desktop-workspace' : 'extension-workspace'}`}
-        inert={
-          resources.preferences || paletteOpen || context.preview || library ? true : undefined
-        }
-      >
-        {isDesktop && sidebarOpen && (
-          <Suspense fallback={<aside className="sidebar-nav" aria-busy="true" />}>
-            <Sidebar
-              desktop={snapshot?.desktop}
-              conversationId={snapshot?.conversationId}
-              busy={busy}
-              onSearch={openPalette}
-              onPreferences={preferences}
-            />
-          </Suspense>
-        )}
+    <div className="extension-frame">
+      <main className="workspace extension-workspace" inert={dialogOpen ? true : undefined}>
         <div className="workspace-main">
           <WorkspaceHeader
-            desktop={snapshot?.desktop}
             title={title}
             busy={busy}
-            inspectorOpen={resources.inspectorOpen}
             conversationId={snapshot?.conversationId}
             hasMessages={Boolean(snapshot?.messages.length) && !showSetup}
-            onSidebar={() => setSidebarOpen((open) => !open)}
             onSetup={() => {
               setSetupOpen((open) => !open);
               if (scroller.current) scroller.current.scrollTop = 0;
             }}
-            onPalette={openPalette}
-            onInspector={() => resources.setInspectorOpen((open) => !open)}
-            onPreferences={preferences}
+            onPalette={() => setPaletteOpen(true)}
+            onPreferences={() => setSettingsOpen(true)}
             onFind={openFind}
           />
           {findOpen && !showSetup && (
@@ -307,7 +191,7 @@ function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
           )}
           <div className="conversation-stage">
             <div
-              className="conversation"
+              className={`conversation${showSetup || snapshot?.messages.length ? '' : ' conversation-empty'}`}
               ref={scroller}
               onScroll={() => {
                 const view = scroller.current;
@@ -332,7 +216,8 @@ function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
                   key={snapshot.conversationId}
                   snapshot={snapshot}
                   thinking={chat.thinking}
-                  activities={chat.activities}
+                  timeline={chat.timeline}
+                  runStartedAt={chat.runStartedAt}
                   busy={busy}
                   onReuse={insertPrompt}
                   onSavePrompt={openLibrary}
@@ -365,6 +250,7 @@ function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
               snapshot={snapshot}
               busy={busy}
               error={chat.error}
+              providerIssue={chat.providerIssue}
               prompt={chat.prompt}
               model={chat.model}
               mode={chat.mode}
@@ -372,63 +258,19 @@ function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
               onDismissError={chat.dismissError}
               onPromptChange={chat.setPrompt}
               onSubmit={chat.submit}
+              onSubmitText={chat.submitText}
               onModelChange={chat.setModel}
               onModeChange={chat.setMode}
               onOpenLibrary={() => openLibrary()}
+              onOpenSettings={() => setSettingsOpen(true)}
+              onOpenPalette={() => setPaletteOpen(true)}
+              onInsertPrompt={insertPrompt}
               onPreviewContext={context.open}
             />
           )}
-          {isDesktop && terminalMounted && (
-            <Suspense fallback={<div className="terminal-loading">{t('Opening terminal…')}</div>}>
-              <TerminalPanel
-                root={snapshot?.desktop?.workspacePath ?? null}
-                visible={terminalOpen}
-                theme={snapshot?.desktop?.theme ?? 'dark'}
-                textSize={snapshot?.desktop?.textSize ?? 'standard'}
-                onHide={hideTerminal}
-              />
-            </Suspense>
-          )}
-          {isDesktop && (
-            <div className="workspace-status">
-              <span>
-                <Icon name="shield" size={12} />
-                {snapshot?.desktop?.workspacePath
-                  ? t('Project boundaries enforced')
-                  : t('Open a project to enable tools')}
-              </span>
-              <span>
-                <span
-                  className={`status-dot ${snapshot?.providerStatus === 'Available' ? 'online' : ''}`}
-                />
-                {busy
-                  ? t('Working')
-                  : snapshot?.providerStatus === 'Available'
-                    ? t('Ready')
-                    : t('Not connected')}
-              </span>
-            </div>
-          )}
         </div>
-        {isDesktop && resources.inspectorOpen && (
-          <Suspense fallback={<aside className="inspector" aria-busy="true" />}>
-            <Inspector
-              key={snapshot?.desktop?.workspacePath ?? 'empty'}
-              files={resources.files}
-              search={resources.search}
-              busy={busy}
-              preview={resources.preview}
-              activities={chat.activities}
-              tab={resources.inspectorTab}
-              onTab={resources.setInspectorTab}
-              onClose={closeInspector}
-              onClosePreview={closePreview}
-              hasWorkspace={Boolean(snapshot?.desktop?.workspacePath)}
-            />
-          </Suspense>
-        )}
       </main>
-      {library && !resources.preferences && !paletteOpen && (
+      {library && !paletteOpen && (
         <Suspense
           fallback={
             <div className="settings-loading" role="status">
@@ -448,42 +290,35 @@ function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
           />
         </Suspense>
       )}
-      {context.preview && !library && !resources.preferences && !paletteOpen && (
+      {context.preview && !library && !paletteOpen && (
         <ContextPreviewDialog preview={context.preview} busy={busy} onClose={context.close} />
-      )}
-      {resources.preferences && snapshot?.desktop && (
-        <Suspense
-          fallback={
-            <div className="settings-loading" role="status">
-              {t('Opening settings…')}
-            </div>
-          }
-        >
-          <ProviderPreferences
-            desktop={snapshot.desktop}
-            busy={busy}
-            initialTab={resources.preferencesTab}
-            onClose={() => resources.setPreferences(false)}
-          />
-        </Suspense>
       )}
       {paletteOpen && (
         <CommandPalette
           snapshot={snapshot}
           busy={busy}
           onClose={() => setPaletteOpen(false)}
-          onPreferences={preferences}
           onFind={openFind}
           onLibrary={() => openLibrary()}
-          onToggleTerminal={toggleTerminal}
-          onTogglePanel={() => resources.setInspectorOpen((open) => !open)}
+          onSettings={() => setSettingsOpen(true)}
         />
       )}
-      {resources.notice && (
+      {settingsOpen && (
+        <Suspense
+          fallback={
+            <div className="settings-loading" role="status">
+              {t('Loading settings…')}
+            </div>
+          }
+        >
+          <SettingsDialog onClose={() => setSettingsOpen(false)} />
+        </Suspense>
+      )}
+      {notice && (
         <div className="toast" role="status">
           <Icon name="help" size={16} />
-          <span>{t(resources.notice)}</span>
-          <button aria-label={t('Dismiss notification')} onClick={() => resources.setNotice('')}>
+          <span>{t(notice)}</span>
+          <button aria-label={t('Dismiss notification')} onClick={() => setNotice('')}>
             <Icon name="close" size={14} />
           </button>
         </div>

@@ -15,15 +15,12 @@ flowchart BT
   V["@kova/vscode · editor composition"] --> R
   V --> C
   V --> P
-  D["@kova/desktop · Electron composition"] --> R
-  D --> C
-  D --> P
   W["@kova/webview · React presentation"] --> P
 ```
 
-Arrows denote imports/dependencies. Core imports only Core. Protocol owns self-contained DTOs, imports nothing from Core, and contains no classes, functions or behavioral interfaces. Host maps between the two. Webview imports only Protocol, its UI libraries and shared PNG branding assets. Ollama and MCP cannot import one another or VS Code. VS Code and Electron are separate composition roots. Root tooling is not part of the runtime graph.
+Arrows denote imports/dependencies. Core imports only Core. Protocol owns self-contained DTOs, imports nothing from Core, and contains no classes, functions or behavioral interfaces. Host maps between the two. Webview imports only Protocol, its UI libraries and shared PNG branding assets. Ollama and MCP cannot import one another or VS Code. VS Code is the only composition root. Root tooling is not part of the runtime graph.
 
-The desktop addition extracts pure Node filesystem/process adapters, provider transport, tools, skills, hooks and projection into `packages/runtime`. The extension injects VS Code-aware reader/writer ports to preserve unsaved editor content and undo. Desktop injects atomic Node writes. Core stays host-independent, and both hosts use the same permission, stale-preview and guardrail pipeline. See [ADR 010](adr/010-desktop-runtime.md). Runtime dependencies belong to the adapter or UI package that uses them.
+Pure Node filesystem/process adapters, provider transport, tools, skills, hooks and projection live in `packages/runtime`. The extension injects VS Code-aware reader/writer ports to preserve unsaved editor content and undo. Core stays host-independent. Runtime dependencies belong to the adapter or UI package that uses them. The former Electron desktop host was removed in 0.10.0 ([ADR 011](adr/011-remove-desktop-host.md)).
 
 ## Repository map
 
@@ -50,7 +47,6 @@ kova/
 │   ├── ollama/src/          OllamaLlmProvider, OllamaModelCatalog
 │   ├── mcp/src/             StdioMcpClient, McpTool
 │   ├── runtime/src/         adapters/, tools/, providers/, skills/, integrations/, presentation/
-│   ├── desktop/src/         main/ (Electron session/controller), state/ (history/settings/keys), preload.ts
 │   ├── vscode/src/
 │   │   ├── extension/       activation, ChatSession, context attachments
 │   │   ├── adapters/        VS Code reader/writer and runtime wrapper
@@ -112,16 +108,8 @@ Adapters translate cancellation to fetch abort, VS Code tokens, pending-approval
 
 ## Application flow and UI
 
-The host translates validated UI intent into `AgentRequest`, then calls `Agent.run`. The Agent retrieves conversation, loads project rules and the selected skill, builds bounded context, streams the provider, resolves tool calls through the safety pipeline, records bounded results and continues. Tool execution is serial in v1. The host projects `AgentEvent` into safe protocol DTOs; React renders conversation, thinking, context cost, approvals and an activity list.
+The host translates validated UI intent into `AgentRequest`, then calls `Agent.run`. The Agent retrieves conversation, loads project rules and the selected skill, builds bounded context, streams the provider, resolves tool calls through the safety pipeline, records bounded results and continues. Tool execution is serial in v1. The host projects `AgentEvent` into safe protocol DTOs; React renders a transcript: messages with inline tool rows and lifecycle notes at the point where the agent acted, an inline permission prompt, a working indicator and the context meter.
 
-Kova: Open Chat opens the sidebar. Kova: Open Chat in Editor creates or focuses one movable editor WebviewPanel. Both views share the same host-owned session through KovaWebviewHost. Closing the editor tab cancels an active run; hiding the sidebar does not. Reopening either view restores the session conversation. Selection/current-file attachments use the most recently active file editor while chat has focus. Both views contain prompt, send/stop, model selector, four-mode picker and context meter. Tool definition token cost is separate. Skills, tools, MCP, hooks, guardrails and errors are visible in expandable activity rows. There is no dashboard and no React-owned business state. Diff preview uses host-side virtual documents and VS Code's diff editor.
+Kova: Open Chat opens the sidebar. Kova: Open Chat in Editor creates or focuses one movable editor WebviewPanel. Both views share the same host-owned session through KovaWebviewHost. Closing the editor tab cancels an active run; hiding the sidebar does not. Reopening either view restores the session conversation. Selection/current-file attachments use the most recently active file editor while chat has focus. Both views contain prompt, send/stop, model selector, four-mode picker and context meter. Tool definition token cost is separate. Tool calls appear as one transcript line each with a folded result; skills, rules, MCP, hooks, guardrails and errors appear as short notes. There is no dashboard and no React-owned business state. Diff preview uses host-side virtual documents and VS Code's diff editor.
 
 Details: [state machine](AGENT-LOOP.md), [protocol](PROTOCOL.md), [context](CONTEXT.md), [policy](TOOLS-AND-POLICY.md), [providers](PROVIDERS.md), [integrations](INTEGRATIONS.md), [testing](TESTING.md).
-
-## Desktop process boundary
-
-Electron main owns provider HTTP, workspace access, commands, MCP, approvals and local persistence. The sandboxed, context-isolated renderer receives JSON DTOs through a frozen preload bridge with only send/subscribe. IPC accepts only the trusted main frame and validates every message; the renderer has no Node integration. Production CSP prevents renderer network connections, new windows/navigation are denied, and external links are restricted to validated HTTP(S) intents.
-
-Desktop stores a small session metadata index at startup and loads bodies on demand into an eight-session LRU. JSON writes are atomic and serialized; archived bodies remain recoverable. Provider keys are hashed by endpoint, encrypted using the OS-backed Electron safeStorage API and persisted separately. Linux basic_text fallback and unavailable secure stores are treated as memory-only. File navigation and filename search enforce the project path guard and skip symlinks/dependency trees; filename search is user-triggered and bounded to 5,000 entries, 100 matches or 1.5 seconds.
-
-The desktop-only `DesktopTerminal` starts a native PTY solely from explicit terminal UI intents. Its session ID gates input/resize/acknowledgments; the host chooses the shell and starting project. It does not register an AI tool. Project switches and app exit terminate it. Bounded replay buffers, coalesced output and acknowledgments provide backpressure. xterm.js loads lazily in the renderer; node-pty is external to the main bundle and its current-platform N-API binaries are shipped outside ASAR for native execution. Script CSP remains self-only; inline styles are allowed for terminal rendering while renderer network access remains disabled.

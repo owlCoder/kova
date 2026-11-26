@@ -8,21 +8,17 @@ ollama pull qwen3:4b
 
 Install Kova from its VSIX with **Extensions: Install from VSIX**. Run **Kova: Open Chat** or select Kova in the Activity Bar to open the sidebar. Use **Kova: Open Chat in Editor** for a movable editor tab. Both views share the session conversation. **Stop** cancels the active run and **New conversation** clears the current chat.
 
-## Desktop app
-
-For the standalone Electron app, follow [DESKTOP.md](DESKTOP.md). It shares the agent, tools, provider presets and chat UI with the extension. Desktop **Settings → Provider** replaces VS Code configuration commands. Choose a project, save a connection, and select a permission mode in Setup. Desktop history is persistent; extension history remains scoped to the extension session.
-
 ## Providers
 
 The first-run guide appears in the chat. Select **Configure provider**, or run **Kova: Set Up AI Provider** at any time. Choose a preset, confirm its endpoint, enter the API key in the native password field, and choose a model. The wizard only saves after the final review. It updates user settings unless existing workspace overrides require workspace settings. API keys are stored separately for each provider endpoint.
 
 Presets include Ollama, DeepSeek, OpenAI, OpenRouter, Groq, Gemini (through its OpenAI-compatible API), LM Studio and a custom compatible endpoint. Connection checking requests the model list; it sends no workspace content and does not generate a paid chat response. It checks model availability, not the model's chat or tool capabilities. Select a chat-capable model and enable tools only if that model supports function calling.
 
-Choose a permission mode in the guide, then **Start chatting**. **Set up later** dismisses the guide. Use **Setup** in the header to reopen it. **Kova: Open Settings** remains available for advanced configuration.
+Choose a permission mode in the guide, then **Start chatting**. **Set up later** dismisses the guide. Use **Setup** in the header to reopen it. **Kova: Open Settings** opens Kova's settings dialog for language, text size, chat placement, context budget, Ollama options and the Auto command allowlist.
 
 ### Ollama
 
-`ollama` remains the default. The default endpoint is `http://127.0.0.1:11434` and the default model is `qwen3:4b`. Installed models are discovered from Ollama. Models without confirmed tool support run chat only.
+`ollama` remains the default. The default endpoint is `http://127.0.0.1:11434`; no model is preselected — you choose one during setup (for example `qwen3:4b`) or later in the chat. Installed models are discovered from Ollama. Models without confirmed tool support run chat only.
 
 ### DeepSeek
 
@@ -52,9 +48,9 @@ Selecting DeepSeek or an OpenAI-compatible endpoint sends the prompt and context
 
 ## Working with Kova
 
-Use **Cmd/Ctrl+F** to search the current conversation. The header actions menu exports or copies Markdown without internal tool logs or reasoning. VS Code preserves the unsent composer draft in workspace storage, even though conversation history still lasts only for the current extension session. A new conversation clears the extension draft. Desktop saves drafts separately for up to 20 recent sessions. Exporting requires the active run to be stopped.
+Use **Cmd/Ctrl+F** to search the current conversation. The header actions menu exports or copies Markdown without internal tool logs or reasoning. VS Code preserves the unsent composer draft in workspace storage, and conversation history is persisted there too: the Activity Bar launcher lists past conversations and reopens any of them. A new conversation clears the draft. Exporting requires the active run to be stopped.
 
-Use **Kova: Open Settings** to change provider/model settings, context budget and the exact Auto command allowlist. Context shows estimated input before generation and measured input/output after the final chunk.
+Use the **Kova settings** dialog (**Kova: Open Settings**) to change the context budget and the exact Auto command allowlist; provider and model settings stay in **Kova: Set Up AI Provider**. Context shows estimated input before generation and measured input/output after the final chunk.
 
 Attach a selection, current file or chosen files with **Add context**. While either chat view has focus, selection/current-file attachments use the most recently active file editor. In Manual mode, inspect the file diff or command and choose **Allow once** or **Reject**. Stale file versions require a new preview. Editor Undo restores file edits; cancellation does not undo applied changes.
 

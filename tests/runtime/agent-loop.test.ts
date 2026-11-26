@@ -29,6 +29,7 @@ const request: AgentRequest = {
   thinkingEnabled: false,
   keepAliveSeconds: 0,
   toolsEnabled: true,
+  imagesSupported: true,
   maxToolIterations: 10,
   commandAllowlist: [],
 };

@@ -11,6 +11,8 @@ export interface ProcessRunner {
       readonly workingDirectory?: string;
       readonly timeoutMs: number;
       readonly maxOutputCharacters: number;
+      /** Live stdout/stderr chunks for UI streaming; output stays bounded by maxOutputCharacters. */
+      readonly onOutput?: (chunk: string) => void;
     },
     cancellation: CancellationToken,
   ): Promise<{

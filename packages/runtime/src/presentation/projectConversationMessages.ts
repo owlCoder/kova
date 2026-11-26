@@ -1,4 +1,5 @@
 import type { ConversationEntry } from '../../../core/src/conversations/Conversation.js';
+import { chatText } from '../../../core/src/providers/chatText.js';
 import type { SessionSnapshot } from '../../../protocol/src/SessionSnapshot.js';
 
 export function projectConversationMessages(
@@ -17,7 +18,7 @@ export function projectConversationMessages(
     .map((entry, index, all) => ({
       id: entry.id,
       role: entry.message.role as 'user' | 'assistant',
-      content: entry.message.content,
+      content: chatText(entry.message.content),
       partial: partial && index === all.length - 1 && entry.message.role === 'assistant',
     }));
   if (activeRun && !messages.some((message) => message.id === `${activeRun.id}-user`))

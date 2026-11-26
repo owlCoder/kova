@@ -3,7 +3,7 @@ import { send } from '../messaging/bridge.js';
 import { useI18n } from '../i18n/I18n.js';
 import { Icon } from './Icon.js';
 import { modifierKey } from './modifierKey.js';
-import { useModelPopover } from './useModelPopover.js';
+import { usePopover } from './usePopover.js';
 import { menuKeydown } from './menuKeydown.js';
 
 export function ConversationTools({
@@ -19,7 +19,7 @@ export function ConversationTools({
 }) {
   const { t } = useI18n();
   const id = useId();
-  const menu = useModelPopover(true, !hasMessages, 260);
+  const menu = usePopover({ disabled: !hasMessages, minimumWidth: 260 });
   useEffect(() => {
     if (menu.open) menu.panel.current?.querySelector('button')?.focus();
   }, [menu.open, menu.panel]);

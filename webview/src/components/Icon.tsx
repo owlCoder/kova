@@ -1,4 +1,5 @@
 import {
+  Image,
   Plus,
   Settings2,
   Paperclip,
@@ -65,6 +66,7 @@ const icons = {
   folderOpen: FolderOpen,
   folder: Folder,
   file: FileCode2,
+  image: Image,
   search: Search,
   chat: MessageSquare,
   panelRight: PanelRight,

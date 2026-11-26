@@ -27,18 +27,6 @@ export function Onboarding({
         <h1 id="setup-title">{t('Make Kova yours')}</h1>
         <p>{t('Connect a model, choose how you work, and start with your code.')}</p>
       </div>
-      {snapshot.desktop && (
-        <div className="setup-project">
-          <button
-            onClick={() => send({ type: 'OpenWorkspace' })}
-            disabled={snapshot.configuringProvider}
-          >
-            {snapshot.desktop.workspacePath
-              ? t('Project: {name}', { name: snapshot.desktop.workspaceName })
-              : t('Open a project')}
-          </button>
-        </div>
-      )}
       <ol className="setup-steps">
         <li>
           <span className={`step-number ${ready ? 'complete' : ''}`}>1</span>
@@ -55,18 +43,12 @@ export function Onboarding({
               onClick={() => send({ type: 'OpenProviderSetup' })}
             >
               {snapshot.configuringProvider
-                ? snapshot.desktop
-                  ? t('Saving connection…')
-                  : t('Setup open in VS Code…')
+                ? t('Setup open in VS Code…')
                 : ready
                   ? t('Change provider')
                   : t('Configure provider')}
             </button>
-            <small>
-              {snapshot.desktop
-                ? t('API keys stay on this device.')
-                : t('API keys stay in VS Code secure storage.')}
-            </small>
+            <small>{t('API keys stay in VS Code secure storage.')}</small>
           </div>
         </li>
         <li>
@@ -74,13 +56,9 @@ export function Onboarding({
           <div>
             <h2>{t('Choose a model')}</h2>
             <p>
-              {snapshot.desktop
-                ? t(
-                    'Load models in provider settings and choose a chat model, or enter its ID manually.',
-                  )
-                : t(
-                    'The setup wizard checks the model list and helps you pick a chat model. You can also enter its ID manually.',
-                  )}
+              {t(
+                'The setup wizard checks the model list and helps you pick a chat model. You can also enter its ID manually.',
+              )}
             </p>
             <div className="setup-status" role="status">
               <span className={`status-dot ${ready ? 'online' : ''}`} />
@@ -122,9 +100,7 @@ export function Onboarding({
               </select>
             </label>
             <p>
-              {snapshot.desktop
-                ? t('Use Add context to attach project files or the current preview.')
-                : t('Use Add context to attach a file or selection.')}{' '}
+              {t('Use Add context to attach a file or selection.')}{' '}
               {t('You can change the provider, model and mode at any time.')}
             </p>
           </div>

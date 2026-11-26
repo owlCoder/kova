@@ -62,7 +62,7 @@ try {
   const registry = new ToolRegistry();
   for (const tool of await mcp.start(root, config, events, source)) registry.register(tool);
   assert.equal(registry.definitions('Manual').length, 3, JSON.stringify(observed));
-  registry.register(new RunCommandTool(guard, runner));
+  registry.register(new RunCommandTool(guard, runner, { emit: () => {} }));
   registry.register(new ReadFileTool(guard, new NodeWorkspaceReader(guard)));
   const runtime = new DefaultToolRuntime(
     root,
@@ -144,6 +144,7 @@ try {
       maxToolIterations: 10,
       commandAllowlist: [],
       toolsEnabled: true,
+      imagesSupported: true,
     },
     source,
     events,

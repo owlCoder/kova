@@ -6,5 +6,6 @@ export interface ProviderConfiguration {
   readonly baseUrl: string;
   readonly model: string;
   readonly supportsTools: boolean;
+  readonly supportsVision: boolean;
   readonly discoverModels: boolean;
 }

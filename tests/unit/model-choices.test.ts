@@ -6,6 +6,7 @@ const model = (id: string, displayName = id): ModelInfo => ({
   id,
   displayName,
   tools: 'Supported',
+  vision: 'Unknown',
   thinking: 'Unknown',
   sizeBytes: null,
   maxContextTokens: 32768,

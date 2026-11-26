@@ -1,0 +1,151 @@
+/* Kova settings dialog: one framed panel with sections of labelled fields. */
+.settings-backdrop {
+  padding: 16px;
+}
+.settings-dialog {
+  width: min(640px, calc(100vw - 32px));
+  max-height: min(760px, calc(100dvh - 56px));
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel);
+  /* Subtle shadow only: the shared --shadow-dialog halo reads as a dark ring on dark themes. */
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.35);
+  overflow: auto;
+  overscroll-behavior: contain;
+  font-size: calc(13px * var(--text-scale, 1));
+}
+.settings-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 20px 4px;
+  flex-shrink: 0;
+}
+.settings-heading > div {
+  flex: 1;
+  min-width: 0;
+}
+.settings-heading .eyebrow {
+  font-size: calc(10px * var(--text-scale, 1));
+  color: var(--brand);
+}
+.settings-heading h2 {
+  margin: 4px 0 0;
+  font-size: calc(18px * var(--text-scale, 1));
+  letter-spacing: -0.02em;
+}
+.settings-pending {
+  padding: 24px 20px;
+  color: var(--muted);
+}
+.settings-error {
+  margin: 12px 20px 0;
+  padding: 8px 10px;
+  border: 1px solid var(--bad);
+  border-radius: var(--radius-control);
+  color: var(--bad);
+  font-size: calc(12.5px * var(--text-scale, 1));
+}
+.settings-body {
+  padding: 8px 20px 16px;
+  display: grid;
+  gap: 18px;
+  overflow: auto;
+}
+.settings-section h3 {
+  margin: 0 0 10px;
+  font-size: calc(11px * var(--text-scale, 1));
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+.settings-field {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+.settings-field:last-child {
+  margin-bottom: 0;
+}
+.settings-label {
+  color: var(--text);
+  font-size: calc(12.5px * var(--text-scale, 1));
+}
+.settings-hint {
+  color: var(--muted);
+  font-size: calc(11.5px * var(--text-scale, 1));
+  line-height: 1.45;
+}
+.settings-field input[type='text'],
+.settings-field input[type='number'],
+.settings-field select,
+.settings-field textarea {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius-control);
+  background: var(--input-bg);
+  color: var(--vscode-input-foreground, var(--text));
+  font: inherit;
+  font-size: calc(12.5px * var(--text-scale, 1));
+}
+.settings-field textarea {
+  resize: vertical;
+  font-family: var(--mono, monospace);
+}
+.settings-field input:focus-visible,
+.settings-field select:focus-visible,
+.settings-field textarea:focus-visible {
+  outline: 1px solid var(--focus);
+  border-color: var(--focus);
+}
+.settings-field.field-checkbox {
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  column-gap: 8px;
+}
+.settings-field.field-checkbox input {
+  order: 1;
+  width: 14px;
+  height: 14px;
+  accent-color: var(--brand);
+}
+.settings-field.field-checkbox .settings-label {
+  order: 2;
+}
+.settings-field.field-checkbox .settings-hint {
+  order: 3;
+  grid-column: 1 / -1;
+}
+.settings-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 20px 16px;
+  border-top: 1px solid var(--border-soft);
+  flex-shrink: 0;
+}
+.settings-button {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  padding: 6px 14px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: calc(12.5px * var(--text-scale, 1));
+  cursor: pointer;
+}
+.settings-button.secondary:hover:not(:disabled) {
+  background: var(--hover);
+}
+.settings-button.primary {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: var(--on-accent);
+}
+.settings-button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}

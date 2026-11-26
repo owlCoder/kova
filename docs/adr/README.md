@@ -14,4 +14,5 @@ All decisions are **Accepted with the amendments in [REVIEW-CHANGES.md](../REVIE
 | [008](008-accepted-risks.md)                | No workspace-trust prompt and explicit accepted risks            |
 | [009](009-testing-and-delivery.md)          | Architectural fitness tests and incremental acceptance gates     |
 
-- [010: Shared runtime and Electron desktop host](010-desktop-runtime.md)
+- [010: Shared runtime and Electron desktop host](010-desktop-runtime.md) — superseded by 011
+- [011: Remove the desktop host; VS Code only](011-remove-desktop-host.md)

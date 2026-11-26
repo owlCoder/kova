@@ -1,12 +1,11 @@
 import * as vscode from 'vscode';
 import type { ModelInfo } from '../../../core/src/models/ModelInfo.js';
 import type { ProviderManager } from '../providers/ProviderManager.js';
+import { configuredContext } from './effectiveContext.js';
 
 export function readRunSettings(providers: ProviderManager, model: ModelInfo) {
   const settings = vscode.workspace.getConfiguration('kova');
-  const maxTokens = settings.get('context.maxTokens', 32768);
-  if (model.maxContextTokens && maxTokens > model.maxContextTokens)
-    throw new Error('Configured context exceeds the model context limit.');
+  const budget = configuredContext(settings, model, providers.kind());
   const thinkingEnabled = providers.thinkingEnabled();
   if (thinkingEnabled && model.thinking !== 'Supported')
     throw new Error(
@@ -14,8 +13,8 @@ export function readRunSettings(providers: ProviderManager, model: ModelInfo) {
     );
   return {
     context: {
-      maxTokens,
-      reservedOutputTokens: settings.get('context.reservedOutputTokens', 4096),
+      maxTokens: budget.maxTokens,
+      reservedOutputTokens: budget.reservedOutputTokens,
       safetyMarginRatio: settings.get('context.safetyMarginRatio', 0.1),
       maxToolOutputCharacters: 8000,
     },

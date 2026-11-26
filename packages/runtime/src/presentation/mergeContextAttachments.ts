@@ -7,7 +7,11 @@ export function mergeContextAttachments(
 ): ContextAttachment[] {
   const result = [...existing];
   for (const item of captured) {
-    if (!item.content || item.content.length > 100_000 || item.content.includes('\0'))
+    if (
+      (!item.content && !item.image) ||
+      item.content.length > 100_000 ||
+      item.content.includes('\0')
+    )
       throw new Error(
         'Attach nonempty text under 100,000 characters. Binary files are not supported.',
       );

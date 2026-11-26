@@ -1,20 +1,22 @@
-import { afterEach, describe, expect, it } from 'vitest';
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { describe, expect, it } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import type { PromptLibrary } from '../../packages/protocol/src/PromptLibrary.js';
 import { PromptLibraryService } from '../../packages/runtime/src/presentation/PromptLibraryService.js';
-import { createPromptLibrary } from '../../packages/desktop/src/state/createPromptLibrary.js';
 import { validateMessage } from '../../packages/runtime/src/presentation/validateMessage.js';
-import { validateDesktopMessage } from '../../packages/desktop/src/main/validateDesktopMessage.js';
 
-const directories: string[] = [];
-afterEach(async () => {
-  await Promise.all(
-    directories.splice(0).map((path) => rm(path, { recursive: true, force: true })),
-  );
-});
+/** Mirrors the extension's workspace-state persistence across extension restarts. */
+function memoryStore(initial?: unknown) {
+  const state = { saved: initial, writes: 0 };
+  const open = () =>
+    new PromptLibraryService({
+      read: async () => structuredClone(state.saved),
+      write: async (library) => {
+        state.writes++;
+        state.saved = structuredClone(library);
+      },
+    });
+  return { state, open };
+}
 const read = { type: 'GetPromptLibrary' } as const;
 const save = (
   revision: string,
@@ -24,18 +26,15 @@ const save = (
 
 describe('personal prompt libraries', () => {
   it('persists exact text across restarts and refreshes an edited prompt without duplicating it', async () => {
-    const path = await mkdtemp(join(tmpdir(), 'kova-prompt-library-'));
-    directories.push(path);
-    const store = createPromptLibrary(path);
+    const memory = memoryStore();
+    const store = memory.open();
     const empty = await store.handle(read);
     expect(empty.prompts).toEqual([]);
-    await expect(readFile(join(path, 'prompt-library.json'))).rejects.toMatchObject({
-      code: 'ENOENT',
-    });
+    expect(memory.state.writes).toBe(0);
     const first = await store.handle(save(empty.revision));
     const prompt = first.prompts[0]!;
     expect(prompt.text).toBe('Keep every character.\n  <code>\n');
-    const reopened = createPromptLibrary(path);
+    const reopened = memory.open();
     expect(await reopened.handle(read)).toEqual(first);
     const updated = await reopened.handle({
       ...save(first.revision, '\n  Updated\n'),
@@ -109,30 +108,22 @@ describe('personal prompt libraries', () => {
     ).rejects.toThrow('no longer exists');
   });
 
-  it('preserves corrupt or over-limit data and retries reads without erasing saved files', async () => {
-    const path = await mkdtemp(join(tmpdir(), 'kova-prompt-library-'));
-    directories.push(path);
-    const file = join(path, 'prompt-library.json');
-    await writeFile(file, '{broken data');
-    const store = createPromptLibrary(path);
+  it('preserves corrupt or over-limit data and retries reads without erasing saved state', async () => {
+    const memory = memoryStore({
+      version: 1,
+      revision: randomUUID(),
+      prompts: [{ id: randomUUID(), title: 'Too long', text: 'x'.repeat(16001) }],
+    });
+    const store = memory.open();
     await expect(store.handle(read)).rejects.toThrow('preserved');
-    expect(await readFile(file, 'utf8')).toBe('{broken data');
-    await writeFile(
-      file,
-      JSON.stringify({
-        version: 1,
-        revision: randomUUID(),
-        prompts: [{ id: randomUUID(), title: 'Too long', text: 'x'.repeat(16001) }],
-      }),
-    );
-    await expect(store.handle(read)).rejects.toThrow('preserved');
-    await writeFile(file, JSON.stringify({ version: 1, revision: randomUUID(), prompts: [] }));
+    expect(memory.state.writes).toBe(0);
+    memory.state.saved = { version: 1, revision: randomUUID(), prompts: [] };
     expect((await store.handle(read)).prompts).toEqual([]);
   });
 
-  it('validates both host boundaries and refuses injected paths, content overflow and invalid references', () => {
+  it('validates the host boundary and refuses injected paths, content overflow and invalid references', () => {
     const revision = randomUUID();
-    for (const validate of [validateMessage, validateDesktopMessage]) {
+    for (const validate of [validateMessage]) {
       const envelope = { protocolVersion: 1, requestId: 'library' };
       expect(
         validate({ ...envelope, ...save(revision, 'x'.repeat(16000), 'T'.repeat(80)) }).type,

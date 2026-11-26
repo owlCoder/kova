@@ -1,7 +1,7 @@
 import { useI18n } from '../i18n/I18n.js';
 import { useEffect, useRef, useState } from 'react';
 import type { SessionSnapshot } from '../../../packages/protocol/src/SessionSnapshot.js';
-import { isDesktop, send } from '../messaging/bridge.js';
+import { send } from '../messaging/bridge.js';
 import { Icon } from './Icon.js';
 import { modifierKey } from './modifierKey.js';
 import { useDialogFocus } from './useDialogFocus.js';
@@ -10,20 +10,16 @@ export function CommandPalette({
   snapshot,
   busy,
   onClose,
-  onPreferences,
-  onTogglePanel,
-  onToggleTerminal,
   onFind,
   onLibrary,
+  onSettings,
 }: {
   snapshot: SessionSnapshot | null;
   busy: boolean;
   onClose(): void;
-  onPreferences(): void;
-  onTogglePanel(): void;
-  onToggleTerminal(): void;
   onFind(): void;
   onLibrary(): void;
+  onSettings(): void;
 }) {
   const { t } = useI18n();
   const [query, setQuery] = useState('');
@@ -31,7 +27,7 @@ export function CommandPalette({
   const input = useRef<HTMLInputElement>(null);
   const dialog = useRef<HTMLElement>(null);
   useDialogFocus(dialog, onClose);
-  const mod = modifierKey(snapshot?.desktop?.platform);
+  const mod = modifierKey();
   const commands = [
     {
       id: 'prompt-library',
@@ -65,55 +61,27 @@ export function CommandPalette({
     },
     {
       id: 'new',
-      label: t('New session'),
+      label: t('New conversation'),
       icon: 'plus' as const,
       shortcut: `${mod} N`,
       disabled: busy,
       run: () => send({ type: 'NewConversation' }),
     },
-    ...(isDesktop
-      ? [
-          {
-            id: 'project',
-            label: t('Open project…'),
-            icon: 'folderOpen' as const,
-            shortcut: `${mod} O`,
-            disabled: busy,
-            run: () => send({ type: 'OpenWorkspace' }),
-          },
-          {
-            id: 'terminal',
-            label: t('Toggle terminal'),
-            icon: 'terminal' as const,
-            shortcut: `${mod} ⇧ T`,
-            disabled: false,
-            run: onToggleTerminal,
-          },
-          {
-            id: 'panel',
-            label: t('Toggle project panel'),
-            icon: 'panelRight' as const,
-            shortcut: `${mod} J`,
-            disabled: false,
-            run: onTogglePanel,
-          },
-        ]
-      : []),
     {
       id: 'provider',
       label: t('Configure AI provider'),
       icon: 'sparkles' as const,
       shortcut: '',
       disabled: busy,
-      run: () => (isDesktop ? onPreferences() : send({ type: 'OpenProviderSetup' })),
+      run: () => send({ type: 'OpenProviderSetup' }),
     },
     {
       id: 'settings',
-      label: t('Open settings'),
+      label: t('Kova settings'),
       icon: 'settings' as const,
       shortcut: `${mod} ,`,
       disabled: false,
-      run: () => (isDesktop ? onPreferences() : send({ type: 'OpenSettings' })),
+      run: onSettings,
     },
     ...(snapshot?.activeRunId
       ? [
@@ -127,14 +95,6 @@ export function CommandPalette({
           },
         ]
       : []),
-    ...(snapshot?.desktop?.sessions ?? []).map((session) => ({
-      id: session.id,
-      label: session.title,
-      icon: session.pinned ? ('pin' as const) : ('chat' as const),
-      shortcut: t('Session'),
-      disabled: busy,
-      run: () => send({ type: 'SelectConversation', conversationId: session.id }),
-    })),
   ].filter((command) => command.label.toLowerCase().includes(query.toLowerCase()));
   const active = commands[selected]?.disabled
     ? commands.findIndex((command) => !command.disabled)
@@ -194,7 +154,7 @@ export function CommandPalette({
             autoComplete="off"
             spellCheck={false}
             aria-label={t('Search commands and sessions')}
-            placeholder={t('Search commands or sessions…')}
+            placeholder={t('Search commands…')}
             value={query}
             onChange={(event) => {
               setQuery(event.target.value);
