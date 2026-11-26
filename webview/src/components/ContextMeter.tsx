@@ -70,6 +70,13 @@ export function ContextMeter({ snapshot }: { snapshot: SessionSnapshot | null })
           {t('Tool definitions')}
           <b>{usage?.toolDefinitionTokens ?? 0}</b>
         </span>
+        {snapshot?.estimatedCost != null && (
+          <span className="context-totals">
+            {t('Estimated cost: {cost}', {
+              cost: snapshot.estimatedCost.toFixed(4),
+            })}
+          </span>
+        )}
         {totals && (
           <span className="context-totals">
             {t('{input} in · {output} out · {runs} runs', {

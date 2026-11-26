@@ -30,6 +30,8 @@ export interface SessionSnapshot {
     readonly outputTokens: number;
     readonly runs: number;
   } | null;
+  /** Estimated cost from kova.cost.* prices, null when prices are unset. */
+  readonly estimatedCost: number | null;
   readonly messages: readonly {
     readonly id: string;
     readonly role: 'user' | 'assistant';

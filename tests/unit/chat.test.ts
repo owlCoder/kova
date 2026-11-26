@@ -30,6 +30,7 @@ const request: AgentRequest = {
   imagesSupported: true,
   maxToolIterations: 10,
   commandAllowlist: [],
+  testCommand: '',
 };
 
 describe('conversation token totals', () => {
@@ -68,6 +69,7 @@ describe('conversation token totals', () => {
       toolsEnabled: false,
       maxToolIterations: 1,
       commandAllowlist: [],
+      testCommand: '',
     };
     const events = { emit: () => {} };
     await agent.run(base, new CancellationSource(), events);

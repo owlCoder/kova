@@ -23,6 +23,7 @@ export function validateMessage(raw: unknown): WebviewMessage {
     CompactConversation: [],
     OpenConversation: ['conversationId'],
     RenameConversation: ['conversationId', 'title'],
+    ImportConversation: ['markdown'],
     UpdateDraft: ['conversationId', 'prompt'],
     ExportConversation: ['conversationId', 'action'],
     SelectSkill: ['skillId'],
@@ -92,6 +93,13 @@ export function validateMessage(raw: unknown): WebviewMessage {
     !/^[a-f0-9-]{36}$/.test(value.conversationId as string)
   )
     throw new Error('Invalid conversation ID.');
+  if (
+    value.type === 'ImportConversation' &&
+    (typeof value.markdown !== 'string' ||
+      !value.markdown.trim() ||
+      value.markdown.length > 1_000_000)
+  )
+    throw new Error('Markdown import must be 1-1,000,000 characters.');
   if (
     value.type === 'RenameConversation' &&
     (typeof value.title !== 'string' ||

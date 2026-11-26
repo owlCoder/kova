@@ -143,6 +143,7 @@ try {
       keepAliveSeconds: 300,
       maxToolIterations: 10,
       commandAllowlist: [],
+      testCommand: '',
       toolsEnabled: true,
       imagesSupported: true,
     },

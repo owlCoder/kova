@@ -41,6 +41,7 @@ export interface ChatMessageHost {
   newConversation(): Promise<void>;
   openConversation(id: string): Promise<void>;
   renameConversation(id: string, title: string): Promise<void>;
+  importConversation(markdown: string): Promise<void>;
   submit(message: Extract<WebviewMessage, { readonly type: 'SubmitPrompt' }>): Promise<string>;
   accept(requestId: string, runId: string | null): void;
   notify(message: string): void;
@@ -111,6 +112,9 @@ export async function handleChatMessage(
       return;
     case 'RenameConversation':
       await host.renameConversation(message.conversationId, message.title);
+      return;
+    case 'ImportConversation':
+      await host.importConversation(message.markdown);
       return;
     case 'SelectSkill':
       if (host.isRunning()) throw new Error('Cannot change skill during a run.');

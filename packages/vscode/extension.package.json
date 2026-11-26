@@ -156,6 +156,23 @@
           "default": true,
           "description": "Whether the configured endpoint/model supports OpenAI-style function tool calls."
         },
+        "kova.testing.command": {
+          "type": "string",
+          "default": "",
+          "description": "Optional command (e.g. \"dotnet test\") the agent runs automatically after a round that successfully wrote or edited files. Goes through the normal command policy and approvals."
+        },
+        "kova.cost.inputPerMillion": {
+          "type": "number",
+          "default": 0,
+          "minimum": 0,
+          "description": "Price per 1,000,000 input tokens in your currency. 0 disables the cost estimate."
+        },
+        "kova.cost.outputPerMillion": {
+          "type": "number",
+          "default": 0,
+          "minimum": 0,
+          "description": "Price per 1,000,000 output tokens in your currency. 0 disables the cost estimate."
+        },
         "kova.openaiCompatible.supportsVision": {
           "type": "boolean",
           "default": true,

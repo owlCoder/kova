@@ -36,6 +36,7 @@ vi.mock('vscode', () => ({
       get: (key: string, fallback: unknown) => fixture.settings[key] ?? fallback,
     }),
   },
+  window: { activeTextEditor: undefined },
 }));
 vi.mock('../../packages/vscode/src/adapters/WorkspaceRuntime.js', () => ({
   WorkspaceRuntime: class {
@@ -480,6 +481,35 @@ describe('@mention workspace files', () => {
     } finally {
       await rm(dir, { recursive: true, force: true });
     }
+  });
+});
+
+describe('conversation import', () => {
+  it('imports markdown as a new conversation and shows its messages', async () => {
+    await session.initialize();
+    await session.handle({ protocolVersion: 1, requestId: 'ready', type: 'Ready' });
+    const before = latestSnapshot().conversationId;
+    await session.handle({
+      protocolVersion: 1,
+      requestId: 'import',
+      type: 'ImportConversation',
+      markdown:
+        '# Kova conversation\n\nProvider at export: Ollama (local)\nSelected model: qwen3:0.6b\n\n## You\n\nImported question\n\n---\n\n## Kova\n\nImported answer\n',
+    });
+    const snapshot = latestSnapshot();
+    expect(snapshot.conversationId).not.toBe(before);
+    expect(snapshot.messages.map((m) => [m.role, m.content])).toEqual([
+      ['user', 'Imported question'],
+      ['assistant', 'Imported answer'],
+    ]);
+    await expect(
+      session.handle({
+        protocolVersion: 1,
+        requestId: 'bad-import',
+        type: 'ImportConversation',
+        markdown: 'nothing parseable',
+      }),
+    ).rejects.toThrow();
   });
 });
 

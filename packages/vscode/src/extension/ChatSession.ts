@@ -43,6 +43,8 @@ import {
 } from './conversationLifecycle.js';
 import { handleChatMessage, type ChatMessageHost } from './handleChatMessage.js';
 import { RunChangeTracker } from './runChanges.js';
+import { expandPlaceholders } from '../../../runtime/src/presentation/expandPlaceholders.js';
+import { parseConversationMarkdown } from '../../../runtime/src/presentation/parseConversationMarkdown.js';
 export class ChatSession {
   readonly hostSessionId = randomUUID();
   readonly currentConversationId = (): string => this.conversationId;
@@ -214,6 +216,18 @@ export class ChatSession {
       refreshModels: (force) => this.refreshModels(force),
       newConversation: () => this.newConversation(),
       openConversation: (id) => this.openConversation(id),
+      importConversation: async (markdown) => {
+        const entries = parseConversationMarkdown(markdown);
+        const id = randomUUID();
+        await this.repository.save({
+          id,
+          workspaceId: this.roots.current ?? '',
+          entries,
+          summary: null,
+        });
+        await openStoredConversation(this.lifecycle, id);
+        await this.snapshot('imported');
+      },
       renameConversation: async (id, title) => {
         const repository = this.repository as Partial<WorkspaceConversationRepository>;
         if (typeof repository.rename !== 'function') throw new Error('History is unavailable.');
@@ -393,11 +407,15 @@ export class ChatSession {
       this.streamingResponse = null;
       const counter = this.counters.get(model.id) ?? new TokenCounter();
       this.counters.set(model.id, counter);
+      const prompt = expandPlaceholders(
+        message.prompt,
+        this.contextAttachments.currentSelection(this.roots.current),
+      );
       const request = {
         runId,
         conversationId: this.conversationId,
         workspaceId: this.roots.current ?? '',
-        prompt: message.prompt,
+        prompt,
         modelId: model.id,
         mode: message.mode,
         activeSkillId: message.skillId,
@@ -406,6 +424,7 @@ export class ChatSession {
         maxToolIterations: 10,
         toolsEnabled: Boolean(this.roots.current && model.tools === 'Supported'),
         imagesSupported: model.vision !== 'Unsupported',
+        testCommand: vscode.workspace.getConfiguration('kova').get<string>('testing.command', ''),
       };
       const provider = await this.providers.forConversation(this.conversationId);
       if (this.providerRefreshPending)

@@ -196,6 +196,7 @@ export class ChatAgent implements Agent {
           events.emit({ type: 'StateChanged', state: 'Completed' });
           return { status: 'Completed', runId: request.runId };
         }
+        let wroteFiles = false;
         for (const rawCandidate of candidates) {
           if (++attempts > iterationLimit) return stop('IterationLimit');
           // Provider IDs can restart each request/run; durable domain IDs remain unique.
@@ -333,6 +334,11 @@ export class ChatAgent implements Agent {
               repairAttempt: malformed,
             });
           } else malformed = 0;
+          if (
+            result.status === 'Success' &&
+            ['write_file', 'edit_file', 'apply_patch'].includes(call.name)
+          )
+            wroteFiles = true;
           events.emit({ type: 'StateChanged', state: 'RecordingToolResult' });
           const cap = request.context.maxToolOutputCharacters;
           const content = JSON.stringify({
@@ -370,6 +376,45 @@ export class ChatAgent implements Agent {
           await this.repository.save(conversation);
           cancellation.throwIfCancellationRequested();
           if (invalidArguments && malformed > 2) return stop('MalformedToolCall');
+        }
+        if (request.testCommand && wroteFiles && this.runtime) {
+          const testCall = {
+            id: `${stepId}-tests`,
+            name: 'run_command',
+            arguments: { command: request.testCommand },
+          };
+          events.emit({ type: 'StateChanged', state: 'ValidatingTool' });
+          const testResult = await this.runtime.execute(
+            testCall,
+            request.mode,
+            request.commandAllowlist,
+            cancellation,
+            events,
+            request.runId,
+          );
+          conversation = {
+            ...conversation,
+            entries: [
+              ...conversation.entries,
+              {
+                id: `${testCall.id}-result`,
+                turnId: request.runId,
+                stepId,
+                message: {
+                  role: 'tool',
+                  callId: testCall.id,
+                  toolName: 'run_command',
+                  content: JSON.stringify({
+                    status: testResult.status,
+                    output: testResult.output.slice(0, request.context.maxToolOutputCharacters),
+                  }),
+                },
+                omitted: false,
+                toolResultOrigin: 'BuiltIn',
+              },
+            ],
+          };
+          await this.repository.save(conversation);
         }
       }
       return stop('IterationLimit');

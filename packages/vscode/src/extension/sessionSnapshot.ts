@@ -47,6 +47,17 @@ export interface SnapshotInput {
   } | null;
 }
 
+function estimateCost(
+  usage: { readonly inputTokens: number; readonly outputTokens: number } | null,
+): number | null {
+  if (!usage) return null;
+  const config = vscode.workspace.getConfiguration('kova');
+  const inputPerMillion = config.get<number>('cost.inputPerMillion', 0);
+  const outputPerMillion = config.get<number>('cost.outputPerMillion', 0);
+  if (!inputPerMillion && !outputPerMillion) return null;
+  return (usage.inputTokens * inputPerMillion + usage.outputTokens * outputPerMillion) / 1_000_000;
+}
+
 /** Builds the full view snapshot; the caller re-checks the conversation is still current. */
 export async function composeSnapshot(input: SnapshotInput): Promise<SessionSnapshot> {
   const conversation = await input.repository.get(input.conversationId);
@@ -77,6 +88,7 @@ export async function composeSnapshot(input: SnapshotInput): Promise<SessionSnap
     activeSkillId: input.skillId,
     usage: input.usage ? structuredClone(input.usage) : null,
     usageTotals: conversation?.usage ? { ...conversation.usage } : null,
+    estimatedCost: estimateCost(conversation?.usage ?? null),
     messages,
     contextAttachments: contextAttachmentViews(input.attachments),
     pendingApproval: input.pendingApproval ? approvalView(input.pendingApproval) : null,

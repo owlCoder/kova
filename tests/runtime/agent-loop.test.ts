@@ -32,6 +32,7 @@ const request: AgentRequest = {
   imagesSupported: true,
   maxToolIterations: 10,
   commandAllowlist: [],
+  testCommand: '',
 };
 const definition: ToolDefinition = {
   name: 'read_file',
@@ -92,6 +93,95 @@ const assertPaired = async (repository: InMemoryConversationRepository) => {
     expect(results.filter((result) => result.callId === call.id)).toHaveLength(1);
   for (const result of results)
     expect(calls.filter((call) => call.id === result.callId)).toHaveLength(1);
+};
+
+describe('automatic test command after file writes', () => {
+  it('runs testCommand through the runtime once after a successful write round', async () => {
+    const executed: string[] = [];
+    const repo = new InMemoryConversationRepository();
+    const runtimeMock: ToolRuntime = {
+      definitions: () => [definition, writeDefinition],
+      execute: vi.fn(async (call) => {
+        executed.push(call.name);
+        return {
+          callId: call.id,
+          toolName: call.name,
+          status: 'Success' as const,
+          output: call.name === 'run_command' ? 'tests passed' : 'Wrote a.txt',
+          error: null,
+          omittedCharacters: 0,
+          durationMs: 1,
+        };
+      }),
+    };
+    const agent = new ChatAgent(
+      provider([[{ id: 'w1', name: 'write_file', arguments: { path: 'a.txt', content: 'x' } }]]),
+      repo,
+      new TokenCounter(),
+      runtimeMock,
+      null,
+      null,
+    );
+    const outcome = await agent.run(
+      { ...request, testCommand: 'npm test', toolsEnabled: true },
+      new CancellationSource(),
+      new EventLog(),
+    );
+    expect(outcome.status).toBe('Completed');
+    expect(executed).toEqual(['write_file', 'run_command']);
+    const entries = (await repo.get('chat'))!.entries;
+    const testResult = entries.find((e) => e.id.endsWith('-tests-result'));
+    expect(testResult?.message.role).toBe('tool');
+    if (testResult?.message.role === 'tool')
+      expect(JSON.parse(testResult.message.content).output).toBe('tests passed');
+  });
+
+  it('does not run the test command when nothing was written', async () => {
+    const executed: string[] = [];
+    const repo = new InMemoryConversationRepository();
+    const runtimeMock: ToolRuntime = {
+      definitions: () => [definition],
+      execute: vi.fn(async (call) => {
+        executed.push(call.name);
+        return {
+          callId: call.id,
+          toolName: call.name,
+          status: 'Success' as const,
+          output: 'ok',
+          error: null,
+          omittedCharacters: 0,
+          durationMs: 1,
+        };
+      }),
+    };
+    const agent = new ChatAgent(
+      provider([[candidate()]]),
+      repo,
+      new TokenCounter(),
+      runtimeMock,
+      null,
+      null,
+    );
+    await agent.run(
+      { ...request, testCommand: 'npm test' },
+      new CancellationSource(),
+      new EventLog(),
+    );
+    expect(executed).toEqual(['read_file']);
+  });
+});
+
+const writeDefinition: ToolDefinition = {
+  name: 'write_file',
+  description: 'write',
+  inputSchema: {
+    type: 'object',
+    properties: { path: { type: 'string' }, content: { type: 'string' } },
+    required: ['path', 'content'],
+    additionalProperties: false,
+  },
+  risk: 'WorkspaceWrite',
+  origin: { kind: 'BuiltIn' },
 };
 
 describe('agent-loop repair/repeat/iteration safety', () => {

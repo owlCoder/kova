@@ -91,6 +91,7 @@ function makeRequest(mode: AgentMode, prompt: string): AgentRequest {
     imagesSupported: true,
     maxToolIterations: 10,
     commandAllowlist: [],
+    testCommand: '',
   };
 }
 
