@@ -25,6 +25,11 @@ export interface SessionSnapshot {
   readonly skills: readonly SkillMetadata[];
   readonly activeSkillId: string | null;
   readonly usage: ContextUsage | null;
+  readonly usageTotals: {
+    readonly inputTokens: number;
+    readonly outputTokens: number;
+    readonly runs: number;
+  } | null;
   readonly messages: readonly {
     readonly id: string;
     readonly role: 'user' | 'assistant';

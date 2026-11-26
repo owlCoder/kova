@@ -9,4 +9,6 @@ export const providerSR: Readonly<Record<string, string>> = {
   'Set up provider': 'Podesi provajdera',
   'Search prompts…': 'Pretraži promptove…',
   'No matching prompts.': 'Nema odgovarajućih promptova.',
+  Prompts: 'Promptovi',
+  'Manage…': 'Upravljaj…',
 };

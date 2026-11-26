@@ -7,6 +7,7 @@ export function ContextMeter({ snapshot }: { snapshot: SessionSnapshot | null })
   const { t } = useI18n();
   const menu = usePopover({ minimumWidth: 240, align: 'end' });
   const usage = snapshot?.usage;
+  const totals = snapshot?.usageTotals ?? null;
   const used = usage
     ? (usage.actualInputTokens ?? usage.estimatedInputTokens) + (usage.actualOutputTokens ?? 0)
     : 0;
@@ -69,6 +70,15 @@ export function ContextMeter({ snapshot }: { snapshot: SessionSnapshot | null })
           {t('Tool definitions')}
           <b>{usage?.toolDefinitionTokens ?? 0}</b>
         </span>
+        {totals && (
+          <span className="context-totals">
+            {t('{input} in · {output} out · {runs} runs', {
+              input: totals.inputTokens.toLocaleString(),
+              output: totals.outputTokens.toLocaleString(),
+              runs: String(totals.runs),
+            })}
+          </span>
+        )}
       </div>
     </div>
   );

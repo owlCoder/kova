@@ -165,6 +165,7 @@ describe('transcript timeline', () => {
       skills: [],
       activeSkillId: null,
       usage: null,
+      usageTotals: null,
       messages: [
         { id: '1', role: 'user', content: 'First question', partial: false },
         { id: '2', role: 'assistant', content: 'Reading now', partial: false },
@@ -223,6 +224,7 @@ describe('transcript timeline', () => {
       skills: [],
       activeSkillId: null,
       usage: null,
+      usageTotals: null,
       messages: [{ id: '1', role: 'user', content: 'Hi', partial: false }],
       contextAttachments: [],
       pendingApproval: null,

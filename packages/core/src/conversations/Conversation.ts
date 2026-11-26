@@ -15,4 +15,10 @@ export interface Conversation {
   readonly workspaceId: string;
   readonly entries: readonly ConversationEntry[];
   readonly summary: ConversationSummary | null;
+  /** Cumulative provider-reported token usage across all runs of this conversation. */
+  readonly usage?: {
+    readonly inputTokens: number;
+    readonly outputTokens: number;
+    readonly runs: number;
+  };
 }

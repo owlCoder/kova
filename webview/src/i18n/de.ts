@@ -185,6 +185,7 @@ export const de: Readonly<Record<string, string>> = {
   'New terminal': 'Neues Terminal',
   'No analytics or telemetry.': 'Keine Analytik oder Telemetrie.',
   'No matching commands or sessions.': 'Keine passenden Befehle oder Sitzungen.',
+  '{input} in · {output} out · {runs} runs': '{input} ein · {output} aus · {runs} Läufe',
   'Paste or drop an image to attach it': 'Bild einfügen oder ablegen, um es anzuhängen',
   'This run changed {count} files': 'Dieser Lauf hat {count} Dateien geändert',
   'Revert run changes': 'Lauf-Änderungen zurücksetzen',
@@ -494,6 +495,4 @@ export const de: Readonly<Record<string, string>> = {
   Destructive: 'Destruktiv',
   Modes: 'Modi',
   'to switch': 'zum Wechseln',
-  Prompts: 'Prompts',
-  'Manage…': 'Verwalten…',
 };

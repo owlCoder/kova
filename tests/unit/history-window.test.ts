@@ -19,6 +19,7 @@ const snapshot: SessionSnapshot = {
   skills: [],
   activeSkillId: null,
   usage: null,
+  usageTotals: null,
   messages: Array.from({ length: 1000 }, (_, i) => ({
     id: `${i}`,
     role: i % 2 ? 'assistant' : 'user',

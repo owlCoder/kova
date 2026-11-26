@@ -157,6 +157,15 @@ export class ChatAgent implements Agent {
               finished = true;
               finishReason = event.reason;
               if (event.usage) {
+                conversation = {
+                  ...conversation,
+                  usage: {
+                    inputTokens: (conversation.usage?.inputTokens ?? 0) + event.usage.inputTokens,
+                    outputTokens:
+                      (conversation.usage?.outputTokens ?? 0) + event.usage.outputTokens,
+                    runs: (conversation.usage?.runs ?? 0) + 1,
+                  },
+                };
                 this.counter.reconcile(built.usage.estimatedInputTokens, event.usage);
                 events.emit({
                   type: 'ContextUpdated',

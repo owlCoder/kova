@@ -9,4 +9,6 @@ export const providerDE: Readonly<Record<string, string>> = {
   'Set up provider': 'Anbieter einrichten',
   'Search prompts…': 'Prompts suchen…',
   'No matching prompts.': 'Keine passenden Prompts.',
+  Prompts: 'Prompts',
+  'Manage…': 'Verwalten…',
 };

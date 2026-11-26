@@ -1383,3 +1383,10 @@ body.editor .extension-frame .welcome-mark .kova-mark img {
   border: 1px solid var(--border-soft);
   object-fit: contain;
 }
+.context-totals {
+  border-top: 1px solid var(--border-soft);
+  margin-top: 4px;
+  padding-top: 6px;
+  font-size: calc(11px * var(--text-scale, 1));
+  color: var(--muted);
+}

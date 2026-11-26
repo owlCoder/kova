@@ -32,6 +32,51 @@ const request: AgentRequest = {
   commandAllowlist: [],
 };
 
+describe('conversation token totals', () => {
+  it('accumulates provider-reported usage across runs', async () => {
+    const repository = new InMemoryConversationRepository();
+    let round = 0;
+    const provider: LlmProvider = {
+      async *streamChat() {
+        round++;
+        yield {
+          type: 'Finished',
+          reason: 'Complete',
+          usage: { inputTokens: 100 * round, outputTokens: 10 * round },
+        };
+      },
+    };
+    const agent = new ChatAgent(provider, repository, new TokenCounter());
+    const base: AgentRequest = {
+      runId: 'r1',
+      conversationId: 'c1',
+      workspaceId: '',
+      prompt: 'hi',
+      modelId: 'm',
+      mode: 'Manual',
+      activeSkillId: null,
+      context: {
+        maxTokens: 32768,
+        reservedOutputTokens: 1024,
+        safetyMarginRatio: 0.1,
+        maxToolOutputCharacters: 8000,
+      },
+      attachments: [],
+      imagesSupported: true,
+      thinkingEnabled: false,
+      keepAliveSeconds: 0,
+      toolsEnabled: false,
+      maxToolIterations: 1,
+      commandAllowlist: [],
+    };
+    const events = { emit: () => {} };
+    await agent.run(base, new CancellationSource(), events);
+    await agent.run({ ...base, runId: 'r2' }, new CancellationSource(), events);
+    const conversation = await repository.get('c1');
+    expect(conversation?.usage).toEqual({ inputTokens: 300, outputTokens: 30, runs: 2 });
+  });
+});
+
 describe('image attachments in context', () => {
   it('sends image parts when the model supports vision and a text note otherwise', () => {
     const builder = new ContextBuilder(new TokenCounter());

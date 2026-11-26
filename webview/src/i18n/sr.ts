@@ -183,6 +183,7 @@ export const sr: Readonly<Record<string, string>> = {
   'New terminal': 'Novi terminal',
   'No analytics or telemetry.': 'Bez analitike i telemetrije.',
   'No matching commands or sessions.': 'Nema odgovarajućih komandi ili sesija.',
+  '{input} in · {output} out · {runs} runs': '{input} ulaz · {output} izlaz · {runs} runova',
   'Paste or drop an image to attach it': 'Nalepi ili prevuci sliku da je прикачиш',
   'This run changed {count} files': 'Ovaj run je izmenio {count} fajlova',
   'Revert run changes': 'Vrati promene runa',
@@ -490,6 +491,4 @@ export const sr: Readonly<Record<string, string>> = {
   Destructive: 'Destruktivno',
   Modes: 'Režimi',
   'to switch': 'za promenu',
-  Prompts: 'Promptovi',
-  'Manage…': 'Upravljaj…',
 };

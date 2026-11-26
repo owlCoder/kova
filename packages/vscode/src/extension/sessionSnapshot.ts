@@ -76,6 +76,7 @@ export async function composeSnapshot(input: SnapshotInput): Promise<SessionSnap
     skills: input.skills.map((skill) => ({ ...skill })),
     activeSkillId: input.skillId,
     usage: input.usage ? structuredClone(input.usage) : null,
+    usageTotals: conversation?.usage ? { ...conversation.usage } : null,
     messages,
     contextAttachments: contextAttachmentViews(input.attachments),
     pendingApproval: input.pendingApproval ? approvalView(input.pendingApproval) : null,
