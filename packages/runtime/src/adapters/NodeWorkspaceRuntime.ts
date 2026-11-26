@@ -64,7 +64,7 @@ export class NodeWorkspaceRuntime implements ToolRuntime {
       new WriteFileTool(guard, reader, writer),
       new EditFileTool(guard, reader, writer),
       new ApplyPatchTool(guard, reader, writer),
-      new RunCommandTool(guard, this.runner),
+      new RunCommandTool(guard, this.runner, events),
       new UpdateTodosTool(events),
     ])
       this.registry.register(tool);

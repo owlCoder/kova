@@ -26,6 +26,7 @@ export class NodeProcessRunner implements ProcessRunner {
         finished = false;
       let grace: ReturnType<typeof setTimeout> | undefined;
       const append = (text: string, stream: 'stdout' | 'stderr') => {
+        if (text) request.onOutput?.(text);
         const room = Math.max(0, max - stdout.length - stderr.length);
         if (stream === 'stdout') stdout += text.slice(0, room);
         else stderr += text.slice(0, room);

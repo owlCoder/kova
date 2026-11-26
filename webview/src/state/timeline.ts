@@ -156,6 +156,10 @@ export function applyTimelineEvent(
         : entries;
     case 'ToolStarted':
       return updateTool(entries, event.callId, () => ({ status: 'Running' }));
+    case 'CommandOutput':
+      return updateTool(entries, event.callId, (entry) =>
+        entry.kind === 'tool' ? { output: clip(entry.output + event.text) } : {},
+      );
     case 'ToolCompleted':
       return updateTool(entries, event.callId, () => ({
         status: event.result.status,

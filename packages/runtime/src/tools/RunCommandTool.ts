@@ -8,6 +8,7 @@ import type { PreparedToolCall } from '../../../core/src/tools/PreparedToolCall.
 import type { ToolPreparationResult } from '../../../core/src/tools/ToolPreparationResult.js';
 import type { ToolResult } from '../../../core/src/tools/ToolResult.js';
 import type { WorkspacePathGuard } from '../../../core/src/workspace/WorkspacePathGuard.js';
+import type { AgentEventSink } from '../../../core/src/agents/AgentEventSink.js';
 import { BuiltInTool } from './BuiltInTool.js';
 
 export class RunCommandTool extends BuiltInTool {
@@ -31,6 +32,7 @@ export class RunCommandTool extends BuiltInTool {
   constructor(
     private readonly guard: WorkspacePathGuard,
     private readonly runner: ProcessRunner,
+    private readonly events: AgentEventSink,
   ) {
     super();
   }
@@ -80,6 +82,14 @@ export class RunCommandTool extends BuiltInTool {
         workingDirectory: current.canonicalPath,
         timeoutMs: this.integerArgument(prepared.call, 'timeout_ms', 120000, 120000),
         maxOutputCharacters: 30000,
+        onOutput: (chunk) => {
+          if (chunk)
+            this.events.emit({
+              type: 'CommandOutput',
+              callId: prepared.call.id,
+              text: chunk.slice(0, 4000),
+            });
+        },
       },
       cancellation,
     );

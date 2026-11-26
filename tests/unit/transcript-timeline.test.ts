@@ -126,6 +126,22 @@ describe('transcript timeline', () => {
       expect(entry.items.map((item) => item.status)).toEqual(['completed', 'in_progress']);
   });
 
+  it('accumulates streamed command output into the running tool row', () => {
+    const entries = fold([
+      request,
+      { type: 'ToolStarted', callId: 'c1' },
+      { type: 'CommandOutput', callId: 'c1', text: 'line 1\n' },
+      { type: 'CommandOutput', callId: 'c1', text: 'line 2\n' },
+      { type: 'CommandOutput', callId: 'other', text: 'ignored' },
+    ]);
+    const row = entries.find((entry) => entry.kind === 'tool');
+    expect(row?.kind).toBe('tool');
+    if (row?.kind === 'tool') {
+      expect(row.status).toBe('Running');
+      expect(row.output).toBe('line 1\nline 2\n');
+    }
+  });
+
   it('names built-in and MCP tools briefly', () => {
     expect(toolLabel('read_file')).toBe('Read');
     expect(toolLabel('run_command')).toBe('Run');

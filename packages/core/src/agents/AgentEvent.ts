@@ -49,6 +49,7 @@ export type AgentEvent =
     }
   | { readonly type: 'ToolAwaitingApproval'; readonly request: ApprovalRequest }
   | { readonly type: 'ToolStarted'; readonly callId: string }
+  | { readonly type: 'CommandOutput'; readonly callId: string; readonly text: string }
   | { readonly type: 'ToolCompleted'; readonly callId: string; readonly result: ToolResult }
   | { readonly type: 'ToolBlocked'; readonly callId: string; readonly reasons: readonly string[] }
   | { readonly type: 'ToolDenied'; readonly callId: string }
