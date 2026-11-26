@@ -147,6 +147,8 @@ ${host ? `<dt>Endpoint</dt><dd title="${escape(host)}">${escape(host)}</dd>` : '
 <div id="shortcuts-pop" class="pop" popover="auto"><ul><li>${key(mac ? '⌘⌥K' : 'Ctrl+Alt+K')} open Kova</li>
 <li>${key('⇧Tab')} switch permission mode</li>
 <li>${key('Esc')} interrupt a running task</li>
+<li>${key('↑')} ${key('↓')} navigate messages</li>
+<li>${key('E')} edit last message · ${key('R')} resend it</li>
 <li>${key('1')} ${key('2')} allow / reject a request</li>
 <li>Right-click a file → <b>Add to Kova Context</b></li></ul></div>
 <div id="ctx" class="pop" hidden>
