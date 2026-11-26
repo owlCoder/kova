@@ -41,6 +41,10 @@ export interface SnapshotInput {
   readonly streamingResponse: SessionSnapshot['messages'][number] | null;
   readonly attachments: readonly ContextAttachment[];
   readonly pendingApproval: ApprovalRequest | null;
+  readonly revertibleRun: {
+    readonly runId: string;
+    readonly files: readonly { readonly path: string; readonly created: boolean }[];
+  } | null;
 }
 
 /** Builds the full view snapshot; the caller re-checks the conversation is still current. */
@@ -75,6 +79,12 @@ export async function composeSnapshot(input: SnapshotInput): Promise<SessionSnap
     messages,
     contextAttachments: contextAttachmentViews(input.attachments),
     pendingApproval: input.pendingApproval ? approvalView(input.pendingApproval) : null,
+    revertibleRun: input.revertibleRun
+      ? {
+          runId: input.revertibleRun.runId,
+          files: input.revertibleRun.files.map((file) => ({ ...file })),
+        }
+      : null,
     thinkingEnabled: activeRun?.thinkingEnabled ?? input.providers.thinkingEnabled(),
     contextMaxTokens:
       activeRun?.contextMaxTokens ??

@@ -163,6 +163,7 @@ describe('transcript timeline', () => {
         reasons: [],
         preview: { kind: 'Command', command: 'dotnet test', relativeWorkingDirectory: '.' },
       },
+      revertibleRun: null,
       thinkingEnabled: false,
       contextMaxTokens: 4096,
     };
@@ -209,6 +210,7 @@ describe('transcript timeline', () => {
       messages: [{ id: '1', role: 'user', content: 'Hi', partial: false }],
       contextAttachments: [],
       pendingApproval: null,
+      revertibleRun: null,
       thinkingEnabled: false,
       contextMaxTokens: 4096,
     };

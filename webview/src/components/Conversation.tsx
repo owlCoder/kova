@@ -1,4 +1,5 @@
 import { Fragment, useRef, type RefObject } from 'react';
+import { send } from '../messaging/bridge.js';
 import { useI18n } from '../i18n/I18n.js';
 import type { SessionSnapshot } from '../../../packages/protocol/src/SessionSnapshot.js';
 import type { TimelineEntry } from '../state/timeline.js';
@@ -103,6 +104,23 @@ export function Conversation({
       {approval && <ApprovalPrompt key={approval.approvalId} approval={approval} />}
       {busy && !approval && !streaming && (
         <WorkingIndicator state={snapshot.state} startedAt={runStartedAt} />
+      )}
+      {snapshot.revertibleRun && !busy && !approval && (
+        <div className="revert-bar">
+          <span>
+            {t('This run changed {count} files', {
+              count: String(snapshot.revertibleRun.files.length),
+            })}
+          </span>
+          <button
+            onClick={() =>
+              snapshot.revertibleRun &&
+              send({ type: 'RevertRun', runId: snapshot.revertibleRun.runId })
+            }
+          >
+            {t('Revert run changes')}
+          </button>
+        </div>
       )}
     </div>
   );

@@ -18,6 +18,7 @@ export function validateMessage(raw: unknown): WebviewMessage {
     DeletePrompt: ['revision', 'id'],
     SubmitPrompt: ['prompt', 'modelId', 'mode', 'skillId', 'attachmentIds'],
     CancelRun: ['runId'],
+    RevertRun: ['runId'],
     NewConversation: [],
     CompactConversation: [],
     OpenConversation: ['conversationId'],

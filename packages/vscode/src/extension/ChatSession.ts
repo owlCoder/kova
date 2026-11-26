@@ -42,6 +42,7 @@ import {
   type ConversationLifecycleHost,
 } from './conversationLifecycle.js';
 import { handleChatMessage, type ChatMessageHost } from './handleChatMessage.js';
+import { RunChangeTracker } from './runChanges.js';
 export class ChatSession {
   readonly hostSessionId = randomUUID();
   readonly currentConversationId = (): string => this.conversationId;
@@ -189,6 +190,23 @@ export class ChatSession {
         this.skillId = id;
       },
       activeRunId: () => this.activeRun?.id ?? null,
+      revertRun: async (runId) => {
+        if (this.activeRun) throw new Error('Wait until generation stops.');
+        const summary = await this.changes.revert(runId, async (files) => {
+          const list = files
+            .slice(0, 10)
+            .map((file) => file.path)
+            .join(', ');
+          const choice = await vscode.window.showWarningMessage(
+            `Revert ${files.length} file change(s) from this run? ${list}`,
+            { modal: true },
+            'Revert',
+          );
+          return choice === 'Revert';
+        });
+        this.deliver({ ...this.envelope(), type: 'Notice', message: summary });
+        await this.snapshot('reverted');
+      },
       cancelRun: (runId) => {
         if (runId !== this.activeRun?.id) throw new Error('Run is no longer active.');
         this.activeRun.cancellation.cancel();
@@ -248,6 +266,11 @@ export class ChatSession {
   }
   private emit(event: AgentEvent): void {
     if (this.disposed) return;
+    const runId = this.activeRun?.id ?? null;
+    if (runId && event.type === 'ToolRequested')
+      this.changes.onToolRequested(runId, event.call.id, event.call.name, event.call.arguments);
+    else if (runId && event.type === 'ToolCompleted')
+      this.changes.onToolCompleted(runId, event.callId, event.result.status === 'Success');
     if (event.type === 'StateChanged') {
       this.state = event.state;
       if (event.state === 'Failed') this.partial = this.streamingResponse?.partial ?? false;
@@ -335,6 +358,7 @@ export class ChatSession {
       streamingResponse: this.streamingResponse,
       attachments: this.contextAttachments.list(),
       pendingApproval: this.approval.requestPending,
+      revertibleRun: this.changes.latest(),
     });
     if (this.disposed) return;
     if (conversationId !== this.conversationId) return this.snapshot(requestId);
@@ -432,6 +456,7 @@ export class ChatSession {
             this.emit({ type: 'StateChanged', state: 'Failed' });
           }
         } finally {
+          this.changes.onRunFinished(runId);
           if (this.activeRun?.id === runId) this.activeRun = null;
           if (this.providerRefreshPending) await this.configurationChanged();
           await this.snapshot(`completed-${runId}`);
@@ -448,6 +473,7 @@ export class ChatSession {
   }
   private readonly lifecycle: ConversationLifecycleHost;
   private readonly messageHost: ChatMessageHost;
+  private readonly changes = new RunChangeTracker(() => this.roots.current);
   async newConversation(): Promise<void> {
     await resetConversation(this.lifecycle);
   }

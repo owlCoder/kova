@@ -7,4 +7,6 @@ export const providerSR: Readonly<Record<string, string>> = {
     'Proverite adresu i API ključ, pa pokušajte ponovo.',
   Retry: 'Pokušaj ponovo',
   'Set up provider': 'Podesi provajdera',
+  'Search prompts…': 'Pretraži promptove…',
+  'No matching prompts.': 'Nema odgovarajućih promptova.',
 };

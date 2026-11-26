@@ -33,6 +33,11 @@ export interface SessionSnapshot {
   }[];
   readonly contextAttachments: readonly ContextAttachmentView[];
   readonly pendingApproval: ApprovalView | null;
+  /** Files changed by the latest completed run, revertible via RevertRun. */
+  readonly revertibleRun: {
+    readonly runId: string;
+    readonly files: readonly { readonly path: string; readonly created: boolean }[];
+  } | null;
   readonly thinkingEnabled: boolean;
   readonly contextMaxTokens: number;
 }

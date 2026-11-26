@@ -1347,3 +1347,30 @@ body.editor .extension-frame .welcome-mark .kova-mark img {
   color: var(--muted);
   text-decoration: line-through;
 }
+
+/* Revert bar under a completed run that changed files. */
+.revert-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 0 4px;
+  padding: 7px 12px;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  font-size: calc(12px * var(--text-scale, 1));
+  color: var(--muted);
+}
+.revert-bar button {
+  margin-left: auto;
+  padding: 3px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--vscode-foreground);
+  font: inherit;
+  cursor: pointer;
+}
+.revert-bar button:hover {
+  background: color-mix(in srgb, var(--bad) 12%, transparent);
+  border-color: var(--bad);
+}

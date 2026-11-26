@@ -7,4 +7,6 @@ export const providerDE: Readonly<Record<string, string>> = {
     'Prüfen Sie Endpunkt und API-Schlüssel und versuchen Sie es erneut.',
   Retry: 'Erneut versuchen',
   'Set up provider': 'Anbieter einrichten',
+  'Search prompts…': 'Prompts suchen…',
+  'No matching prompts.': 'Keine passenden Prompts.',
 };

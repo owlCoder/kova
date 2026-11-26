@@ -26,6 +26,7 @@ export interface ChatMessageHost {
   selectSkill(id: string | null): void;
   activeRunId(): string | null;
   cancelRun(runId: string): void;
+  revertRun(runId: string): Promise<void>;
   resolveApproval(
     runId: string,
     approvalId: string,
@@ -91,6 +92,9 @@ export async function handleChatMessage(
     case 'CancelRun':
       host.cancelRun(message.runId);
       break;
+    case 'RevertRun':
+      await host.revertRun(message.runId);
+      return;
     case 'NewConversation':
       await host.newConversation();
       await host.snapshot(message.requestId);

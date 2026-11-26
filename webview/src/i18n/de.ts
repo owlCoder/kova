@@ -185,6 +185,8 @@ export const de: Readonly<Record<string, string>> = {
   'New terminal': 'Neues Terminal',
   'No analytics or telemetry.': 'Keine Analytik oder Telemetrie.',
   'No matching commands or sessions.': 'Keine passenden Befehle oder Sitzungen.',
+  'This run changed {count} files': 'Dieser Lauf hat {count} Dateien geändert',
+  'Revert run changes': 'Lauf-Änderungen zurücksetzen',
   'Analyze the workspace and write AGENTS.md': 'Arbeitsbereich analysieren und AGENTS.md schreiben',
   'Mention a file': 'Datei erwähnen',
   'No matching files.': 'Keine passenden Dateien.',
@@ -493,6 +495,4 @@ export const de: Readonly<Record<string, string>> = {
   'to switch': 'zum Wechseln',
   Prompts: 'Prompts',
   'Manage…': 'Verwalten…',
-  'Search prompts…': 'Prompts suchen…',
-  'No matching prompts.': 'Keine passenden Prompts.',
 };

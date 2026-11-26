@@ -27,6 +27,7 @@ const snapshot: SessionSnapshot = {
   })),
   contextAttachments: [],
   pendingApproval: null,
+  revertibleRun: null,
   thinkingEnabled: false,
   contextMaxTokens: 32768,
 };

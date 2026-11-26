@@ -183,6 +183,8 @@ export const sr: Readonly<Record<string, string>> = {
   'New terminal': 'Novi terminal',
   'No analytics or telemetry.': 'Bez analitike i telemetrije.',
   'No matching commands or sessions.': 'Nema odgovarajućih komandi ili sesija.',
+  'This run changed {count} files': 'Ovaj run je izmenio {count} fajlova',
+  'Revert run changes': 'Vrati promene runa',
   'Analyze the workspace and write AGENTS.md': 'Analiziraj workspace i napiši AGENTS.md',
   'Mention a file': 'Pomeni fajl',
   'No matching files.': 'Nema fajlova koji odgovaraju.',
@@ -489,6 +491,4 @@ export const sr: Readonly<Record<string, string>> = {
   'to switch': 'za promenu',
   Prompts: 'Promptovi',
   'Manage…': 'Upravljaj…',
-  'Search prompts…': 'Pretraži promptove…',
-  'No matching prompts.': 'Nema odgovarajućih promptova.',
 };

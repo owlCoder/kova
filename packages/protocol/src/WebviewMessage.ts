@@ -18,6 +18,7 @@ export type WebviewMessage = {
       readonly attachmentIds: readonly string[];
     }
   | { readonly type: 'CancelRun'; readonly runId: string }
+  | { readonly type: 'RevertRun'; readonly runId: string }
   | { readonly type: 'NewConversation' }
   | { readonly type: 'CompactConversation' }
   | { readonly type: 'OpenConversation'; readonly conversationId: string }
