@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.28.4
+
+- Add a small gap between the provider/error banner and the composer so the banner no longer sits flush against the chat input.
+
 ## 1.28.3
 
 - Remove the last popup border (context meter popover); all floating surfaces are now border-free with a soft shadow (high-contrast themes keep their contrast border).
