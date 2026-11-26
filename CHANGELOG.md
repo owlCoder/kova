@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.28.1
+
+- Fix the transcript going blank right after sending: the host now persists the user message before the started snapshot, and the agent no longer duplicates it, so Enter visibly sends and the conversation never renders empty while a run is busy.
+- Remove borders and hard shadow rings from popups and dialogs (mode/model/attach/prompt menus, slash menu, command palette, settings, prompt library, context preview, toast, launcher context menu); high-contrast themes keep their contrast border.
+
 ## 1.28.0
 
 - Add prompt placeholders: `{selection}` and `{file}` in a prompt expand from the active editor at submit time.

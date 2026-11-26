@@ -1,6 +1,6 @@
 {
   "name": "kova",
-  "version": "1.28.0",
+  "version": "1.28.1",
   "private": true,
   "description": "Local-first AI coding agent for VS Code",
   "type": "module",
