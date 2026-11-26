@@ -5,6 +5,7 @@ export interface CodeIndexQuery {
   readonly queryText: string;
   readonly focusPaths?: readonly string[];
   readonly maxSnippets: number;
+  readonly queryVector?: readonly number[];
 }
 
 export interface CodeIndex {

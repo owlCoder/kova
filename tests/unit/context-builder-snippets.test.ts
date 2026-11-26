@@ -41,6 +41,7 @@ describe('ContextBuilder code snippets', () => {
         ],
       },
       attachments: [],
+      imagesSupported: false,
       codeSnippets: snippets,
       settings: {
         maxTokens: 4096,
@@ -54,6 +55,7 @@ describe('ContextBuilder code snippets', () => {
     if (result.status === 'Ready') {
       const hasSnippetMessage = result.messages.some(
         (m) =>
+          typeof m.content === 'string' &&
           m.content.includes('packages/core/src/indexing/RelevanceRanker.ts:1-15') &&
           m.content.includes('export class RelevanceRanker {}'),
       );
@@ -104,6 +106,7 @@ describe('ContextBuilder code snippets', () => {
         ],
       },
       attachments: [],
+      imagesSupported: false,
       codeSnippets: snippets,
       settings: {
         maxTokens: 600,

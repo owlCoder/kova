@@ -116,6 +116,7 @@ export async function submitRun(
       host.runtime(),
       host.skillsRepository() ? new SkillLoader(host.skillsRepository()!) : null,
       host.projectInstructions(),
+      host.runtime()?.index ?? null,
     );
     cancellation.throwIfCancellationRequested();
     await host.draft().consume(message.prompt);

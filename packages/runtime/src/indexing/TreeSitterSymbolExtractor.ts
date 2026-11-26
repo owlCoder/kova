@@ -1,4 +1,3 @@
-import { createRequire } from 'node:module';
 import { dirname, extname, join, posix } from 'node:path';
 import { Language, Parser } from 'web-tree-sitter';
 import type { Node } from 'web-tree-sitter';
@@ -113,8 +112,12 @@ export class TreeSitterSymbolExtractor {
     if (existing) return existing;
     const wasm = directory
       ? join(directory, `tree-sitter-${grammar}.wasm`)
-      : createRequire(join(here, 'noop.js')).resolve(
-          `tree-sitter-wasms/out/tree-sitter-${grammar}.wasm`,
+      : join(
+          process.cwd(),
+          'node_modules',
+          'tree-sitter-wasms',
+          'out',
+          `tree-sitter-${grammar}.wasm`,
         );
     const parser = new Parser();
     parser.setLanguage(await Language.load(wasm));

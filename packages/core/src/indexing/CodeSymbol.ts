@@ -26,4 +26,5 @@ export interface IndexedSnippet {
   readonly startLine: number;
   readonly endLine: number;
   readonly symbolNames: readonly string[];
+  readonly vector?: readonly number[];
 }

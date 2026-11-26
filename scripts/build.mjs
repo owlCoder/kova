@@ -18,6 +18,12 @@ const bundled = await build({
   sourcemap: true,
   legalComments: 'external',
   metafile: true,
+  define: {
+    'import.meta.url': 'importMetaUrl',
+  },
+  banner: {
+    js: "const importMetaUrl = require('node:url').pathToFileURL(__filename).href;",
+  },
 });
 await copyFile('packages/vscode/extension.package.json', 'dist/extension/package.json');
 for (const name of ['README.md', 'CHANGELOG.md', 'LICENSE'])
