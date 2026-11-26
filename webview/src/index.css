@@ -560,7 +560,7 @@ kbd {
   min-width: 180px;
   padding: 5px;
   background: var(--elevated);
-  border: 1px solid var(--border);
+  border: var(--frame-border, 0);
   border-radius: var(--radius-control);
   box-shadow: var(--shadow-float);
   z-index: 5;
@@ -853,7 +853,7 @@ kbd {
   gap: 10px;
   max-width: min(600px, 85vw);
   padding: 12px 14px;
-  border: 1px solid var(--border);
+  border: var(--frame-border, 0);
   background: var(--elevated);
   border-radius: var(--radius-panel);
   box-shadow: var(--shadow-float);
@@ -880,7 +880,7 @@ kbd {
   width: 570px;
   max-width: 100%;
   background: var(--elevated);
-  border: 1px solid var(--border);
+  border: var(--frame-border, 0);
   border-radius: 12px;
   box-shadow: var(--shadow-dialog);
   animation: panel-in var(--motion-normal) var(--ease-out);

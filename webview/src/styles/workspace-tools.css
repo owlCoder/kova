@@ -73,7 +73,7 @@
   width: min(760px, calc(100vw - 32px));
   max-height: min(800px, calc(100dvh - 56px));
   background: var(--panel);
-  border: 1px solid var(--border);
+  border: var(--frame-border, 0);
   border-radius: var(--radius-dialog);
   box-shadow: var(--shadow-dialog);
   overflow: auto;

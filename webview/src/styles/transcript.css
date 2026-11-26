@@ -661,12 +661,10 @@ details.timeline-note > summary {
   max-height: 280px;
   overflow: auto;
   padding: 5px;
-  border: 0;
+  border: var(--frame-border, 0);
   border-radius: 10px;
   background: var(--vscode-quickInput-background, var(--vscode-editorWidget-background, #202020));
-  box-shadow:
-    0 12px 32px rgb(0 0 0 / 0.38),
-    0 2px 6px rgb(0 0 0 / 0.24);
+  box-shadow: var(--shadow-float);
 }
 .extension-frame .slash-menu button {
   display: flex;
@@ -1120,13 +1118,11 @@ body.editor .extension-frame .chat-footer {
 .extension-frame .context-details {
   margin: 0;
   padding: 5px;
-  border: 0;
+  border: var(--frame-border, 0);
   border-radius: 10px;
   background: var(--vscode-quickInput-background, var(--vscode-editorWidget-background, #202020));
   color: var(--vscode-foreground);
-  box-shadow:
-    0 12px 32px rgb(0 0 0 / 0.38),
-    0 2px 6px rgb(0 0 0 / 0.24);
+  box-shadow: var(--shadow-float);
   font-size: calc(12.5px * var(--text-scale, 1));
 }
 .extension-frame .kova-popover {

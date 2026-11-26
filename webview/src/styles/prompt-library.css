@@ -6,7 +6,7 @@
   max-height: min(820px, calc(100dvh - 56px));
   display: flex;
   flex-direction: column;
-  border: 1px solid var(--border);
+  border: var(--frame-border, 0);
   border-radius: var(--radius-dialog);
   background: var(--panel);
   box-shadow: var(--shadow-dialog);
