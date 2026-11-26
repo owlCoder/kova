@@ -21,6 +21,8 @@ import { ReadFileTool } from '../tools/ReadFileTool.js';
 import { RunCommandTool } from '../tools/RunCommandTool.js';
 import { UpdateTodosTool } from '../tools/UpdateTodosTool.js';
 import { SearchFilesTool } from '../tools/SearchFilesTool.js';
+import { WebFetchTool } from '../tools/WebFetchTool.js';
+import { WebSearchTool } from '../tools/WebSearchTool.js';
 import { WriteFileTool } from '../tools/WriteFileTool.js';
 import { CommandHook } from '../adapters/CommandHook.js';
 import { NodeGitReader } from '../adapters/NodeGitReader.js';
@@ -66,6 +68,8 @@ export class NodeWorkspaceRuntime implements ToolRuntime {
       new ApplyPatchTool(guard, reader, writer),
       new RunCommandTool(guard, this.runner, events),
       new UpdateTodosTool(events),
+      new WebFetchTool(),
+      new WebSearchTool(),
     ])
       this.registry.register(tool);
     this.runtime = this.compose(new HookPipeline());
