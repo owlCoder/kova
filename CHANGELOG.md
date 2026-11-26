@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.27.0
+
+- Work in the opened workspace folder like a CLI harness: the agent knows the workspace root and follows folder changes live (adding/removing folders rebuilds the tool runtime after the current run). With no folder open the welcome screen says file tools are disabled.
+- Add the `apply_patch` tool: multi-file unified diffs with strict hunk matching, bounded size, and the usual path containment, protected-path and approval pipeline.
+- Add the `update_todos` tool and a live plan checklist in the transcript (Plan header, per-step status) for multi-step runs.
+- Type `@` in the composer to mention workspace files (debounced search, inserts `@path` and attaches the file).
+- Add `/init`: scans the workspace and writes or updates `AGENTS.md` through the normal tool/approval flow.
+- Chat history rows can be renamed (right-click → Rename) and filtered with a search box in the launcher.
+- Add a **Revert run changes** action after a run that touched files: modal confirmation, then `git checkout` for tracked files and deletion of files the run created.
+- Stream `run_command` output live into the tool row while the command runs.
+- Paste or drop images into the composer to attach them for vision-capable models (Ollama `vision` capability, `kova.openaiCompatible.supportsVision`); shown as a chip and rendered in the preview dialog.
+- Show cumulative token usage (input/output/runs) for the conversation in the context meter popover.
+
 ## 1.26.11
 
 - Open Kova as an editor tab beside the current file by default, like other agent tabs, so the Explorer stays free. **Kova: Open Chat** (Cmd+Alt+K / Ctrl+Alt+K) and a Kova button in the editor title bar open it; `kova.chat.openIn` switches back to the Activity Bar sidebar, or run **Kova: Open Chat in Sidebar**, which switches that setting.
