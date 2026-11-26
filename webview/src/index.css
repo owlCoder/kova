@@ -103,6 +103,20 @@ option {
   color: var(--text);
   border-color: transparent;
 }
+.icon-button.voice-input.listening {
+  color: var(--accent);
+  background: var(--hover);
+  animation: voice-pulse 1.2s ease-in-out infinite;
+}
+@keyframes voice-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
 .primary {
   background: var(--accent);
   border-color: var(--accent);

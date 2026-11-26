@@ -48,6 +48,7 @@ import {
   ArchiveRestore,
   Library,
   FlaskConical,
+  Mic,
 } from 'lucide-react';
 
 const icons = {
@@ -100,6 +101,7 @@ const icons = {
   restore: ArchiveRestore,
   library: Library,
   test: FlaskConical,
+  mic: Mic,
 };
 export function Icon({
   name,
