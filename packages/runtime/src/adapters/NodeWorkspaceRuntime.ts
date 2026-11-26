@@ -13,6 +13,7 @@ import type { ToolCall } from '../../../core/src/tools/ToolCall.js';
 import type { ToolDefinition } from '../../../core/src/tools/ToolDefinition.js';
 import type { ToolResult } from '../../../core/src/tools/ToolResult.js';
 import { StdioMcpClient } from '../../../mcp/src/StdioMcpClient.js';
+import { ApplyPatchTool } from '../tools/ApplyPatchTool.js';
 import { EditFileTool } from '../tools/EditFileTool.js';
 import { GetGitDiffTool } from '../tools/GetGitDiffTool.js';
 import { ListDirectoryTool } from '../tools/ListDirectoryTool.js';
@@ -61,6 +62,7 @@ export class NodeWorkspaceRuntime implements ToolRuntime {
       new GetGitDiffTool(new NodeGitReader(this.runner, guard), guard),
       new WriteFileTool(guard, reader, writer),
       new EditFileTool(guard, reader, writer),
+      new ApplyPatchTool(guard, reader, writer),
       new RunCommandTool(guard, this.runner),
     ])
       this.registry.register(tool);
