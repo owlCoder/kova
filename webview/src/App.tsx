@@ -207,6 +207,8 @@ function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
             busy={busy}
             conversationId={snapshot?.conversationId}
             hasMessages={Boolean(snapshot?.messages.length) && !showSetup}
+            root={chat.workspaceId}
+            workspaceFolders={snapshot?.workspaceFolders ?? []}
             onSetup={() => {
               setSetupOpen((open) => !open);
               if (scroller.current) scroller.current.scrollTop = 0;

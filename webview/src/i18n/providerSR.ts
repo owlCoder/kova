@@ -21,4 +21,5 @@ export const providerSR: Readonly<Record<string, string>> = {
   After: 'Posle',
   'Preview truncated': 'Prikaz skraćen',
   'Git checkpoint saved': 'Git checkpoint sačuvan',
+  'Workspace folder': 'Radni folder',
 };

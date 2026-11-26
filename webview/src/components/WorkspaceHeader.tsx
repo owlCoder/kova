@@ -9,6 +9,8 @@ export function WorkspaceHeader({
   busy,
   conversationId,
   hasMessages,
+  root,
+  workspaceFolders,
   onSetup,
   onPalette,
   onPreferences,
@@ -18,12 +20,15 @@ export function WorkspaceHeader({
   busy: boolean;
   conversationId: string | undefined;
   hasMessages: boolean;
+  root: string | null;
+  workspaceFolders: readonly string[];
   onSetup(): void;
   onPalette(): void;
   onPreferences(): void;
   onFind(): void;
 }) {
   const { t } = useI18n();
+  const folderName = (path: string) => path.split('/').filter(Boolean).pop() ?? path;
   return (
     <header className="workspace-header">
       <div className="workspace-breadcrumb">
@@ -31,6 +36,22 @@ export function WorkspaceHeader({
           <span className="header-title" title={title}>
             {title}
           </span>
+        )}
+        {workspaceFolders.length > 1 && (
+          <select
+            className="workspace-picker"
+            aria-label={t('Workspace folder')}
+            title={t('Workspace folder')}
+            disabled={busy}
+            value={root ?? workspaceFolders[0]}
+            onChange={(event) => send({ type: 'SetWorkspaceRoot', path: event.target.value })}
+          >
+            {workspaceFolders.map((folder) => (
+              <option key={folder} value={folder}>
+                {folderName(folder)}
+              </option>
+            ))}
+          </select>
         )}
       </div>
       <div className="header-actions">

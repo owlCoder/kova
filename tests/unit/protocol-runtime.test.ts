@@ -22,6 +22,20 @@ describe('host message validation and projection', () => {
     ])
       expect(() => validateMessage(input)).toThrow();
   });
+  it('validates SetWorkspaceRoot paths', () => {
+    expect(() =>
+      validateMessage({
+        protocolVersion: 1,
+        requestId: 'x',
+        type: 'SetWorkspaceRoot',
+        path: '/Users/danijel/Desktop/kova',
+      }),
+    ).not.toThrow();
+    for (const path of ['', '   ', 'x'.repeat(513), 'a\0b', 42])
+      expect(() =>
+        validateMessage({ protocolVersion: 1, requestId: 'x', type: 'SetWorkspaceRoot', path }),
+      ).toThrow();
+  });
   it('validates @mention messages with bounded path and query', () => {
     expect(
       validateMessage({

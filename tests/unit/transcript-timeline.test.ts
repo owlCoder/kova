@@ -182,6 +182,7 @@ describe('transcript timeline', () => {
         preview: { kind: 'Command', command: 'dotnet test', relativeWorkingDirectory: '.' },
       },
       revertibleRun: null,
+      workspaceFolders: [],
       thinkingEnabled: false,
       contextMaxTokens: 4096,
     };
@@ -231,6 +232,7 @@ describe('transcript timeline', () => {
       contextAttachments: [],
       pendingApproval: null,
       revertibleRun: null,
+      workspaceFolders: [],
       thinkingEnabled: false,
       contextMaxTokens: 4096,
     };

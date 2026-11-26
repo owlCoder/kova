@@ -223,6 +223,7 @@ export class ChatSession {
           },
           markdown,
         ),
+      setWorkspaceRoot: (path) => this.setRoot(path),
       renameConversation: async (id, title) => {
         const repository = this.repository as Partial<WorkspaceConversationRepository>;
         if (typeof repository.rename !== 'function') throw new Error('History is unavailable.');
@@ -351,6 +352,7 @@ export class ChatSession {
       providerStatus: this.discovery.status,
       configuring: this.configuring,
       root: this.roots.current,
+      workspaceFolders: vscode.workspace.workspaceFolders?.map((folder) => folder.uri.fsPath) ?? [],
       skills: this.skills,
       skillId: this.skillId,
       usage: this.usage,

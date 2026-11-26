@@ -548,4 +548,29 @@ describe('workspace root switching', () => {
     await vi.waitFor(() => expect(fixture.runtimeRoots).toContain('/pending-workspace'));
     expect(fixture.runtimeDisposals).toBe(1);
   });
+
+  it('switches root via SetWorkspaceRoot and publishes workspaceFolders in snapshots', async () => {
+    const vscodeMock = (await import('vscode')) as unknown as {
+      workspace: { workspaceFolders?: unknown };
+    };
+    vscodeMock.workspace.workspaceFolders = [
+      { uri: { fsPath: '/fixture-workspace' } },
+      { uri: { fsPath: '/other-workspace' } },
+    ];
+    try {
+      await session.initialize();
+      await session.snapshot('folders');
+      expect(latestSnapshot().workspaceFolders).toEqual(['/fixture-workspace', '/other-workspace']);
+      await session.handle({
+        protocolVersion: 1,
+        requestId: 'set-root',
+        type: 'SetWorkspaceRoot',
+        path: '/other-workspace',
+      });
+      expect(fixture.runtimeRoots).toEqual(['/fixture-workspace', '/other-workspace']);
+      expect(messages.at(-1)?.workspaceId).toBe('/other-workspace');
+    } finally {
+      vscodeMock.workspace.workspaceFolders = [];
+    }
+  });
 });

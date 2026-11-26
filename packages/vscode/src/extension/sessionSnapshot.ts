@@ -34,6 +34,7 @@ export interface SnapshotInput {
   readonly providerStatus: 'Available' | 'Unavailable' | 'ModelMissing';
   readonly configuring: boolean;
   readonly root: string | null;
+  readonly workspaceFolders: readonly string[];
   readonly skills: readonly SkillMetadata[];
   readonly skillId: string | null;
   readonly usage: ContextUsage | null;
@@ -85,6 +86,7 @@ export async function composeSnapshot(input: SnapshotInput): Promise<SessionSnap
     setupCompleted: input.context.globalState?.get<boolean>('kova.setupCompleted', false) ?? false,
     configuringProvider: input.configuring,
     toolsEnabled: Boolean(input.root && selected?.tools === 'Supported'),
+    workspaceFolders: [...input.workspaceFolders],
     skills: input.skills.map((skill) => ({ ...skill })),
     activeSkillId: input.skillId,
     usage: input.usage ? structuredClone(input.usage) : null,

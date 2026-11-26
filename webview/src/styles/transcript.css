@@ -104,6 +104,20 @@ body.vscode-high-contrast .extension-frame {
   font-size: calc(12px * var(--text-scale, 1));
   color: var(--vscode-foreground);
 }
+.extension-frame .workspace-picker {
+  max-width: 180px;
+  padding: 1px 4px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: calc(11px * var(--text-scale, 1));
+}
+.extension-frame .workspace-picker:hover:not(:disabled) {
+  border-color: var(--line);
+  color: var(--vscode-foreground);
+}
 .extension-frame .header-actions {
   gap: 1px;
 }

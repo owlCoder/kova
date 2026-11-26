@@ -42,6 +42,7 @@ export interface ChatMessageHost {
   openConversation(id: string): Promise<void>;
   renameConversation(id: string, title: string): Promise<void>;
   importConversation(markdown: string): Promise<void>;
+  setWorkspaceRoot(path: string): Promise<void>;
   submit(message: Extract<WebviewMessage, { readonly type: 'SubmitPrompt' }>): Promise<string>;
   accept(requestId: string, runId: string | null): void;
   notify(message: string): void;
@@ -145,6 +146,10 @@ export async function handleChatMessage(
       break;
     case 'CompleteSetup':
       await host.completeSetup();
+      await host.snapshot(message.requestId);
+      return;
+    case 'SetWorkspaceRoot':
+      await host.setWorkspaceRoot(message.path);
       await host.snapshot(message.requestId);
       return;
   }

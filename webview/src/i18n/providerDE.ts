@@ -21,4 +21,5 @@ export const providerDE: Readonly<Record<string, string>> = {
   After: 'Nachher',
   'Preview truncated': 'Vorschau gekürzt',
   'Git checkpoint saved': 'Git-Checkpoint gespeichert',
+  'Workspace folder': 'Arbeitsordner',
 };

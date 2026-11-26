@@ -40,6 +40,7 @@ export type WebviewMessage = {
       readonly dataUrl: string;
     }
   | { readonly type: 'ListWorkspaceFiles'; readonly query: string }
+  | { readonly type: 'SetWorkspaceRoot'; readonly path: string }
   | { readonly type: 'RemoveContext'; readonly attachmentId: string }
   | {
       readonly type: 'PreviewContext';

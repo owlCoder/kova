@@ -30,6 +30,7 @@ const snapshot: SessionSnapshot = {
   contextAttachments: [],
   pendingApproval: null,
   revertibleRun: null,
+  workspaceFolders: [],
   thinkingEnabled: false,
   contextMaxTokens: 32768,
 };

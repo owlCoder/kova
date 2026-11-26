@@ -25,6 +25,7 @@ export function useChat() {
   const [providerIssue, setProviderIssue] = useState('');
   const [settingsRequest, setSettingsRequest] = useState(0);
   const [submitting, setSubmitting] = useState(false);
+  const [workspaceId, setWorkspaceId] = useState<string | null>(null);
   const serial = useRef({ session: '', sequence: 0 });
   const hostSelection = useRef<{ modelId: string; mode: AgentMode } | null>(null);
   const active = useRef<string | null>(null);
@@ -51,6 +52,7 @@ export function useChat() {
         return;
       }
       serial.current.sequence = data.sequence;
+      setWorkspaceId(data.workspaceId);
       if (data.type === 'Snapshot') {
         // Reset per-conversation presentation state here, not inside a state updater:
         // updaters run later and would erase events that arrived after this snapshot.
@@ -192,6 +194,7 @@ export function useChat() {
   const submit = () => doSubmit(prompt);
   return {
     snapshot,
+    workspaceId,
     prompt,
     setPrompt,
     submitText,

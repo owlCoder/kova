@@ -22,6 +22,8 @@ export interface SessionSnapshot {
   readonly setupCompleted: boolean;
   readonly configuringProvider: boolean;
   readonly toolsEnabled: boolean;
+  /** All open workspace folders; the active one arrives via the message envelope. */
+  readonly workspaceFolders: readonly string[];
   readonly skills: readonly SkillMetadata[];
   readonly activeSkillId: string | null;
   readonly usage: ContextUsage | null;
