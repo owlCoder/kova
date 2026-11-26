@@ -22,6 +22,32 @@ describe('host message validation and projection', () => {
     ])
       expect(() => validateMessage(input)).toThrow();
   });
+  it('validates @mention messages with bounded path and query', () => {
+    expect(
+      validateMessage({
+        protocolVersion: 1,
+        requestId: 'x',
+        type: 'AttachPath',
+        path: 'Domain/User.cs',
+      }).type,
+    ).toBe('AttachPath');
+    expect(
+      validateMessage({
+        protocolVersion: 1,
+        requestId: 'x',
+        type: 'ListWorkspaceFiles',
+        query: 'user',
+      }).type,
+    ).toBe('ListWorkspaceFiles');
+    for (const bad of [
+      { protocolVersion: 1, requestId: 'x', type: 'AttachPath', path: '' },
+      { protocolVersion: 1, requestId: 'x', type: 'AttachPath', path: 'x'.repeat(513) },
+      { protocolVersion: 1, requestId: 'x', type: 'ListWorkspaceFiles', query: 'q'.repeat(101) },
+      { protocolVersion: 1, requestId: 'x', type: 'ListWorkspaceFiles' },
+      { protocolVersion: 1, requestId: 'x', type: 'AttachPath', path: 'a.cs', extra: 1 },
+    ])
+      expect(() => validateMessage(bad)).toThrow();
+  });
   it('accepts valid prompt and requires exact approval identity fields', () => {
     expect(
       validateMessage({

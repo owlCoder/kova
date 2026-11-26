@@ -21,6 +21,12 @@ export type HostMessage = {
       readonly preview: ContextPreview;
     }
   | { readonly type: 'Notice'; readonly message: string }
+  | {
+      readonly type: 'WorkspaceFiles';
+      readonly requestId: string;
+      readonly files: readonly string[];
+      readonly truncated: boolean;
+    }
   | { readonly type: 'Snapshot'; readonly requestId: string; readonly snapshot: SessionSnapshot }
   | { readonly type: 'Event'; readonly runId: string | null; readonly event: PresentationEvent }
   | { readonly type: 'Accepted'; readonly requestId: string; readonly runId: string | null }

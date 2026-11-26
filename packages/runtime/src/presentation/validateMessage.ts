@@ -25,6 +25,8 @@ export function validateMessage(raw: unknown): WebviewMessage {
     ExportConversation: ['conversationId', 'action'],
     SelectSkill: ['skillId'],
     AddContext: ['source'],
+    AttachPath: ['path'],
+    ListWorkspaceFiles: ['query'],
     RemoveContext: ['attachmentId'],
     PreviewContext: ['conversationId', 'attachmentId'],
     ResolveApproval: ['runId', 'approvalId', 'preparationKey', 'decision'],
@@ -107,6 +109,19 @@ export function validateMessage(raw: unknown): WebviewMessage {
     !['Selection', 'CurrentFile', 'PickFiles'].includes(value.source as string)
   )
     throw new Error('Invalid context source.');
+  if (
+    value.type === 'AttachPath' &&
+    (typeof value.path !== 'string' ||
+      !value.path.trim() ||
+      value.path.length > 512 ||
+      value.path.includes('\0'))
+  )
+    throw new Error('Invalid file path.');
+  if (
+    value.type === 'ListWorkspaceFiles' &&
+    (typeof value.query !== 'string' || value.query.length > 100 || value.query.includes('\0'))
+  )
+    throw new Error('Invalid file query.');
   if (
     value.type === 'ResolveApproval' &&
     !['AllowOnce', 'Reject'].includes(value.decision as string)

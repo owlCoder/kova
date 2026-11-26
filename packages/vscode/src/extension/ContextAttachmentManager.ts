@@ -38,6 +38,21 @@ export class ContextAttachmentManager {
     this.revision++;
   }
 
+  /** Attaches one workspace file chosen by a root-relative path (the @mention flow). */
+  async addPath(relativePath: string): Promise<void> {
+    if (!this.editable()) throw new Error('Wait until generation stops.');
+    const root = this.root();
+    if (!root) throw new Error('Open a workspace to attach context.');
+    const cancellation = new CancellationSource();
+    const guard = new NodeWorkspacePathGuard(root);
+    const path = await guard.resolve(root, relativePath, 'Read', cancellation);
+    const { content } = await new BoundedTextFile().read(path.canonicalPath, cancellation, 100_000);
+    this.attachments = mergeContextAttachments(this.attachments, [
+      { id: randomUUID(), source: 'ExplicitFile', label: path.relativePath, content },
+    ]);
+    this.revision++;
+  }
+
   /** `uris` comes from an Explorer selection; without it PickFiles shows a file dialog. */
   async add(
     source: 'Selection' | 'CurrentFile' | 'PickFiles',

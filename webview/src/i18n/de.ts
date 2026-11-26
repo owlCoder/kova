@@ -2,12 +2,14 @@ import { promptLibraryDE } from './promptLibraryDE.js';
 import { notesDE } from './notesDE.js';
 import { settingsDE } from './settingsDE.js';
 import { slashDE } from './slashDE.js';
+import { providerDE } from './providerDE.js';
 
 export const de: Readonly<Record<string, string>> = {
   ...promptLibraryDE,
   ...notesDE,
   ...settingsDE,
   ...slashDE,
+  ...providerDE,
   'Find in conversation': 'Im Gespräch suchen',
   'Find in conversation…': 'Im Gespräch suchen…',
   'Conversation actions': 'Gesprächsaktionen',
@@ -183,6 +185,9 @@ export const de: Readonly<Record<string, string>> = {
   'New terminal': 'Neues Terminal',
   'No analytics or telemetry.': 'Keine Analytik oder Telemetrie.',
   'No matching commands or sessions.': 'Keine passenden Befehle oder Sitzungen.',
+  'Mention a file': 'Datei erwähnen',
+  'No matching files.': 'Keine passenden Dateien.',
+  'Showing first matches only.': 'Nur die ersten Treffer werden angezeigt.',
   'No matching files': 'Keine passenden Dateien',
   'No matching sessions': 'Keine passenden Sitzungen',
   'No skill': 'Kein Skill',
@@ -489,11 +494,4 @@ export const de: Readonly<Record<string, string>> = {
   'Manage…': 'Verwalten…',
   'Search prompts…': 'Prompts suchen…',
   'No matching prompts.': 'Keine passenden Prompts.',
-  'Kova can’t reach {provider}': 'Kova erreicht {provider} nicht',
-  'The selected model is not offered by this provider.':
-    'Das gewählte Modell wird von diesem Anbieter nicht angeboten.',
-  'Check the endpoint and API key, then try again.':
-    'Prüfen Sie Endpunkt und API-Schlüssel und versuchen Sie es erneut.',
-  Retry: 'Erneut versuchen',
-  'Set up provider': 'Anbieter einrichten',
 };

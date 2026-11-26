@@ -1,8 +1,8 @@
 import { useI18n } from '../i18n/I18n.js';
-import { useLayoutEffect, useState, type RefObject } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react';
 import type { AgentMode } from '../../../packages/protocol/src/AgentMode.js';
 import type { SessionSnapshot } from '../../../packages/protocol/src/SessionSnapshot.js';
-import { inHost, send } from '../messaging/bridge.js';
+import { inHost, send, subscribe } from '../messaging/bridge.js';
 import { Icon } from './Icon.js';
 import { ModelPicker } from './ModelPicker.js';
 import { PromptMenu } from './PromptMenu.js';
@@ -61,6 +61,52 @@ export function ChatFooter({
   const [slashDismissed, setSlashDismissed] = useState(false);
   const slashMatches = matchSlashCommands(prompt);
   const slashOpen = prompt.startsWith('/') && !slashDismissed;
+  // @mention: a "@query" fragment right before the caret opens the file menu.
+  const [mention, setMention] = useState<{ query: string; start: number } | null>(null);
+  const [mentionDismissed, setMentionDismissed] = useState(false);
+  const [mentionFiles, setMentionFiles] = useState<readonly string[]>([]);
+  const [mentionTruncated, setMentionTruncated] = useState(false);
+  const [mentionIndex, setMentionIndex] = useState(0);
+  const mentionRequest = useRef<string | null>(null);
+  const mentionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () =>
+      subscribe((message) => {
+        if (message.type === 'WorkspaceFiles' && message.requestId === mentionRequest.current) {
+          setMentionFiles(message.files);
+          setMentionTruncated(message.truncated);
+          setMentionIndex(0);
+        }
+      }),
+    [],
+  );
+  const mentionOpen =
+    !slashOpen && !mentionDismissed && mention !== null && Boolean(snapshot?.toolsEnabled);
+  const updateMention = (value: string, caret: number) => {
+    const before = value.slice(0, caret);
+    const match = /(?:^|\s)@([^\s@]{0,80})$/.exec(before);
+    if (match) {
+      const next = { query: match[1] ?? '', start: before.length - match[0].length };
+      setMention(next);
+      setMentionDismissed(false);
+      if (mentionTimer.current) clearTimeout(mentionTimer.current);
+      mentionTimer.current = setTimeout(() => {
+        mentionRequest.current = send({ type: 'ListWorkspaceFiles', query: next.query });
+      }, 120);
+    } else {
+      setMention(null);
+      setMentionFiles([]);
+    }
+  };
+  const pickMention = (path: string) => {
+    if (!mention) return;
+    const end = mention.start + 1 + mention.query.length;
+    onPromptChange(`${prompt.slice(0, mention.start)}@${path} ${prompt.slice(end)}`);
+    setMention(null);
+    setMentionFiles([]);
+    send({ type: 'AttachPath', path });
+    inputRef.current?.focus();
+  };
   useLayoutEffect(() => {
     const resize = () => {
       const field = inputRef.current;
@@ -145,6 +191,28 @@ export function ChatFooter({
             )}
           </div>
         )}
+        {mentionOpen && (
+          <div className="slash-menu mention-menu" role="menu" aria-label={t('Mention a file')}>
+            {mentionFiles.length ? (
+              mentionFiles.map((path, index) => (
+                <button
+                  key={path}
+                  role="menuitemradio"
+                  aria-checked={index === mentionIndex}
+                  className={index === mentionIndex ? 'active' : ''}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => pickMention(path)}
+                  onMouseEnter={() => setMentionIndex(index)}
+                >
+                  <strong>@{path}</strong>
+                </button>
+              ))
+            ) : (
+              <p className="slash-empty">{t('No matching files.')}</p>
+            )}
+            {mentionTruncated && <p className="slash-empty">{t('Showing first matches only.')}</p>}
+          </div>
+        )}
         <ContextAttachments
           items={snapshot?.contextAttachments ?? []}
           busy={busy}
@@ -166,9 +234,38 @@ export function ChatFooter({
             onPromptChange(event.target.value);
             setSlashIndex(0);
             setSlashDismissed(false);
+            updateMention(event.target.value, event.target.selectionStart);
           }}
+          onKeyUp={(event) =>
+            updateMention(event.currentTarget.value, event.currentTarget.selectionStart)
+          }
+          onClick={(event) =>
+            updateMention(event.currentTarget.value, event.currentTarget.selectionStart)
+          }
           onKeyDown={(event) => {
             if (event.nativeEvent.isComposing) return;
+            if (mentionOpen && mentionFiles.length) {
+              if (event.key === 'Escape') {
+                event.preventDefault();
+                event.stopPropagation();
+                setMentionDismissed(true);
+                return;
+              }
+              if (['ArrowDown', 'ArrowUp'].includes(event.key)) {
+                event.preventDefault();
+                setMentionIndex(
+                  (index) =>
+                    (index + (event.key === 'ArrowDown' ? 1 : -1) + mentionFiles.length) %
+                    mentionFiles.length,
+                );
+                return;
+              }
+              if ((event.key === 'Enter' || event.key === 'Tab') && !event.shiftKey) {
+                event.preventDefault();
+                pickMention(mentionFiles[Math.min(mentionIndex, mentionFiles.length - 1)]!);
+                return;
+              }
+            }
             if (slashOpen && event.key === 'Escape') {
               event.preventDefault();
               event.stopPropagation();

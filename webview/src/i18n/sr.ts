@@ -2,12 +2,14 @@ import { promptLibrarySR } from './promptLibrarySR.js';
 import { notesSR } from './notesSR.js';
 import { settingsSR } from './settingsSR.js';
 import { slashSR } from './slashSR.js';
+import { providerSR } from './providerSR.js';
 
 export const sr: Readonly<Record<string, string>> = {
   ...promptLibrarySR,
   ...notesSR,
   ...settingsSR,
   ...slashSR,
+  ...providerSR,
   'Find in conversation': 'Pronađi u razgovoru',
   'Find in conversation…': 'Pronađi u razgovoru…',
   'Conversation actions': 'Radnje razgovora',
@@ -181,6 +183,9 @@ export const sr: Readonly<Record<string, string>> = {
   'New terminal': 'Novi terminal',
   'No analytics or telemetry.': 'Bez analitike i telemetrije.',
   'No matching commands or sessions.': 'Nema odgovarajućih komandi ili sesija.',
+  'Mention a file': 'Pomeni fajl',
+  'No matching files.': 'Nema fajlova koji odgovaraju.',
+  'Showing first matches only.': 'Prikazani su samo prvi rezultati.',
   'No matching files': 'Nema odgovarajućih fajlova',
   'No matching sessions': 'Nema odgovarajućih sesija',
   'No skill': 'Bez veštine',
@@ -485,11 +490,4 @@ export const sr: Readonly<Record<string, string>> = {
   'Manage…': 'Upravljaj…',
   'Search prompts…': 'Pretraži promptove…',
   'No matching prompts.': 'Nema odgovarajućih promptova.',
-  'Kova can’t reach {provider}': 'Kova ne može da dođe do {provider}',
-  'The selected model is not offered by this provider.':
-    'Izabrani model nije dostupan kod ovog provajdera.',
-  'Check the endpoint and API key, then try again.':
-    'Proverite adresu i API ključ, pa pokušajte ponovo.',
-  Retry: 'Pokušaj ponovo',
-  'Set up provider': 'Podesi provajdera',
 };

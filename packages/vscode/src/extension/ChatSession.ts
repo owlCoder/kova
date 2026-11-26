@@ -1,6 +1,5 @@
 import type { ActiveChatRun } from './ActiveChatRun.js';
 import { ChatResources } from './ChatResources.js';
-import { handlePresentationAction, presentationActions } from './handlePresentationAction.js';
 import { randomUUID } from 'node:crypto';
 import * as vscode from 'vscode';
 import { ChatAgent } from '../../../core/src/agents/ChatAgent.js';
@@ -11,6 +10,7 @@ import { CancellationSource } from '../../../core/src/common/CancellationSource.
 import type { ContextUsage } from '../../../core/src/context/ContextUsage.js';
 import { TokenCounter } from '../../../core/src/context/TokenCounter.js';
 import { InMemoryConversationRepository } from '../../../core/src/conversations/InMemoryConversationRepository.js';
+import type { Conversation } from '../../../core/src/conversations/Conversation.js';
 import type { ConversationRepository } from '../../../core/src/conversations/ConversationRepository.js';
 import type { SkillMetadata } from '../../../core/src/skills/Skill.js';
 import { SkillLoader } from '../../../core/src/skills/SkillLoader.js';
@@ -33,6 +33,14 @@ import { readRunSettings } from './readRunSettings.js';
 import { createWorkspaceServices } from './createWorkspaceServices.js';
 import { WorkspaceRootController } from './WorkspaceRootController.js';
 import { ModelDiscovery } from './modelDiscovery.js';
+import type { WorkspaceContextHost } from './workspaceContext.js';
+import { SessionInitializer } from './sessionInitializer.js';
+import {
+  openStoredConversation,
+  resetConversation,
+  type ConversationLifecycleHost,
+} from './conversationLifecycle.js';
+import { handleChatMessage, type ChatMessageHost } from './handleChatMessage.js';
 export class ChatSession {
   readonly hostSessionId = randomUUID();
   readonly currentConversationId = (): string => this.conversationId;
@@ -57,8 +65,8 @@ export class ChatSession {
   private activeRun: ActiveChatRun | null = null;
   private preparingRun: CancellationSource | null = null;
   private streamingResponse: SessionSnapshot['messages'][number] | null = null;
-  private initialization: Promise<void> | null = null;
-  private initializationCancellation: CancellationSource | null = null;
+  private readonly initializer: SessionInitializer;
+  private readonly workspaceHost: WorkspaceContextHost;
   private runtime: WorkspaceRuntime | null = null;
   private skillsRepository: WorkspaceSkillRepository | null = null;
   private projectInstructions: WorkspaceProjectInstructions | null = null;
@@ -103,12 +111,106 @@ export class ChatSession {
       () => this.roots.current,
       () => !this.activeRun && !this.preparingRun && !this.configuring && !this.disposed,
     );
+    this.initializer = new SessionInitializer({
+      root: () => this.roots.current,
+      busy: () => Boolean(this.activeRun || this.preparingRun || this.disposed),
+      disposed: () => this.disposed,
+      hasRuntime: () => this.runtime !== null,
+      createServices: (root, cancellation) =>
+        createWorkspaceServices(
+          root,
+          this.approval,
+          { emit: (event) => this.emit(event) },
+          cancellation,
+        ),
+      setServices: (services) => {
+        this.runtime = services.runtime;
+        this.skillsRepository = services.skills;
+        this.projectInstructions = services.instructions;
+      },
+      initializeRuntime: (cancellation) =>
+        this.runtime?.initialize(cancellation) ?? Promise.resolve(),
+      discoverSkills: (root, cancellation) =>
+        this.skillsRepository?.discover(root, cancellation) ?? Promise.resolve([]),
+      setSkills: (skills) => {
+        this.skills = skills;
+      },
+      refreshModels: () => this.refreshModels(),
+    });
+    this.workspaceHost = {
+      root: () => this.roots.current,
+      runActive: () => Boolean(this.activeRun),
+      attachments: this.contextAttachments,
+      deliver: (message) => this.deliver(message),
+      envelope: () => this.envelope(),
+      snapshot: (requestId) => this.snapshot(requestId),
+    };
+    this.lifecycle = {
+      activeRun: () => this.activeRun,
+      conversationId: () => this.conversationId,
+      cancelRun: () => this.cancelActiveRun(),
+      forgetConversation: (id) => this.providers.forgetConversation(id),
+      clearAttachments: () => this.contextAttachments.clear(),
+      clearDraft: () => this.resources.draft.set(''),
+      resetTransientState: () => {
+        this.state = 'Idle';
+        this.usage = null;
+        this.partial = false;
+        this.streamingResponse = null;
+      },
+      setConversationId: (id) => {
+        this.conversationId = id as typeof this.conversationId;
+      },
+      hasConversation: async (id) => Boolean(await this.repository.get(id)),
+      snapshot: (requestId) => this.snapshot(requestId),
+    };
     this.resources = new ChatResources(
       context,
       this.repository,
       () => ({ conversationId: this.conversationId, attachments: this.contextAttachments.list() }),
       (payload) => this.deliver({ ...this.envelope(), ...payload } as HostMessage),
     );
+    this.messageHost = {
+      context: this.context,
+      resources: this.resources,
+      workspace: this.workspaceHost,
+      attachments: this.contextAttachments,
+      approval: this.approval,
+      requests: this.requests,
+      isRunning: () => Boolean(this.activeRun || this.preparingRun),
+      isConfiguring: () => this.configuring,
+      isCurrentConversation: (id) => id === this.conversationId,
+      partial: () => this.partial,
+      providerLabel: () => this.providers.label(),
+      selectedModel: () => this.discovery.selectedModel,
+      knownSkill: (id) => this.skills.some((skill) => skill.id === id),
+      selectSkill: (id) => {
+        this.skillId = id;
+      },
+      activeRunId: () => this.activeRun?.id ?? null,
+      cancelRun: (runId) => {
+        if (runId !== this.activeRun?.id) throw new Error('Run is no longer active.');
+        this.activeRun.cancellation.cancel();
+      },
+      resolveApproval: (runId, approvalId, preparationKey, decision) => {
+        if (runId !== this.activeRun?.id) throw new Error('Stale run approval.');
+        this.approval.resolve({ approvalId, preparationKey, decision }, runId);
+      },
+      openDiff: (approvalId) => this.approval.openDiff(approvalId),
+      completeSetup: async () => {
+        await this.context.globalState?.update('kova.setupCompleted', true);
+      },
+      snapshot: (requestId) => this.snapshot(requestId),
+      refreshModels: (force) => this.refreshModels(force),
+      newConversation: () => this.newConversation(),
+      openConversation: (id) => this.openConversation(id),
+      submit: (message) => this.submit(message),
+      accept: (requestId, runId) => this.accept(requestId, runId),
+      notify: (text) => this.deliver({ ...this.envelope(), type: 'Notice', message: text }),
+      clipboardCopied: (requestId) =>
+        this.deliver({ ...this.envelope(), type: 'ClipboardCopied', requestId }),
+      readConversation: (id) => this.repository.get(id) as Promise<Conversation | null>,
+    };
   }
   connect(deliver: (message: HostMessage) => void): () => void {
     this.listeners.add(deliver);
@@ -122,13 +224,12 @@ export class ChatSession {
     this.activeRun?.cancellation.cancel();
   }
   private deliver(message: HostMessage): void {
-    for (const listener of this.listeners) {
+    for (const listener of this.listeners)
       try {
         listener(message);
       } catch {
         this.output.appendLine('[WebviewDeliveryFailed]');
       }
-    }
   }
   private envelope() {
     return {
@@ -156,7 +257,7 @@ export class ChatSession {
     this.configuring = true;
     await this.snapshot('setup-started');
     try {
-      await this.initialization;
+      await this.initializer.pending;
       if (await setup()) {
         this.discovery.selectedModel = '';
         this.providerRefreshPending = true;
@@ -183,10 +284,8 @@ export class ChatSession {
     await this.roots.applyPending();
   }
   private async resetWorkspace(): Promise<void> {
-    this.initializationCancellation?.cancel();
-    await this.initialization?.catch(() => {});
-    this.initialization = null;
-    this.initializationCancellation = null;
+    this.initializer.cancel();
+    await this.initializer.pending?.catch(() => {});
     await this.runtime?.dispose();
     this.runtime = null;
     this.skillsRepository = null;
@@ -197,37 +296,7 @@ export class ChatSession {
     this.usage = null;
   }
   initialize(): Promise<void> {
-    if (this.activeRun) return Promise.resolve();
-    if (this.initialization) return this.initialization;
-    if (this.preparingRun || this.disposed) return Promise.resolve();
-    const cancellation = new CancellationSource();
-    this.initializationCancellation = cancellation;
-    const task = this.initializeSession(cancellation);
-    this.initialization = task;
-    const clear = () => {
-      if (this.initialization === task) {
-        this.initialization = null;
-        this.initializationCancellation = null;
-      }
-    };
-    void task.finally(clear).catch(() => {});
-    return task;
-  }
-  private async initializeSession(source: CancellationSource): Promise<void> {
-    if (this.roots.current && !this.runtime) {
-      const services = await createWorkspaceServices(
-        this.roots.current,
-        this.approval,
-        { emit: (event) => this.emit(event) },
-        source,
-      );
-      this.runtime = services.runtime;
-      this.skillsRepository = services.skills;
-      this.projectInstructions = services.instructions;
-    }
-    await this.runtime?.initialize(source);
-    this.skills = (await this.skillsRepository?.discover(this.roots.current ?? '', source)) ?? [];
-    await this.refreshModels();
+    return this.initializer.initialize();
   }
   async refreshModels(force = false): Promise<void> {
     await this.discovery.refresh(force);
@@ -266,90 +335,7 @@ export class ChatSession {
     this.deliver({ ...this.envelope(), type: 'Snapshot', requestId, snapshot });
   }
   async handle(message: WebviewMessage): Promise<void> {
-    if (this.requests.has(message.requestId)) throw new Error('Duplicate request ID.');
-    this.requests.add(message.requestId);
-    if (this.requests.size > 200) this.requests.delete(this.requests.values().next().value!);
-    if (this.resources.handles(message.type)) {
-      await this.resources.handle(message);
-      return;
-    }
-    if (
-      presentationActions.has(message.type) &&
-      (await handlePresentationAction(message, this.context, {
-        read: (id) => this.repository.get(id),
-        current: (id) =>
-          id === this.conversationId && !this.activeRun && !this.preparingRun && !this.configuring,
-        partial: this.partial,
-        provider: this.providers.label(),
-        model: this.discovery.selectedModel,
-        notify: (message) => this.deliver({ ...this.envelope(), type: 'Notice', message }),
-        copied: (requestId) =>
-          this.deliver({ ...this.envelope(), type: 'ClipboardCopied', requestId }),
-      }))
-    )
-      return;
-    switch (message.type) {
-      case 'Ready':
-        await this.snapshot(message.requestId);
-        return;
-      case 'RetryProvider':
-        if (this.activeRun || this.preparingRun || this.configuring)
-          throw new Error('Wait until generation stops.');
-        await this.refreshModels(true);
-        await this.snapshot(message.requestId);
-        return;
-      case 'SubmitPrompt': {
-        this.accept(message.requestId, await this.submit(message));
-        return;
-      }
-      case 'CancelRun':
-        if (message.runId !== this.activeRun?.id) throw new Error('Run is no longer active.');
-        this.activeRun.cancellation.cancel();
-        break;
-      case 'NewConversation':
-        await this.newConversation();
-        await this.snapshot(message.requestId);
-        return;
-      case 'OpenConversation':
-        await this.openConversation(message.conversationId);
-        return;
-      case 'SelectSkill':
-        if (this.activeRun) throw new Error('Cannot change skill during a run.');
-        if (message.skillId && !this.skills.some((skill) => skill.id === message.skillId))
-          throw new Error('Unknown skill.');
-        this.skillId = message.skillId;
-        await this.snapshot(message.requestId);
-        return;
-      case 'AddContext':
-        if (this.activeRun) throw new Error('Cannot change context during a run.');
-        await this.contextAttachments.add(message.source);
-        await this.snapshot(message.requestId);
-        return;
-      case 'RemoveContext':
-        if (this.activeRun) throw new Error('Cannot change context during a run.');
-        this.contextAttachments.remove(message.attachmentId);
-        await this.snapshot(message.requestId);
-        return;
-      case 'ResolveApproval':
-        if (message.runId !== this.activeRun?.id) throw new Error('Stale run approval.');
-        this.approval.resolve(
-          {
-            approvalId: message.approvalId,
-            preparationKey: message.preparationKey,
-            decision: message.decision,
-          },
-          message.runId,
-        );
-        break;
-      case 'OpenDiffPreview':
-        await this.approval.openDiff(message.approvalId);
-        break;
-      case 'CompleteSetup':
-        await this.context.globalState?.update('kova.setupCompleted', true);
-        await this.snapshot(message.requestId);
-        return;
-    }
-    this.accept(message.requestId, this.activeRun?.id ?? null);
+    await handleChatMessage(this.messageHost, message);
   }
   private accept(requestId: string, runId: string | null): void {
     this.deliver({ ...this.envelope(), type: 'Accepted', requestId, runId });
@@ -366,7 +352,7 @@ export class ChatSession {
     const cancellation = new CancellationSource();
     this.preparingRun = cancellation;
     try {
-      await this.initialization;
+      await this.initializer.pending;
       cancellation.throwIfCancellationRequested();
       if (this.disposed) throw new Error('Kova session is closed.');
       if (message.attachmentIds.some((id) => !this.contextAttachments.has(id)))
@@ -453,37 +439,23 @@ export class ChatSession {
       await this.applyPendingRoot();
     }
   }
+  private readonly lifecycle: ConversationLifecycleHost;
+  private readonly messageHost: ChatMessageHost;
   async newConversation(): Promise<void> {
-    const active = this.activeRun;
-    this.cancelActiveRun();
-    await active?.task;
-    // The previous conversation stays in the repository so the launcher can list it.
-    this.providers.forgetConversation(this.conversationId);
-    this.conversationId = randomUUID();
-    this.contextAttachments.clear();
-    await this.resources.draft.set('');
-    this.state = 'Idle';
-    this.usage = null;
-    this.partial = false;
-    this.streamingResponse = null;
+    await resetConversation(this.lifecycle);
   }
   /** Reopens a stored conversation; the next snapshot shows its messages. */
   async openConversation(id: string): Promise<void> {
-    if (id === this.conversationId) return;
-    if (this.activeRun || !(await this.repository.get(id)))
-      throw new Error('Unknown conversation.');
-    await this.newConversation();
-    this.conversationId = id as typeof this.conversationId;
-    await this.snapshot('open-conversation');
+    await openStoredConversation(this.lifecycle, id);
   }
   async dispose(): Promise<void> {
     this.disposed = true;
     this.events.dispose();
     this.discovery.cancel();
-    this.initializationCancellation?.cancel();
+    this.initializer.cancel();
     this.cancelActiveRun();
     await this.activeRun?.task;
-    await this.initialization?.catch(() => {});
+    await this.initializer.pending?.catch(() => {});
     this.approval.dispose();
     await this.runtime?.dispose();
     await this.resources.flush();
