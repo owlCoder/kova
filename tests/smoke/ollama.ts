@@ -47,6 +47,7 @@ export async function run() {
     imagesSupported: true,
     maxToolIterations: 10,
     commandAllowlist: [],
+    testCommand: '',
   };
   const completed = await agent.run(request, source, { emit: (event) => events.push(event) });
   assert.equal(completed.status, 'Completed');

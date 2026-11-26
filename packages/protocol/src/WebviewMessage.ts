@@ -23,6 +23,7 @@ export type WebviewMessage = {
   | { readonly type: 'CompactConversation' }
   | { readonly type: 'OpenConversation'; readonly conversationId: string }
   | { readonly type: 'RenameConversation'; readonly conversationId: string; readonly title: string }
+  | { readonly type: 'ImportConversation'; readonly markdown: string }
   | { readonly type: 'UpdateDraft'; readonly conversationId: string; readonly prompt: string }
   | {
       readonly type: 'ExportConversation';
@@ -39,6 +40,7 @@ export type WebviewMessage = {
       readonly dataUrl: string;
     }
   | { readonly type: 'ListWorkspaceFiles'; readonly query: string }
+  | { readonly type: 'SetWorkspaceRoot'; readonly path: string }
   | { readonly type: 'RemoveContext'; readonly attachmentId: string }
   | {
       readonly type: 'PreviewContext';

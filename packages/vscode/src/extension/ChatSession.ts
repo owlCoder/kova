@@ -2,7 +2,6 @@ import type { ActiveChatRun } from './ActiveChatRun.js';
 import { ChatResources } from './ChatResources.js';
 import { randomUUID } from 'node:crypto';
 import * as vscode from 'vscode';
-import { ChatAgent } from '../../../core/src/agents/ChatAgent.js';
 import type { AgentEvent } from '../../../core/src/agents/AgentEvent.js';
 import type { AgentMode } from '../../../core/src/agents/AgentMode.js';
 import type { AgentState } from '../../../core/src/agents/AgentState.js';
@@ -14,7 +13,6 @@ import type { Conversation } from '../../../core/src/conversations/Conversation.
 import type { ConversationRepository } from '../../../core/src/conversations/ConversationRepository.js';
 import type { WorkspaceConversationRepository } from './conversationStore.js';
 import type { SkillMetadata } from '../../../core/src/skills/Skill.js';
-import { SkillLoader } from '../../../core/src/skills/SkillLoader.js';
 import type { HostMessage } from '../../../protocol/src/HostMessage.js';
 import type { SessionSnapshot } from '../../../protocol/src/SessionSnapshot.js';
 import type { WebviewMessage } from '../../../protocol/src/WebviewMessage.js';
@@ -30,7 +28,7 @@ import { nextStreamingMessage } from '../../../runtime/src/presentation/nextStre
 import { composeSnapshot } from './sessionSnapshot.js';
 import { StreamEventBuffer } from '../../../runtime/src/presentation/StreamEventBuffer.js';
 import { logAgentEvent } from './logAgentEvent.js';
-import { readRunSettings } from './readRunSettings.js';
+import { submitRun, readTestCommand, type SubmitRunHost } from './submitRun.js';
 import { createWorkspaceServices } from './createWorkspaceServices.js';
 import { WorkspaceRootController } from './WorkspaceRootController.js';
 import { ModelDiscovery } from './modelDiscovery.js';
@@ -43,6 +41,7 @@ import {
 } from './conversationLifecycle.js';
 import { handleChatMessage, type ChatMessageHost } from './handleChatMessage.js';
 import { RunChangeTracker } from './runChanges.js';
+import { importConversationMarkdown } from './importConversation.js';
 export class ChatSession {
   readonly hostSessionId = randomUUID();
   readonly currentConversationId = (): string => this.conversationId;
@@ -214,6 +213,17 @@ export class ChatSession {
       refreshModels: (force) => this.refreshModels(force),
       newConversation: () => this.newConversation(),
       openConversation: (id) => this.openConversation(id),
+      importConversation: (markdown) =>
+        importConversationMarkdown(
+          {
+            repository: this.repository,
+            lifecycle: this.lifecycle,
+            workspaceId: () => this.roots.current,
+            snapshot: (requestId) => this.snapshot(requestId),
+          },
+          markdown,
+        ),
+      setWorkspaceRoot: (path) => this.setRoot(path),
       renameConversation: async (id, title) => {
         const repository = this.repository as Partial<WorkspaceConversationRepository>;
         if (typeof repository.rename !== 'function') throw new Error('History is unavailable.');
@@ -342,6 +352,7 @@ export class ChatSession {
       providerStatus: this.discovery.status,
       configuring: this.configuring,
       root: this.roots.current,
+      workspaceFolders: vscode.workspace.workspaceFolders?.map((folder) => folder.uri.fsPath) ?? [],
       skills: this.skills,
       skillId: this.skillId,
       usage: this.usage,
@@ -369,100 +380,61 @@ export class ChatSession {
   private async submit(
     message: Extract<WebviewMessage, { type: 'SubmitPrompt' }>,
   ): Promise<string> {
-    if (this.activeRun || this.preparingRun || this.configuring)
-      throw new Error('Kova is already generating. Stop before submitting another prompt.');
-    const cancellation = new CancellationSource();
-    this.preparingRun = cancellation;
-    try {
-      await this.initializer.pending;
-      cancellation.throwIfCancellationRequested();
-      if (this.disposed) throw new Error('Kova session is closed.');
-      if (message.attachmentIds.some((id) => !this.contextAttachments.has(id)))
-        throw new Error('Unknown context attachment.');
-      if (message.skillId && !this.skills.some((skill) => skill.id === message.skillId))
-        throw new Error('Unknown selected skill.');
-      const model = this.discovery.models.find((item) => item.id === message.modelId);
-      if (!model) throw new Error('Selected model is unavailable. Retry model discovery.');
-      const runSettings = readRunSettings(this.providers, model);
-      const runId = randomUUID();
-      this.discovery.selectedModel = model.id;
-      this.discovery.status = 'Available';
-      this.mode = message.mode;
-      this.skillId = message.skillId;
-      this.partial = false;
-      this.streamingResponse = null;
-      const counter = this.counters.get(model.id) ?? new TokenCounter();
-      this.counters.set(model.id, counter);
-      const request = {
-        runId,
-        conversationId: this.conversationId,
-        workspaceId: this.roots.current ?? '',
-        prompt: message.prompt,
-        modelId: model.id,
-        mode: message.mode,
-        activeSkillId: message.skillId,
-        ...runSettings,
-        attachments: this.contextAttachments.selected(message.attachmentIds),
-        maxToolIterations: 10,
-        toolsEnabled: Boolean(this.roots.current && model.tools === 'Supported'),
-        imagesSupported: model.vision !== 'Unsupported',
-      };
-      const provider = await this.providers.forConversation(this.conversationId);
-      if (this.providerRefreshPending)
-        throw new Error('Provider configuration changed. Retry after model discovery.');
-      const agent = new ChatAgent(
-        provider,
-        this.repository,
-        counter,
-        this.runtime,
-        this.skillsRepository ? new SkillLoader(this.skillsRepository) : null,
-        this.projectInstructions,
-        this.runtime?.index ?? null,
-      );
-      cancellation.throwIfCancellationRequested();
-      await this.resources.draft.consume(message.prompt);
-      this.state = 'BuildingContext';
-      this.activeRun = {
-        id: runId,
-        cancellation,
-        task: Promise.resolve(),
-        prompt: message.prompt,
-        thinkingEnabled: request.thinkingEnabled,
-        contextMaxTokens: request.context.maxTokens,
-      };
-      this.activeRun.task = (async () => {
-        try {
-          await this.snapshot(`started-${runId}`);
-          await this.runtime?.initialize(cancellation);
-          await agent.run(request, cancellation, { emit: (event) => this.emit(event) });
-        } catch (error) {
-          if (cancellation.isCancellationRequested) {
-            this.emit({ type: 'GenerationCancelled' });
-            this.emit({ type: 'StateChanged', state: 'Cancelled' });
-          } else {
-            this.emit({
-              type: 'ErrorOccurred',
-              code: 'RuntimeFailed',
-              message: error instanceof Error ? error.message : 'Runtime failed.',
-              recoverable: true,
-            });
-            this.emit({ type: 'StateChanged', state: 'Failed' });
-          }
-        } finally {
-          this.changes.onRunFinished(runId);
-          if (this.activeRun?.id === runId) this.activeRun = null;
-          if (this.providerRefreshPending) await this.configurationChanged();
-          await this.snapshot(`completed-${runId}`);
-          if (!this.activeRun) this.streamingResponse = null;
-          await this.applyPendingRoot();
-        }
-      })();
-      return runId;
-    } finally {
-      if (this.preparingRun === cancellation) this.preparingRun = null;
-      if (this.providerRefreshPending && !this.activeRun) await this.configurationChanged();
-      await this.applyPendingRoot();
-    }
+    return submitRun(this.runHost, message);
+  }
+  private get runHost(): SubmitRunHost {
+    return {
+      disposed: () => this.disposed,
+      activeRun: () => this.activeRun,
+      preparingRun: () => this.preparingRun,
+      configuring: () => this.configuring,
+      providerRefreshPending: () => this.providerRefreshPending,
+      initializerPending: () => this.initializer.pending,
+      discovery: () => this.discovery,
+      attachments: () => this.contextAttachments,
+      skills: () => this.skills,
+      rootsCurrent: () => this.roots.current,
+      conversationId: () => this.conversationId,
+      counters: () => this.counters,
+      repository: () => this.repository,
+      runtime: () => this.runtime,
+      skillsRepository: () => this.skillsRepository,
+      projectInstructions: () => this.projectInstructions,
+      providers: () => this.providers,
+      draft: () => this.resources.draft,
+      changes: () => this.changes,
+      setPreparing: (source) => {
+        this.preparingRun = source;
+      },
+      clearPreparing: (source) => {
+        if (this.preparingRun === source) this.preparingRun = null;
+      },
+      setMode: (mode) => {
+        this.mode = mode;
+      },
+      setSkillId: (id) => {
+        this.skillId = id;
+      },
+      beginRun: () => {
+        this.partial = false;
+        this.streamingResponse = null;
+      },
+      setState: (state) => {
+        this.state = state;
+      },
+      setActiveRun: (run) => {
+        this.activeRun = run;
+      },
+      endStreaming: () => {
+        this.streamingResponse = null;
+      },
+      emit: (event) => this.emit(event),
+      snapshot: (requestId) => this.snapshot(requestId),
+      configurationChanged: () => this.configurationChanged(),
+      applyPendingRoot: () => this.applyPendingRoot(),
+      model: (id) => this.discovery.models.find((item) => item.id === id),
+      testCommand: () => readTestCommand(),
+    };
   }
   private readonly lifecycle: ConversationLifecycleHost;
   private readonly messageHost: ChatMessageHost;

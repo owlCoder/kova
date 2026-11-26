@@ -103,6 +103,20 @@ option {
   color: var(--text);
   border-color: transparent;
 }
+.icon-button.voice-input.listening {
+  color: var(--accent);
+  background: var(--hover);
+  animation: voice-pulse 1.2s ease-in-out infinite;
+}
+@keyframes voice-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
 .primary {
   background: var(--accent);
   border-color: var(--accent);
@@ -546,7 +560,7 @@ kbd {
   min-width: 180px;
   padding: 5px;
   background: var(--elevated);
-  border: 1px solid var(--border);
+  border: var(--frame-border, 0);
   border-radius: var(--radius-control);
   box-shadow: var(--shadow-float);
   z-index: 5;
@@ -647,7 +661,7 @@ kbd {
   right: 0;
   bottom: 29px;
   z-index: 6;
-  border: 1px solid var(--border);
+  border: var(--frame-border, 0);
   border-radius: var(--radius-control);
   background: var(--elevated);
   padding: 13px;
@@ -839,7 +853,7 @@ kbd {
   gap: 10px;
   max-width: min(600px, 85vw);
   padding: 12px 14px;
-  border: 1px solid var(--border);
+  border: var(--frame-border, 0);
   background: var(--elevated);
   border-radius: var(--radius-panel);
   box-shadow: var(--shadow-float);
@@ -866,7 +880,7 @@ kbd {
   width: 570px;
   max-width: 100%;
   background: var(--elevated);
-  border: 1px solid var(--border);
+  border: var(--frame-border, 0);
   border-radius: 12px;
   box-shadow: var(--shadow-dialog);
   animation: panel-in var(--motion-normal) var(--ease-out);

@@ -13,6 +13,11 @@ import { I18nProvider, useI18n } from './i18n/I18n.js';
 import { useChat } from './state/useChat.js';
 import { useNotice } from './state/useNotice.js';
 import { insertComposerText } from './state/insertComposerText.js';
+import {
+  isEditableTarget,
+  nextMessageIndex,
+  transcriptShortcut,
+} from './state/transcriptShortcuts.js';
 import { useContextPreview } from './state/useContextPreview.js';
 import { usePromptWorkbench } from './state/usePromptWorkbench.js';
 
@@ -131,6 +136,36 @@ function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
         send({ type: 'CancelRun', runId: snapshot.activeRunId });
         return;
       }
+      // Plain keys navigate the transcript when focus is outside the composer.
+      const shortcut = transcriptShortcut(event.key, isEditableTarget(event.target));
+      if (shortcut && !dialogOpen && !findOpen && !showSetup && snapshot?.messages.length) {
+        event.preventDefault();
+        if (shortcut.type === 'focusMessage') {
+          const items = Array.from(
+            document.querySelectorAll<HTMLElement>('.conversation .message'),
+          );
+          const active = document.activeElement;
+          const current = items.findIndex(
+            (el) => el === active || (active instanceof Node && el.contains(active)),
+          );
+          const next = nextMessageIndex(current, shortcut.direction, items.length);
+          if (next >= 0) {
+            items[next]?.focus();
+            items[next]?.scrollIntoView({ block: 'nearest' });
+          }
+        } else {
+          const lastUser = [...snapshot.messages].reverse().find((m) => m.role === 'user');
+          if (lastUser?.content.trim()) {
+            if (shortcut.type === 'editLastUserMessage') {
+              chat.setPrompt(lastUser.content);
+              input.current?.focus({ preventScroll: true });
+            } else if (!busy) {
+              chat.submitText(lastUser.content);
+            }
+          }
+        }
+        return;
+      }
       if (!(event.metaKey || event.ctrlKey) || context.preview || library) return;
       const key = event.key.toLowerCase();
       if (key === 'k') {
@@ -155,6 +190,8 @@ function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
     openFind,
     snapshot?.activeRunId,
     snapshot?.messages.length,
+    snapshot?.messages,
+    busy,
     showSetup,
   ]);
   const closeSetup = () => {
@@ -170,6 +207,8 @@ function Workspace({ chat }: { chat: ReturnType<typeof useChat> }) {
             busy={busy}
             conversationId={snapshot?.conversationId}
             hasMessages={Boolean(snapshot?.messages.length) && !showSetup}
+            root={chat.workspaceId}
+            workspaceFolders={snapshot?.workspaceFolders ?? []}
             onSetup={() => {
               setSetupOpen((open) => !open);
               if (scroller.current) scroller.current.scrollTop = 0;

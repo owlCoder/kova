@@ -33,7 +33,12 @@ export class RunChangeTracker {
     { runId: string; tool: string; args: unknown; existed: Map<string, boolean> }
   >();
   private readonly runs = new Map<string, Map<string, boolean>>();
-  private lastCompleted: { runId: string; files: readonly RunFileChange[] } | null = null;
+  private readonly checkpoints = new Map<string, string>();
+  private lastCompleted: {
+    runId: string;
+    files: readonly RunFileChange[];
+    checkpointed: boolean;
+  } | null = null;
   constructor(
     private readonly root: () => string | null,
     private readonly deps: RunChangeTrackerDeps = {},
@@ -71,18 +76,58 @@ export class RunChangeTracker {
     this.runs.set(pending.runId, files);
   }
 
+  /**
+   * Snapshots the working tree with `git stash create` when a run starts, so
+   * revert can fall back to `git stash apply <sha>` if per-file checkout fails.
+   */
+  onRunStarted(runId: string): void {
+    const root = this.root();
+    if (!root) return;
+    const cancellation = new CancellationSource();
+    const pending = this.deps.gitStashCreate
+      ? this.deps.gitStashCreate(root, cancellation)
+      : new NodeProcessRunner(root)
+          .run(
+            {
+              workspaceId: root,
+              command: 'git',
+              args: ['stash', 'create'],
+              workingDirectory: root,
+              timeoutMs: 15_000,
+              maxOutputCharacters: 200,
+            },
+            cancellation,
+          )
+          .then((result) =>
+            result.exitCode === 0 && result.stdout.trim() ? result.stdout.trim() : null,
+          )
+          .catch(() => null);
+    void pending.then((sha) => {
+      if (sha) this.checkpoints.set(runId, sha);
+    });
+  }
+
   onRunFinished(runId: string): void {
     const files = this.runs.get(runId);
     if (files && files.size) {
       this.lastCompleted = {
         runId,
         files: [...files.entries()].map(([path, created]) => ({ path, created })),
+        checkpointed: this.checkpoints.has(runId),
       };
     }
-    while (this.runs.size > 5) this.runs.delete(this.runs.keys().next().value!);
+    while (this.runs.size > 5) {
+      const oldest = this.runs.keys().next().value!;
+      this.runs.delete(oldest);
+      this.checkpoints.delete(oldest);
+    }
   }
 
-  latest(): { runId: string; files: readonly RunFileChange[] } | null {
+  latest(): {
+    runId: string;
+    files: readonly RunFileChange[];
+    checkpointed: boolean;
+  } | null {
     return this.lastCompleted;
   }
 
@@ -100,7 +145,8 @@ export class RunChangeTracker {
     const root = this.root();
     if (!root) throw new Error('Open a workspace to revert changes.');
     const files = this.filesFor(runId);
-    if (!files.length) throw new Error('No recorded file changes for this run.');
+    const checkpoint = this.checkpoints.get(runId) ?? null;
+    if (!files.length && !checkpoint) throw new Error('No recorded file changes for this run.');
     const agreed = confirm
       ? await confirm(files)
       : await (async () => {
@@ -118,34 +164,67 @@ export class RunChangeTracker {
     if (!agreed) return 'Revert cancelled.';
     const guard = new NodeWorkspacePathGuard(root);
     const cancellation = new CancellationSource();
-    const checkout: string[] = [];
-    const unlink: string[] = [];
-    for (const file of files) {
-      const resolved = await guard.resolve(root, file.path, 'Write', cancellation);
-      if (file.created) unlink.push(resolved.canonicalPath);
-      else checkout.push(resolved.relativePath);
-    }
-    if (checkout.length) {
-      if (this.deps.gitCheckout) await this.deps.gitCheckout(root, checkout, cancellation);
-      else {
-        const result = await new NodeProcessRunner(root).run(
-          {
-            workspaceId: root,
-            command: 'git',
-            args: ['checkout', '--', ...checkout],
-            workingDirectory: root,
-            timeoutMs: 15_000,
-            maxOutputCharacters: 4_000,
-          },
-          cancellation,
-        );
-        if (result.exitCode !== 0)
-          throw new Error(`git checkout failed: ${result.stderr.slice(0, 200)}`);
+    const applyCheckpoint = async (): Promise<void> => {
+      if (!checkpoint) throw new Error('No git checkpoint recorded for this run.');
+      if (this.deps.gitStashApply) {
+        await this.deps.gitStashApply(root, checkpoint, cancellation);
+        return;
       }
+      const result = await new NodeProcessRunner(root).run(
+        {
+          workspaceId: root,
+          command: 'git',
+          args: ['stash', 'apply', checkpoint],
+          workingDirectory: root,
+          timeoutMs: 30_000,
+          maxOutputCharacters: 4_000,
+        },
+        cancellation,
+      );
+      if (result.exitCode !== 0)
+        throw new Error(`git stash apply failed: ${result.stderr.slice(0, 200)}`);
+    };
+    try {
+      if (!files.length) {
+        await applyCheckpoint();
+      } else {
+        const checkout: string[] = [];
+        const unlink: string[] = [];
+        for (const file of files) {
+          const resolved = await guard.resolve(root, file.path, 'Write', cancellation);
+          if (file.created) unlink.push(resolved.canonicalPath);
+          else checkout.push(resolved.relativePath);
+        }
+        if (checkout.length) {
+          if (this.deps.gitCheckout) await this.deps.gitCheckout(root, checkout, cancellation);
+          else {
+            const result = await new NodeProcessRunner(root).run(
+              {
+                workspaceId: root,
+                command: 'git',
+                args: ['checkout', '--', ...checkout],
+                workingDirectory: root,
+                timeoutMs: 15_000,
+                maxOutputCharacters: 4_000,
+              },
+              cancellation,
+            );
+            if (result.exitCode !== 0)
+              throw new Error(`git checkout failed: ${result.stderr.slice(0, 200)}`);
+          }
+        }
+        for (const path of unlink) await vscode.workspace.fs.delete(vscode.Uri.file(path));
+      }
+    } catch (error) {
+      // Per-file revert could not restore everything; fall back to the checkpoint.
+      if (!checkpoint) throw error;
+      await applyCheckpoint();
     }
-    for (const path of unlink) await vscode.workspace.fs.delete(vscode.Uri.file(path));
     this.runs.delete(runId);
+    this.checkpoints.delete(runId);
     if (this.lastCompleted?.runId === runId) this.lastCompleted = null;
-    return `Reverted ${files.length} file${files.length === 1 ? '' : 's'} from the run.`;
+    return checkpoint && !files.length
+      ? 'Reverted the run from its git checkpoint.'
+      : `Reverted ${files.length} file${files.length === 1 ? '' : 's'} from the run.`;
   }
 }

@@ -166,6 +166,7 @@ describe('transcript timeline', () => {
       activeSkillId: null,
       usage: null,
       usageTotals: null,
+      estimatedCost: null,
       messages: [
         { id: '1', role: 'user', content: 'First question', partial: false },
         { id: '2', role: 'assistant', content: 'Reading now', partial: false },
@@ -181,6 +182,7 @@ describe('transcript timeline', () => {
         preview: { kind: 'Command', command: 'dotnet test', relativeWorkingDirectory: '.' },
       },
       revertibleRun: null,
+      workspaceFolders: [],
       thinkingEnabled: false,
       contextMaxTokens: 4096,
     };
@@ -225,10 +227,12 @@ describe('transcript timeline', () => {
       activeSkillId: null,
       usage: null,
       usageTotals: null,
+      estimatedCost: null,
       messages: [{ id: '1', role: 'user', content: 'Hi', partial: false }],
       contextAttachments: [],
       pendingApproval: null,
       revertibleRun: null,
+      workspaceFolders: [],
       thinkingEnabled: false,
       contextMaxTokens: 4096,
     };

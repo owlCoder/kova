@@ -8,6 +8,7 @@ import { ModelPicker } from './ModelPicker.js';
 import { PromptMenu } from './PromptMenu.js';
 import { ContextAttachments } from './ContextAttachments.js';
 import { ContextMeter } from './ContextMeter.js';
+import { VoiceInputButton } from './VoiceInputButton.js';
 import { ModeMenu, modeOrder } from './ModeMenu.js';
 import { ProviderBanner } from './ProviderBanner.js';
 import { usePopover } from './usePopover.js';
@@ -380,6 +381,12 @@ export function ChatFooter({
                 </button>
               </div>
             </div>
+            <VoiceInputButton
+              disabled={busy || disabled}
+              onTranscript={(text) =>
+                onPromptChange(prompt.trim() ? `${prompt.replace(/\s+$/, '')} ${text}` : text)
+              }
+            />
             <PromptMenu
               messages={snapshot?.messages}
               disabled={disabled}

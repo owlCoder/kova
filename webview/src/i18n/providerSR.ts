@@ -1,4 +1,4 @@
-/** Provider and onboarding banner texts. */
+/** Provider, onboarding and composer voice input texts. */
 export const providerSR: Readonly<Record<string, string>> = {
   'Kova can’t reach {provider}': 'Kova ne može da dođe do {provider}',
   'The selected model is not offered by this provider.':
@@ -11,4 +11,15 @@ export const providerSR: Readonly<Record<string, string>> = {
   'No matching prompts.': 'Nema odgovarajućih promptova.',
   Prompts: 'Promptovi',
   'Manage…': 'Upravljaj…',
+  'Voice input': 'Glasovni unos',
+  'Stop listening': 'Zaustavi slušanje',
+  'Microphone permission denied': 'Dozvola za mikrofon je odbijena',
+  'Voice input failed. Try again.': 'Glasovni unos nije uspeo. Pokušajte ponovo.',
+  'New file': 'Novi fajl',
+  Replace: 'Zameni',
+  Before: 'Pre',
+  After: 'Posle',
+  'Preview truncated': 'Prikaz skraćen',
+  'Git checkpoint saved': 'Git checkpoint sačuvan',
+  'Workspace folder': 'Radni folder',
 };

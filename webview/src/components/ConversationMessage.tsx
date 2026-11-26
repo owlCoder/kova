@@ -24,7 +24,11 @@ export const ConversationMessage = memo(function ConversationMessage({
 }) {
   const { t } = useI18n();
   return (
-    <article className={`message ${role}`} aria-label={role === 'user' ? t('You') : 'Kova'}>
+    <article
+      className={`message ${role}`}
+      aria-label={role === 'user' ? t('You') : 'Kova'}
+      tabIndex={-1}
+    >
       {/* Hover actions; also the scroll anchor used when older messages load. */}
       <div className="message-label">
         {partial && !working && <span className="muted">{t('Partial response')}</span>}

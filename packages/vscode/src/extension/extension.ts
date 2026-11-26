@@ -8,6 +8,7 @@ import { KovaPanelController } from '../webview/KovaPanelController.js';
 import { KovaViewProvider } from '../webview/KovaViewProvider.js';
 import { ChatSession } from './ChatSession.js';
 import { WorkspaceConversationRepository } from './conversationStore.js';
+import { runInlineEdit } from './inlineEdit.js';
 
 let session: ChatSession | undefined;
 
@@ -96,6 +97,7 @@ export function activate(context: vscode.ExtensionContext) {
         }
       },
     ),
+    vscode.commands.registerCommand('kova.inlineEdit', () => runInlineEdit(session)),
     vscode.commands.registerCommand('kova.setup', () =>
       configure(() => new ProviderSetupWizard(providers, apiKeys).run()),
     ),

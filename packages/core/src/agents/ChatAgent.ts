@@ -49,20 +49,22 @@ export class ChatAgent implements Agent {
       summary: null,
     };
     const userId = `${request.runId}-user`;
-    conversation = {
-      ...conversation,
-      entries: [
-        ...conversation.entries,
-        {
-          id: userId,
-          turnId: request.runId,
-          stepId: null,
-          message: { role: 'user', content: request.prompt },
-          toolResultOrigin: null,
-          omitted: false,
-        },
-      ],
-    };
+    // The host may have persisted this entry before its started-snapshot; never duplicate it.
+    if (!conversation.entries.some((entry) => entry.id === userId))
+      conversation = {
+        ...conversation,
+        entries: [
+          ...conversation.entries,
+          {
+            id: userId,
+            turnId: request.runId,
+            stepId: null,
+            message: { role: 'user', content: request.prompt },
+            toolResultOrigin: null,
+            omitted: false,
+          },
+        ],
+      };
     let stepId: string | null = null;
     const iterationLimit = Math.min(10, Math.max(1, request.maxToolIterations));
     let attempts = 0;
@@ -86,6 +88,10 @@ export class ChatAgent implements Agent {
       if (skill)
         events.emit({ type: 'SkillLoaded', skillId: skill.metadata.id, name: skill.metadata.name });
       const tools = request.toolsEnabled ? (this.runtime?.definitions(request.mode) ?? []) : [];
+      // When the pinned context plus tool schemas exceeds a small model's budget,
+      // drop the tool definitions instead of failing the whole run.
+      let activeTools = tools;
+      let toolsDisabled = false;
       for (let round = 0; round <= iterationLimit; round++) {
         cancellation.throwIfCancellationRequested();
         events.emit({ type: 'StateChanged', state: 'BuildingContext' });
@@ -107,13 +113,13 @@ export class ChatAgent implements Agent {
         const codeSnippets = found
           ? found.filter((snippet) => !fullFilePaths.has(snippet.relativePath)).slice(0, 4)
           : undefined;
-        const built = this.context.build({
+        const buildRequest = {
           systemInstructions:
             request.toolsEnabled && request.workspaceId
               ? instructions + workspaceInstructions(request.workspaceId)
               : instructions,
           projectInstructions,
-          tools,
+          tools: activeTools,
           activeSkill: skill,
           currentUserMessageId: userId,
           currentStepId: stepId,
@@ -122,11 +128,26 @@ export class ChatAgent implements Agent {
           ...(codeSnippets ? { codeSnippets } : {}),
           imagesSupported: request.imagesSupported,
           settings: request.context,
-        });
+        };
+        let built = this.context.build(buildRequest);
+        if (built.status === 'Overflow' && activeTools.length) {
+          activeTools = [];
+          toolsDisabled = true;
+          built = this.context.build({ ...buildRequest, tools: activeTools });
+        }
         if (built.status === 'Overflow') throw new Error(`${built.code}: ${built.suggestion}`);
         conversation = built.boundedConversation;
         await this.repository.save(conversation);
-        events.emit({ type: 'ContextUpdated', usage: built.usage });
+        const usage = toolsDisabled
+          ? {
+              ...built.usage,
+              evictions: [
+                ...built.usage.evictions,
+                { label: 'tool definitions', action: 'Disabled' as const },
+              ],
+            }
+          : built.usage;
+        events.emit({ type: 'ContextUpdated', usage });
         stepId = `${request.runId}-step-${round}`;
         const messageId = `${stepId}-assistant`;
         let text = '';
@@ -141,7 +162,7 @@ export class ChatAgent implements Agent {
             {
               modelId: request.modelId,
               messages: built.messages,
-              tools,
+              tools: activeTools,
               contextWindowTokens: request.context.maxTokens,
               maxOutputTokens: request.context.reservedOutputTokens,
               thinkingEnabled: request.thinkingEnabled,
@@ -217,12 +238,13 @@ export class ChatAgent implements Agent {
           events.emit({ type: 'StateChanged', state: 'Completed' });
           return { status: 'Completed', runId: request.runId };
         }
+        let wroteFiles = false;
         for (const rawCandidate of candidates) {
           if (++attempts > iterationLimit) return stop('IterationLimit');
           // Provider IDs can restart each request/run; durable domain IDs remain unique.
           const candidate = { ...rawCandidate, id: `${stepId}-call-${attempts}` };
           events.emit({ type: 'StateChanged', state: 'ValidatingTool' });
-          const definition = tools.find((tool) => tool.name === candidate.name);
+          const definition = activeTools.find((tool) => tool.name === candidate.name);
           const validation = definition
             ? new ToolInputValidator().validate(candidate, definition)
             : {
@@ -354,6 +376,11 @@ export class ChatAgent implements Agent {
               repairAttempt: malformed,
             });
           } else malformed = 0;
+          if (
+            result.status === 'Success' &&
+            ['write_file', 'edit_file', 'apply_patch'].includes(call.name)
+          )
+            wroteFiles = true;
           events.emit({ type: 'StateChanged', state: 'RecordingToolResult' });
           const cap = request.context.maxToolOutputCharacters;
           const content = JSON.stringify({
@@ -391,6 +418,45 @@ export class ChatAgent implements Agent {
           await this.repository.save(conversation);
           cancellation.throwIfCancellationRequested();
           if (invalidArguments && malformed > 2) return stop('MalformedToolCall');
+        }
+        if (request.testCommand && wroteFiles && this.runtime) {
+          const testCall = {
+            id: `${stepId}-tests`,
+            name: 'run_command',
+            arguments: { command: request.testCommand },
+          };
+          events.emit({ type: 'StateChanged', state: 'ValidatingTool' });
+          const testResult = await this.runtime.execute(
+            testCall,
+            request.mode,
+            request.commandAllowlist,
+            cancellation,
+            events,
+            request.runId,
+          );
+          conversation = {
+            ...conversation,
+            entries: [
+              ...conversation.entries,
+              {
+                id: `${testCall.id}-result`,
+                turnId: request.runId,
+                stepId,
+                message: {
+                  role: 'tool',
+                  callId: testCall.id,
+                  toolName: 'run_command',
+                  content: JSON.stringify({
+                    status: testResult.status,
+                    output: testResult.output.slice(0, request.context.maxToolOutputCharacters),
+                  }),
+                },
+                omitted: false,
+                toolResultOrigin: 'BuiltIn',
+              },
+            ],
+          };
+          await this.repository.save(conversation);
         }
       }
       return stop('IterationLimit');

@@ -32,6 +32,7 @@ const request: AgentRequest = {
   imagesSupported: true,
   maxToolIterations: 10,
   commandAllowlist: [],
+  testCommand: '',
 };
 const definition: ToolDefinition = {
   name: 'read_file',
@@ -94,7 +95,122 @@ const assertPaired = async (repository: InMemoryConversationRepository) => {
     expect(calls.filter((call) => call.id === result.callId)).toHaveLength(1);
 };
 
+describe('automatic test command after file writes', () => {
+  it('runs testCommand through the runtime once after a successful write round', async () => {
+    const executed: string[] = [];
+    const repo = new InMemoryConversationRepository();
+    const runtimeMock: ToolRuntime = {
+      definitions: () => [definition, writeDefinition],
+      execute: vi.fn(async (call) => {
+        executed.push(call.name);
+        return {
+          callId: call.id,
+          toolName: call.name,
+          status: 'Success' as const,
+          output: call.name === 'run_command' ? 'tests passed' : 'Wrote a.txt',
+          error: null,
+          omittedCharacters: 0,
+          durationMs: 1,
+        };
+      }),
+    };
+    const agent = new ChatAgent(
+      provider([[{ id: 'w1', name: 'write_file', arguments: { path: 'a.txt', content: 'x' } }]]),
+      repo,
+      new TokenCounter(),
+      runtimeMock,
+      null,
+      null,
+    );
+    const outcome = await agent.run(
+      { ...request, testCommand: 'npm test', toolsEnabled: true },
+      new CancellationSource(),
+      new EventLog(),
+    );
+    expect(outcome.status).toBe('Completed');
+    expect(executed).toEqual(['write_file', 'run_command']);
+    const entries = (await repo.get('chat'))!.entries;
+    const testResult = entries.find((e) => e.id.endsWith('-tests-result'));
+    expect(testResult?.message.role).toBe('tool');
+    if (testResult?.message.role === 'tool')
+      expect(JSON.parse(testResult.message.content).output).toBe('tests passed');
+  });
+
+  it('does not run the test command when nothing was written', async () => {
+    const executed: string[] = [];
+    const repo = new InMemoryConversationRepository();
+    const runtimeMock: ToolRuntime = {
+      definitions: () => [definition],
+      execute: vi.fn(async (call) => {
+        executed.push(call.name);
+        return {
+          callId: call.id,
+          toolName: call.name,
+          status: 'Success' as const,
+          output: 'ok',
+          error: null,
+          omittedCharacters: 0,
+          durationMs: 1,
+        };
+      }),
+    };
+    const agent = new ChatAgent(
+      provider([[candidate()]]),
+      repo,
+      new TokenCounter(),
+      runtimeMock,
+      null,
+      null,
+    );
+    await agent.run(
+      { ...request, testCommand: 'npm test' },
+      new CancellationSource(),
+      new EventLog(),
+    );
+    expect(executed).toEqual(['read_file']);
+  });
+});
+
+const writeDefinition: ToolDefinition = {
+  name: 'write_file',
+  description: 'write',
+  inputSchema: {
+    type: 'object',
+    properties: { path: { type: 'string' }, content: { type: 'string' } },
+    required: ['path', 'content'],
+    additionalProperties: false,
+  },
+  risk: 'WorkspaceWrite',
+  origin: { kind: 'BuiltIn' },
+};
+
 describe('agent-loop repair/repeat/iteration safety', () => {
+  it('does not duplicate the user entry when the host already persisted it', async () => {
+    const repository = new InMemoryConversationRepository();
+    await repository.save({
+      id: 'chat',
+      workspaceId: 'workspace',
+      entries: [
+        {
+          id: 'run-user',
+          turnId: 'run',
+          stepId: null,
+          message: { role: 'user', content: request.prompt },
+          toolResultOrigin: null,
+          omitted: false,
+        },
+      ],
+      summary: null,
+    });
+    await new ChatAgent(provider([[]]), repository, new TokenCounter(), runtime()).run(
+      request,
+      new CancellationSource(),
+      new EventLog(),
+    );
+    const entries = (await repository.get('chat'))!.entries;
+    expect(entries.filter((entry) => entry.id === 'run-user')).toHaveLength(1);
+    expect(entries.filter((entry) => entry.message.role === 'user')).toHaveLength(1);
+  });
   it('three identical schema failures stop as MalformedToolCall without executing any tool', async () => {
     const implementation = runtime(),
       repository = new InMemoryConversationRepository(),
@@ -253,5 +369,60 @@ describe('agent-loop repair/repeat/iteration safety', () => {
     ).toMatchObject({ status: 'Failed' });
     await assertPaired(repository);
     expect(JSON.stringify(await repository.get('chat'))).toContain('partial');
+  });
+});
+
+describe('context overflow with tools', () => {
+  it('drops tool definitions and completes instead of failing when they exceed a small budget', async () => {
+    const fatDefinition: ToolDefinition = {
+      name: 'read_file',
+      description: 'Read a file. '.repeat(2000),
+      inputSchema: {
+        type: 'object',
+        properties: { path: { type: 'string' } },
+        required: ['path'],
+        additionalProperties: false,
+      },
+      risk: 'ReadOnly',
+      origin: { kind: 'BuiltIn' },
+    };
+    const seenTools: number[] = [];
+    const recordingProvider: LlmProvider = {
+      async *streamChat(req: { tools: readonly unknown[] }) {
+        seenTools.push(req.tools.length);
+        yield { type: 'Finished', reason: 'Complete' as const, usage: null };
+      },
+    };
+    const repository = new InMemoryConversationRepository();
+    const events = new EventLog();
+    const tiny = {
+      ...request,
+      toolsEnabled: true,
+      context: {
+        maxTokens: 900,
+        reservedOutputTokens: 128,
+        safetyMarginRatio: 0.1,
+        maxToolOutputCharacters: 8000,
+      },
+    };
+    const outcome = await new ChatAgent(recordingProvider, repository, new TokenCounter(), {
+      definitions: () => [fatDefinition],
+      execute: vi.fn(async (call) => ({
+        callId: call.id,
+        toolName: call.name,
+        status: 'Success' as const,
+        output: 'ok',
+        error: null,
+        omittedCharacters: 0,
+        durationMs: 0,
+      })),
+    }).run(tiny, new CancellationSource(), events);
+    expect(outcome.status).not.toBe('Failed');
+    expect(seenTools).toEqual([0]);
+    const contextEvents = events.events.filter((event) => event.type === 'ContextUpdated');
+    const evictions = contextEvents.flatMap((event) =>
+      event.type === 'ContextUpdated' ? event.usage.evictions : [],
+    );
+    expect(evictions).toContainEqual({ label: 'tool definitions', action: 'Disabled' });
   });
 });

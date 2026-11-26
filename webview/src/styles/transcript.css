@@ -104,6 +104,20 @@ body.vscode-high-contrast .extension-frame {
   font-size: calc(12px * var(--text-scale, 1));
   color: var(--vscode-foreground);
 }
+.extension-frame .workspace-picker {
+  max-width: 180px;
+  padding: 1px 4px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: calc(11px * var(--text-scale, 1));
+}
+.extension-frame .workspace-picker:hover:not(:disabled) {
+  border-color: var(--line);
+  color: var(--vscode-foreground);
+}
 .extension-frame .header-actions {
   gap: 1px;
 }
@@ -141,6 +155,11 @@ body.vscode-high-contrast .extension-frame {
   margin: 0;
   border: 0;
   background: none;
+  border-radius: 8px;
+}
+.extension-frame .message:focus {
+  outline: 1px solid var(--accent);
+  outline-offset: 3px;
 }
 .extension-frame .message-label {
   position: absolute;
@@ -447,6 +466,74 @@ details.timeline-note > summary {
   color: var(--info);
   font-size: 11.5px;
 }
+.approval-file-diff {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--code-bg);
+  overflow: hidden;
+}
+.approval-file-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 9px;
+  border-bottom: 1px solid var(--line);
+}
+.approval-file-path {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--mono);
+  font-size: 11.5px;
+}
+.approval-file-op {
+  flex: none;
+  padding: 1px 7px;
+  border-radius: 8px;
+  font-size: 10.5px;
+  font-weight: 600;
+}
+.approval-file-op.op-create {
+  background: var(--vscode-diffEditor-insertedLineBackground, rgb(80 220 130 / 0.16));
+  color: var(--ok, #4ec97e);
+}
+.approval-file-op.op-replace {
+  background: var(--vscode-diffEditor-removedLineBackground, rgb(244 135 113 / 0.16));
+  color: var(--danger, #f48771);
+}
+.diff-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--mono);
+  font-size: 11px;
+  table-layout: fixed;
+}
+.diff-table th {
+  padding: 3px 9px;
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  font-weight: 600;
+  text-align: left;
+}
+.diff-table td {
+  width: 50%;
+  padding: 0 9px;
+  white-space: pre-wrap;
+  word-break: break-all;
+  vertical-align: top;
+}
+.diff-table tr.diff-removed td:first-child {
+  background: var(--vscode-diffEditor-removedLineBackground, rgb(244 135 113 / 0.12));
+}
+.diff-table tr.diff-added td:last-child {
+  background: var(--vscode-diffEditor-insertedLineBackground, rgb(80 220 130 / 0.12));
+}
+.approval-diff-truncated {
+  padding: 3px 9px;
+  border-top: 1px solid var(--line);
+}
 .approval-reasons,
 .approval-prompt p {
   margin: 0;
@@ -574,12 +661,10 @@ details.timeline-note > summary {
   max-height: 280px;
   overflow: auto;
   padding: 5px;
-  border: 0;
+  border: var(--frame-border, 0);
   border-radius: 10px;
   background: var(--vscode-quickInput-background, var(--vscode-editorWidget-background, #202020));
-  box-shadow:
-    0 12px 32px rgb(0 0 0 / 0.38),
-    0 2px 6px rgb(0 0 0 / 0.24);
+  box-shadow: var(--shadow-float);
 }
 .extension-frame .slash-menu button {
   display: flex;
@@ -1033,13 +1118,11 @@ body.editor .extension-frame .chat-footer {
 .extension-frame .context-details {
   margin: 0;
   padding: 5px;
-  border: 0;
+  border: var(--frame-border, 0);
   border-radius: 10px;
   background: var(--vscode-quickInput-background, var(--vscode-editorWidget-background, #202020));
   color: var(--vscode-foreground);
-  box-shadow:
-    0 12px 32px rgb(0 0 0 / 0.38),
-    0 2px 6px rgb(0 0 0 / 0.24);
+  box-shadow: var(--shadow-float);
   font-size: calc(12.5px * var(--text-scale, 1));
 }
 .extension-frame .kova-popover {
@@ -1217,6 +1300,7 @@ body.editor .extension-frame .composer-bar {
   display: flex;
   align-items: center;
   gap: 10px;
+  margin-bottom: 10px;
   padding: 9px 10px 9px 12px;
   border: 1px solid var(--line);
   border-radius: 10px;

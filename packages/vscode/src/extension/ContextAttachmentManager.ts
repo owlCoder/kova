@@ -19,6 +19,17 @@ export class ContextAttachmentManager {
   captureEditor(editor: vscode.TextEditor | undefined): void {
     if (editor?.document.uri.scheme === 'file') this.contextEditor = editor;
   }
+  /** Active editor's selection for {selection}/{file} prompt placeholders. */
+  currentSelection(root: string | null): { text: string; label: string } | null {
+    const editor =
+      vscode.window.activeTextEditor?.document.uri.scheme === 'file'
+        ? vscode.window.activeTextEditor
+        : this.contextEditor;
+    if (!editor || editor.document.uri.scheme !== 'file' || !root) return null;
+    const text = editor.document.getText(editor.selection);
+    if (!text.trim()) return null;
+    return { text, label: editor.document.uri.fsPath.slice(root.length + 1) };
+  }
   list(): readonly ContextAttachment[] {
     return this.attachments;
   }

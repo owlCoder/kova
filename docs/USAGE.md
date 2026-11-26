@@ -111,7 +111,15 @@ The interface initially renders the latest 40 saved messages. Load earlier messa
 
 ## Chat history
 
-Conversations are saved in VS Code workspace storage after each turn, so they survive a window reload. The Activity Bar launcher lists them under **Conversations**, newest first, titled by the first prompt; click one to reopen it in the chat. The list keeps at most 50 conversations per workspace, stores at most the newest 200 messages each and drops the oldest entries beyond a 3 MB total, so storage stays bounded on disk.
+Conversations are saved in VS Code workspace storage after each turn, so they survive a window reload. The Activity Bar launcher lists them under **Conversations**, newest first, titled by the first prompt; click one to reopen it in the chat. The list keeps at most 50 conversations per workspace, stores at most the newest 200 messages each and drops the oldest entries beyond a 3 MB total, so storage stays bounded on disk. `/export` saves the conversation as Markdown and **Import conversation** (command palette / `/import`) loads such a file back as the active conversation.
+
+## Keyboard and voice
+
+With focus outside the composer, **↑/↓** move between transcript messages, **E** loads the last user message back into the composer and **R** resends it. The microphone button in the composer records speech (Web Speech API, language follows the UI language) and appends the transcript to the draft; it hides itself in browsers without speech recognition. **Kova: Inline Edit Selection** (editor context menu) attaches the current selection and opens the chat with a prefilled edit prompt.
+
+## Approvals, diffs and checkpoints
+
+File-changing approvals show a side-by-side before/after diff (capped preview, full diff still opens in the editor diff view). Every run automatically creates a `git stash create` checkpoint; **Revert run changes** first restores tracked files precisely and falls back to applying the checkpoint. When several workspace folders are open, the header shows a folder picker to switch the active root (applied after the current run finishes).
 
 ## Personal prompt library
 

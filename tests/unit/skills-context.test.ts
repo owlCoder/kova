@@ -83,6 +83,7 @@ describe('explicit safe skills', () => {
       keepAliveSeconds: 300,
       maxToolIterations: 10,
       commandAllowlist: [],
+      testCommand: '',
       toolsEnabled: false,
     };
     await agent.run(request, new CancellationSource(), { emit() {} });
@@ -135,6 +136,7 @@ describe('explicit safe skills', () => {
       keepAliveSeconds: 300,
       maxToolIterations: 10,
       commandAllowlist: [],
+      testCommand: '',
       toolsEnabled: false,
     };
     const events = { emit: (event: { type: string }) => observed.push(event.type) };

@@ -5,6 +5,7 @@ import type { SessionSnapshot } from '../../../packages/protocol/src/SessionSnap
 import { send, subscribe } from '../messaging/bridge.js';
 import { useComposerDraft } from './useComposerDraft.js';
 import { applyEvent } from './presentation.js';
+import { errorBannerFor } from './errorBanner.js';
 import { applyTimelineEvent, type TimelineEntry } from './timeline.js';
 
 export function useChat() {
@@ -25,6 +26,7 @@ export function useChat() {
   const [providerIssue, setProviderIssue] = useState('');
   const [settingsRequest, setSettingsRequest] = useState(0);
   const [submitting, setSubmitting] = useState(false);
+  const [workspaceId, setWorkspaceId] = useState<string | null>(null);
   const serial = useRef({ session: '', sequence: 0 });
   const hostSelection = useRef<{ modelId: string; mode: AgentMode } | null>(null);
   const active = useRef<string | null>(null);
@@ -51,6 +53,7 @@ export function useChat() {
         return;
       }
       serial.current.sequence = data.sequence;
+      setWorkspaceId(data.workspaceId);
       if (data.type === 'Snapshot') {
         // Reset per-conversation presentation state here, not inside a state updater:
         // updaters run later and would erase events that arrived after this snapshot.
@@ -148,8 +151,11 @@ export function useChat() {
           }));
         }
         const event = data.event;
-        if (event.type === 'ErrorOccurred' && event.code === 'ProviderUnavailable')
-          setProviderIssue(event.message);
+        if (event.type === 'ErrorOccurred') {
+          const banner = errorBannerFor(event);
+          if (banner?.kind === 'provider') setProviderIssue(banner.text);
+          else if (banner) setError(banner.text);
+        }
         const anchor = messageCount.current;
         const sequence = data.sequence;
         setTimeline((previous) => applyTimelineEvent(previous, event, anchor, sequence));
@@ -192,6 +198,7 @@ export function useChat() {
   const submit = () => doSubmit(prompt);
   return {
     snapshot,
+    workspaceId,
     prompt,
     setPrompt,
     submitText,

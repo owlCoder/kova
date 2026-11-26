@@ -34,6 +34,7 @@ export interface SnapshotInput {
   readonly providerStatus: 'Available' | 'Unavailable' | 'ModelMissing';
   readonly configuring: boolean;
   readonly root: string | null;
+  readonly workspaceFolders: readonly string[];
   readonly skills: readonly SkillMetadata[];
   readonly skillId: string | null;
   readonly usage: ContextUsage | null;
@@ -44,7 +45,19 @@ export interface SnapshotInput {
   readonly revertibleRun: {
     readonly runId: string;
     readonly files: readonly { readonly path: string; readonly created: boolean }[];
+    readonly checkpointed: boolean;
   } | null;
+}
+
+function estimateCost(
+  usage: { readonly inputTokens: number; readonly outputTokens: number } | null,
+): number | null {
+  if (!usage) return null;
+  const config = vscode.workspace.getConfiguration('kova');
+  const inputPerMillion = config.get<number>('cost.inputPerMillion', 0);
+  const outputPerMillion = config.get<number>('cost.outputPerMillion', 0);
+  if (!inputPerMillion && !outputPerMillion) return null;
+  return (usage.inputTokens * inputPerMillion + usage.outputTokens * outputPerMillion) / 1_000_000;
 }
 
 /** Builds the full view snapshot; the caller re-checks the conversation is still current. */
@@ -73,10 +86,12 @@ export async function composeSnapshot(input: SnapshotInput): Promise<SessionSnap
     setupCompleted: input.context.globalState?.get<boolean>('kova.setupCompleted', false) ?? false,
     configuringProvider: input.configuring,
     toolsEnabled: Boolean(input.root && selected?.tools === 'Supported'),
+    workspaceFolders: [...input.workspaceFolders],
     skills: input.skills.map((skill) => ({ ...skill })),
     activeSkillId: input.skillId,
     usage: input.usage ? structuredClone(input.usage) : null,
     usageTotals: conversation?.usage ? { ...conversation.usage } : null,
+    estimatedCost: estimateCost(conversation?.usage ?? null),
     messages,
     contextAttachments: contextAttachmentViews(input.attachments),
     pendingApproval: input.pendingApproval ? approvalView(input.pendingApproval) : null,
@@ -84,6 +99,7 @@ export async function composeSnapshot(input: SnapshotInput): Promise<SessionSnap
       ? {
           runId: input.revertibleRun.runId,
           files: input.revertibleRun.files.map((file) => ({ ...file })),
+          checkpointed: input.revertibleRun.checkpointed,
         }
       : null,
     thinkingEnabled: activeRun?.thinkingEnabled ?? input.providers.thinkingEnabled(),

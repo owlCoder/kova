@@ -112,4 +112,56 @@ describe('RunChangeTracker', () => {
     tracker.onRunFinished('r1');
     await expect(tracker.revert('r1', async () => true)).rejects.toThrow('outside');
   });
+
+  it('records a git checkpoint at run start and flags the snapshot', async () => {
+    const tracker = new RunChangeTracker(() => root, {
+      gitStashCreate: async () => 'abc123',
+    });
+    tracker.onRunStarted('r1');
+    tracker.onToolRequested('r1', 'c1', 'write_file', { path: 'tracked.txt', content: 'x' });
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    tracker.onToolCompleted('r1', 'c1', true);
+    tracker.onRunFinished('r1');
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(tracker.latest()?.checkpointed).toBe(true);
+  });
+
+  it('falls back to git stash apply when per-file checkout fails', async () => {
+    const applied: string[] = [];
+    const tracker = new RunChangeTracker(() => root, {
+      gitStashCreate: async () => 'abc123',
+      gitCheckout: async () => {
+        throw new Error('git checkout failed: conflict');
+      },
+      gitStashApply: async (_root, sha) => {
+        applied.push(sha);
+      },
+    });
+    tracker.onRunStarted('r1');
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    tracker.onToolRequested('r1', 'c1', 'write_file', { path: 'tracked.txt', content: 'x' });
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    tracker.onToolCompleted('r1', 'c1', true);
+    tracker.onRunFinished('r1');
+    const summary = await tracker.revert('r1', async () => true);
+    expect(applied).toEqual(['abc123']);
+    expect(summary).toContain('Reverted 1 file');
+  });
+
+  it('reverts from the checkpoint alone when no files were tracked', async () => {
+    const applied: string[] = [];
+    const tracker = new RunChangeTracker(() => root, {
+      gitStashCreate: async () => 'def456',
+      gitStashApply: async (_root, sha) => {
+        applied.push(sha);
+      },
+    });
+    tracker.onRunStarted('r9');
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    tracker.onRunFinished('r9');
+    // onRunFinished only publishes lastCompleted when files exist; revert directly.
+    const summary = await tracker.revert('r9', async () => true);
+    expect(applied).toEqual(['def456']);
+    expect(summary).toBe('Reverted the run from its git checkpoint.');
+  });
 });

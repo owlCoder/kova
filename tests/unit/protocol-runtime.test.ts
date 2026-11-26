@@ -22,6 +22,20 @@ describe('host message validation and projection', () => {
     ])
       expect(() => validateMessage(input)).toThrow();
   });
+  it('validates SetWorkspaceRoot paths', () => {
+    expect(() =>
+      validateMessage({
+        protocolVersion: 1,
+        requestId: 'x',
+        type: 'SetWorkspaceRoot',
+        path: '/Users/danijel/Desktop/kova',
+      }),
+    ).not.toThrow();
+    for (const path of ['', '   ', 'x'.repeat(513), 'a\0b', 42])
+      expect(() =>
+        validateMessage({ protocolVersion: 1, requestId: 'x', type: 'SetWorkspaceRoot', path }),
+      ).toThrow();
+  });
   it('validates @mention messages with bounded path and query', () => {
     expect(
       validateMessage({
@@ -203,5 +217,47 @@ describe('host message validation and projection', () => {
     });
     expect(JSON.stringify(event)).not.toContain('secret file body');
     expect(JSON.stringify(event)).toContain('app.ts');
+  });
+  it('caps before/after text in the approval preview', () => {
+    const big = Array.from({ length: 500 }, (_, i) => `line ${i}`).join('\n');
+    const event = projectEvent({
+      type: 'ToolAwaitingApproval',
+      request: {
+        approvalId: 'a1',
+        runId: 'r1',
+        preparationKey: 'p1',
+        call: { id: 'c1', name: 'apply_patch', arguments: {} },
+        risk: 'WorkspaceWrite',
+        reasons: ['writes files'],
+        preview: {
+          kind: 'FileChanges',
+          changes: [
+            {
+              relativePath: 'src/big.ts',
+              operation: 'Replace',
+              beforeContent: big,
+              afterContent: `${big}\nmore`,
+              expectedVersion: null,
+            },
+            {
+              relativePath: 'src/new.ts',
+              operation: 'Create',
+              beforeContent: null,
+              afterContent: 'hello',
+              expectedVersion: null,
+            },
+          ],
+        },
+      },
+    });
+    expect(event.type).toBe('ToolAwaitingApproval');
+    if (event.type !== 'ToolAwaitingApproval') return;
+    const preview = event.request.preview;
+    if (preview?.kind !== 'FileChanges') throw new Error('expected file changes preview');
+    expect(preview.changes[0]?.after.split('\n')).toHaveLength(200);
+    expect(preview.changes[0]?.truncated).toBe(true);
+    expect(preview.changes[1]?.before).toBeNull();
+    expect(preview.changes[1]?.after).toBe('hello');
+    expect(preview.changes[1]?.truncated).toBe(false);
   });
 });

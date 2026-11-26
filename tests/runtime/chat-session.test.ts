@@ -36,6 +36,7 @@ vi.mock('vscode', () => ({
       get: (key: string, fallback: unknown) => fixture.settings[key] ?? fallback,
     }),
   },
+  window: { activeTextEditor: undefined },
 }));
 vi.mock('../../packages/vscode/src/adapters/WorkspaceRuntime.js', () => ({
   WorkspaceRuntime: class {
@@ -199,6 +200,21 @@ describe('shared chat session synchronization', () => {
     expect(latestSnapshot().draft).toBe('');
     expect(fixture.drafts.get('kova.composerDraft')).toBe('');
     await expect(session.handle({ ...exportRequest, requestId: 'export-stale' })).rejects.toThrow();
+  });
+
+  it('includes the user message in the started snapshot so the transcript never renders empty', async () => {
+    await session.initialize();
+    await beginStream();
+    const started = messages.find(
+      (message) => message.type === 'Snapshot' && message.requestId.startsWith('started-'),
+    );
+    expect(started).toBeTruthy();
+    if (started?.type === 'Snapshot')
+      expect(started.snapshot.messages).toEqual([
+        expect.objectContaining({ role: 'user', content: 'A public test prompt' }),
+      ]);
+    send({ message: { content: 'Done' } });
+    await finish();
   });
 
   it('persists onboarding dismissal and serializes configuration against submission', async () => {
@@ -483,6 +499,35 @@ describe('@mention workspace files', () => {
   });
 });
 
+describe('conversation import', () => {
+  it('imports markdown as a new conversation and shows its messages', async () => {
+    await session.initialize();
+    await session.handle({ protocolVersion: 1, requestId: 'ready', type: 'Ready' });
+    const before = latestSnapshot().conversationId;
+    await session.handle({
+      protocolVersion: 1,
+      requestId: 'import',
+      type: 'ImportConversation',
+      markdown:
+        '# Kova conversation\n\nProvider at export: Ollama (local)\nSelected model: qwen3:0.6b\n\n## You\n\nImported question\n\n---\n\n## Kova\n\nImported answer\n',
+    });
+    const snapshot = latestSnapshot();
+    expect(snapshot.conversationId).not.toBe(before);
+    expect(snapshot.messages.map((m) => [m.role, m.content])).toEqual([
+      ['user', 'Imported question'],
+      ['assistant', 'Imported answer'],
+    ]);
+    await expect(
+      session.handle({
+        protocolVersion: 1,
+        requestId: 'bad-import',
+        type: 'ImportConversation',
+        markdown: 'nothing parseable',
+      }),
+    ).rejects.toThrow();
+  });
+});
+
 describe('workspace root switching', () => {
   it('rebuilds the tool runtime when the folder changes while idle and disables tools without one', async () => {
     await session.initialize();
@@ -517,5 +562,30 @@ describe('workspace root switching', () => {
     await finish();
     await vi.waitFor(() => expect(fixture.runtimeRoots).toContain('/pending-workspace'));
     expect(fixture.runtimeDisposals).toBe(1);
+  });
+
+  it('switches root via SetWorkspaceRoot and publishes workspaceFolders in snapshots', async () => {
+    const vscodeMock = (await import('vscode')) as unknown as {
+      workspace: { workspaceFolders?: unknown };
+    };
+    vscodeMock.workspace.workspaceFolders = [
+      { uri: { fsPath: '/fixture-workspace' } },
+      { uri: { fsPath: '/other-workspace' } },
+    ];
+    try {
+      await session.initialize();
+      await session.snapshot('folders');
+      expect(latestSnapshot().workspaceFolders).toEqual(['/fixture-workspace', '/other-workspace']);
+      await session.handle({
+        protocolVersion: 1,
+        requestId: 'set-root',
+        type: 'SetWorkspaceRoot',
+        path: '/other-workspace',
+      });
+      expect(fixture.runtimeRoots).toEqual(['/fixture-workspace', '/other-workspace']);
+      expect(messages.at(-1)?.workspaceId).toBe('/other-workspace');
+    } finally {
+      vscodeMock.workspace.workspaceFolders = [];
+    }
   });
 });

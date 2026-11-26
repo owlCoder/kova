@@ -41,6 +41,8 @@ export interface ChatMessageHost {
   newConversation(): Promise<void>;
   openConversation(id: string): Promise<void>;
   renameConversation(id: string, title: string): Promise<void>;
+  importConversation(markdown: string): Promise<void>;
+  setWorkspaceRoot(path: string): Promise<void>;
   submit(message: Extract<WebviewMessage, { readonly type: 'SubmitPrompt' }>): Promise<string>;
   accept(requestId: string, runId: string | null): void;
   notify(message: string): void;
@@ -112,6 +114,9 @@ export async function handleChatMessage(
     case 'RenameConversation':
       await host.renameConversation(message.conversationId, message.title);
       return;
+    case 'ImportConversation':
+      await host.importConversation(message.markdown);
+      return;
     case 'SelectSkill':
       if (host.isRunning()) throw new Error('Cannot change skill during a run.');
       if (message.skillId && !host.knownSkill(message.skillId)) throw new Error('Unknown skill.');
@@ -141,6 +146,10 @@ export async function handleChatMessage(
       break;
     case 'CompleteSetup':
       await host.completeSetup();
+      await host.snapshot(message.requestId);
+      return;
+    case 'SetWorkspaceRoot':
+      await host.setWorkspaceRoot(message.path);
       await host.snapshot(message.requestId);
       return;
   }

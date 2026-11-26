@@ -20,8 +20,9 @@
   --red: #eeaaa0;
   --blue: #9dbfdc;
   --selection: #e3b48c32;
-  --shadow-dialog: 0 24px 80px #0006, 0 0 0 1px #ffffff04;
-  --shadow-float: 0 12px 36px #0005, 0 2px 8px #0003;
+  --shadow-dialog: 0 32px 96px #0007;
+  --shadow-float: 0 16px 48px #0006;
+  --frame-border: 0;
   --backdrop: #070b0e99;
   --radius-control: 5px;
   --radius-panel: 8px;
@@ -55,12 +56,13 @@
   --red: #a64339;
   --blue: #376586;
   --selection: #82542f25;
-  --shadow-dialog: 0 24px 80px #1d2b3826, 0 0 0 1px #ffffff80;
-  --shadow-float: 0 12px 36px #1d2b3820, 0 2px 8px #1d2b3810;
+  --shadow-dialog: 0 32px 96px #1d2b3833;
+  --shadow-float: 0 16px 48px #1d2b3826;
   --backdrop: #18232955;
 }
 /* High-contrast themes need visible structure lines. */
 body.vscode-high-contrast {
   --border: var(--vscode-contrastBorder, #ffffff);
   --border-soft: var(--vscode-contrastBorder, #ffffff);
+  --frame-border: 1px solid var(--vscode-contrastBorder, #ffffff);
 }

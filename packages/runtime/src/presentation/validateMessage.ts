@@ -23,6 +23,7 @@ export function validateMessage(raw: unknown): WebviewMessage {
     CompactConversation: [],
     OpenConversation: ['conversationId'],
     RenameConversation: ['conversationId', 'title'],
+    ImportConversation: ['markdown'],
     UpdateDraft: ['conversationId', 'prompt'],
     ExportConversation: ['conversationId', 'action'],
     SelectSkill: ['skillId'],
@@ -30,6 +31,7 @@ export function validateMessage(raw: unknown): WebviewMessage {
     AttachPath: ['path'],
     AttachImage: ['name', 'mimeType', 'dataUrl'],
     ListWorkspaceFiles: ['query'],
+    SetWorkspaceRoot: ['path'],
     RemoveContext: ['attachmentId'],
     PreviewContext: ['conversationId', 'attachmentId'],
     ResolveApproval: ['runId', 'approvalId', 'preparationKey', 'decision'],
@@ -93,6 +95,13 @@ export function validateMessage(raw: unknown): WebviewMessage {
   )
     throw new Error('Invalid conversation ID.');
   if (
+    value.type === 'ImportConversation' &&
+    (typeof value.markdown !== 'string' ||
+      !value.markdown.trim() ||
+      value.markdown.length > 1_000_000)
+  )
+    throw new Error('Markdown import must be 1-1,000,000 characters.');
+  if (
     value.type === 'RenameConversation' &&
     (typeof value.title !== 'string' ||
       !value.title.trim() ||
@@ -148,6 +157,14 @@ export function validateMessage(raw: unknown): WebviewMessage {
     (typeof value.query !== 'string' || value.query.length > 100 || value.query.includes('\0'))
   )
     throw new Error('Invalid file query.');
+  if (
+    value.type === 'SetWorkspaceRoot' &&
+    (typeof value.path !== 'string' ||
+      !value.path.trim() ||
+      value.path.length > 512 ||
+      value.path.includes('\0'))
+  )
+    throw new Error('Invalid workspace folder.');
   if (
     value.type === 'ResolveApproval' &&
     !['AllowOnce', 'Reject'].includes(value.decision as string)

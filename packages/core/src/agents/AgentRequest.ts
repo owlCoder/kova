@@ -19,4 +19,6 @@ export interface AgentRequest {
   readonly imagesSupported: boolean;
   readonly maxToolIterations: number;
   readonly commandAllowlist: readonly string[];
+  /** When set, the agent runs this command after a round with successful file writes. */
+  readonly testCommand: string;
 }

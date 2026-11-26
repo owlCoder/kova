@@ -22,6 +22,8 @@ export interface SessionSnapshot {
   readonly setupCompleted: boolean;
   readonly configuringProvider: boolean;
   readonly toolsEnabled: boolean;
+  /** All open workspace folders; the active one arrives via the message envelope. */
+  readonly workspaceFolders: readonly string[];
   readonly skills: readonly SkillMetadata[];
   readonly activeSkillId: string | null;
   readonly usage: ContextUsage | null;
@@ -30,6 +32,8 @@ export interface SessionSnapshot {
     readonly outputTokens: number;
     readonly runs: number;
   } | null;
+  /** Estimated cost from kova.cost.* prices, null when prices are unset. */
+  readonly estimatedCost: number | null;
   readonly messages: readonly {
     readonly id: string;
     readonly role: 'user' | 'assistant';
@@ -42,6 +46,8 @@ export interface SessionSnapshot {
   readonly revertibleRun: {
     readonly runId: string;
     readonly files: readonly { readonly path: string; readonly created: boolean }[];
+    /** A `git stash create` checkpoint exists for the run and can restore it. */
+    readonly checkpointed: boolean;
   } | null;
   readonly thinkingEnabled: boolean;
   readonly contextMaxTokens: number;
