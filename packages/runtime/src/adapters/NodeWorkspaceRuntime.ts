@@ -19,6 +19,7 @@ import { GetGitDiffTool } from '../tools/GetGitDiffTool.js';
 import { ListDirectoryTool } from '../tools/ListDirectoryTool.js';
 import { ReadFileTool } from '../tools/ReadFileTool.js';
 import { RunCommandTool } from '../tools/RunCommandTool.js';
+import { UpdateTodosTool } from '../tools/UpdateTodosTool.js';
 import { SearchFilesTool } from '../tools/SearchFilesTool.js';
 import { WriteFileTool } from '../tools/WriteFileTool.js';
 import { CommandHook } from '../adapters/CommandHook.js';
@@ -64,6 +65,7 @@ export class NodeWorkspaceRuntime implements ToolRuntime {
       new EditFileTool(guard, reader, writer),
       new ApplyPatchTool(guard, reader, writer),
       new RunCommandTool(guard, this.runner),
+      new UpdateTodosTool(events),
     ])
       this.registry.register(tool);
     this.runtime = this.compose(new HookPipeline());

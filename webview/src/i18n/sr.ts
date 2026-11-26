@@ -209,6 +209,8 @@ export const sr: Readonly<Record<string, string>> = {
   'Partial response': 'Prekinut odgovor',
   Permissions: 'Dozvole',
   'Plan something new': 'Isplaniraj nešto novo',
+  Plan: 'Plan',
+  '{done} of {total} done': '{done} od {total} završeno',
   'Plan · read and explain code': 'Plan · čitanje i objašnjavanje koda',
   'Plan · read only': 'Plan · samo čitanje',
   'Privacy & local data': 'Privatnost i lokalni podaci',

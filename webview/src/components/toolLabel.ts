@@ -6,6 +6,7 @@ const labels: Readonly<Record<string, string>> = {
   search_files: 'Search',
   run_command: 'Run',
   get_git_diff: 'Git diff',
+  update_todos: 'Plan',
 };
 
 /** Short, verb-style tool names in the transcript; unknown tools keep their own name. */

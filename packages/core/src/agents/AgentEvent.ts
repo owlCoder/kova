@@ -7,6 +7,7 @@ import type { ToolCall } from '../tools/ToolCall.js';
 import type { ToolResult } from '../tools/ToolResult.js';
 import type { AgentState } from './AgentState.js';
 import type { LoopStopReason } from './RunOutcome.js';
+import type { TodoItem } from './TodoItem.js';
 
 /** Events contain presentation-safe JSON data, never implementation objects. */
 export type AgentEvent =
@@ -64,6 +65,7 @@ export type AgentEvent =
       readonly callId: string;
       readonly toolName: string;
     }
+  | { readonly type: 'TodosUpdated'; readonly todos: readonly TodoItem[] }
   | { readonly type: 'ContextUpdated'; readonly usage: ContextUsage }
   | { readonly type: 'AgentLoopStopped'; readonly reason: LoopStopReason }
   | { readonly type: 'GenerationCancelled' }

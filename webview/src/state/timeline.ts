@@ -1,4 +1,5 @@
 import type { PresentationEvent } from '../../../packages/protocol/src/PresentationEvent.js';
+import type { TodoItem } from '../../../packages/protocol/src/TodoItem.js';
 
 export type ToolStatus =
   | 'Requested'
@@ -40,7 +41,15 @@ export interface NoteEntry {
   readonly tone: 'info' | 'warning' | 'error';
 }
 
-export type TimelineEntry = ToolEntry | NoteEntry;
+/** The agent's live plan, rendered as a checklist; one entry, updated in place. */
+export interface TodosEntry {
+  readonly kind: 'todos';
+  readonly id: string;
+  readonly anchor: number;
+  readonly items: readonly TodoItem[];
+}
+
+export type TimelineEntry = ToolEntry | NoteEntry | TodosEntry;
 
 const MAX_ENTRIES = 200;
 const MAX_TEXT = 30_000;
@@ -51,7 +60,11 @@ const clip = (text: string) => text.slice(0, MAX_TEXT);
 function bound(entries: TimelineEntry[]): TimelineEntry[] {
   const next = entries.slice(-MAX_ENTRIES);
   const size = (entry: TimelineEntry) =>
-    entry.kind === 'tool' ? entry.output.length + entry.detail.length : entry.detail.length;
+    entry.kind === 'tool'
+      ? entry.output.length + entry.detail.length
+      : entry.kind === 'todos'
+        ? entry.items.reduce((sum, item) => sum + item.content.length, 0)
+        : entry.detail.length;
   let total = next.reduce((sum, entry) => sum + size(entry), 0);
   while (total > MAX_TOTAL && next.length > 1) total -= size(next.shift()!);
   return next;
@@ -97,6 +110,20 @@ export function applyTimelineEvent(
   sequence: number,
 ): readonly TimelineEntry[] {
   switch (event.type) {
+    case 'TodosUpdated': {
+      const existing = entries.findIndex((entry) => entry.kind === 'todos');
+      const entry: TodosEntry = {
+        kind: 'todos',
+        id: existing === -1 ? `todos-${sequence}` : entries[existing]!.id,
+        anchor: existing === -1 ? anchor : entries[existing]!.anchor,
+        items: event.todos.map((item) => ({ ...item })),
+      };
+      return bound(
+        existing === -1
+          ? [...entries, entry]
+          : entries.map((item) => (item === entries[existing] ? entry : item)),
+      );
+    }
     case 'ToolRequested': {
       const existing = entries.some((entry) => entry.kind === 'tool' && entry.id === event.callId);
       if (existing) return entries;

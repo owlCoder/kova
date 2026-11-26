@@ -102,6 +102,30 @@ describe('transcript timeline', () => {
     });
   });
 
+  it('keeps one live plan entry that updates in place', () => {
+    const entries = fold([
+      {
+        type: 'TodosUpdated',
+        todos: [
+          { id: 'todo-1', content: 'Read code', status: 'in_progress' },
+          { id: 'todo-2', content: 'Edit file', status: 'pending' },
+        ],
+      },
+      {
+        type: 'TodosUpdated',
+        todos: [
+          { id: 'todo-1', content: 'Read code', status: 'completed' },
+          { id: 'todo-2', content: 'Edit file', status: 'in_progress' },
+        ],
+      },
+    ]);
+    expect(entries).toHaveLength(1);
+    const entry = entries[0]!;
+    expect(entry.kind).toBe('todos');
+    if (entry.kind === 'todos')
+      expect(entry.items.map((item) => item.status)).toEqual(['completed', 'in_progress']);
+  });
+
   it('names built-in and MCP tools briefly', () => {
     expect(toolLabel('read_file')).toBe('Read');
     expect(toolLabel('run_command')).toBe('Run');

@@ -211,6 +211,8 @@ export const de: Readonly<Record<string, string>> = {
   'Partial response': 'Unvollständige Antwort',
   Permissions: 'Berechtigungen',
   'Plan something new': 'Etwas Neues planen',
+  Plan: 'Plan',
+  '{done} of {total} done': '{done} von {total} erledigt',
   'Plan · read and explain code': 'Planen · Code lesen und erklären',
   'Plan · read only': 'Planen · nur lesen',
   'Privacy & local data': 'Datenschutz & lokale Daten',

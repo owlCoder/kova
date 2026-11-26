@@ -5,13 +5,16 @@ import type { TimelineEntry } from '../state/timeline.js';
 import { Icon } from './Icon.js';
 import { ConversationMessage } from './ConversationMessage.js';
 import { ToolCallRow } from './ToolCallRow.js';
+import { TodoList } from './TodoList.js';
 import { TimelineNote } from './TimelineNote.js';
 import { ApprovalPrompt } from './ApprovalPrompt.js';
 import { WorkingIndicator } from './WorkingIndicator.js';
 import { useHistoryWindow } from '../state/useHistoryWindow.js';
 
 function Entry({ entry }: { entry: TimelineEntry }) {
-  return entry.kind === 'tool' ? <ToolCallRow entry={entry} /> : <TimelineNote entry={entry} />;
+  if (entry.kind === 'tool') return <ToolCallRow entry={entry} />;
+  if (entry.kind === 'todos') return <TodoList entry={entry} />;
+  return <TimelineNote entry={entry} />;
 }
 
 /**

@@ -169,6 +169,41 @@ describe('workspace agent end to end', () => {
     expect(events.events.some((event: AgentEvent) => event.type === 'ToolCompleted')).toBe(true);
   });
 
+  it('publishes a plan via update_todos without approval in any mode', async () => {
+    const { events, repository, outcome } = await runAgent(
+      'Manual',
+      [
+        [
+          candidate('update_todos', {
+            todos: [
+              { content: 'Read existing code', status: 'in_progress' },
+              { content: 'Write Domain/User.cs', status: 'pending' },
+            ],
+          }),
+          candidate('write_file', { path: 'Domain/User.cs', content: 'class User {}\n' }),
+        ],
+        [
+          candidate('update_todos', {
+            todos: [
+              { content: 'Read existing code', status: 'completed' },
+              { content: 'Write Domain/User.cs', status: 'completed' },
+            ],
+          }),
+        ],
+        [],
+      ],
+      new ScriptedApproval('AllowOnce'),
+    );
+    expect(outcome.status).toBe('Completed');
+    const updates = events.events.filter((event: AgentEvent) => event.type === 'TodosUpdated');
+    expect(updates).toHaveLength(2);
+    if (updates[0]?.type === 'TodosUpdated')
+      expect(updates[0].todos.map((todo) => todo.status)).toEqual(['in_progress', 'pending']);
+    expect(await readFile(join(root, 'Domain', 'User.cs'), 'utf8')).toBe('class User {}\n');
+    const results = await toolResults(repository);
+    expect(results).toHaveLength(3);
+  });
+
   it('asks for approval in Manual mode and writes only after AllowOnce', async () => {
     const approval = new ScriptedApproval('AllowOnce');
     const { events, repository, outcome } = await runAgent(
