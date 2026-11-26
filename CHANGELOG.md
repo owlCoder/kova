@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.28.2
+
+- Fix `PinnedContextExceedsBudget` failures on small model windows: the pinned system prompt (instructions + AGENTS.md + skill) is capped at 25% of the context window with a truncation marker, and if tool schemas still do not fit, the run drops tool definitions (recorded as a `Disabled` eviction) and answers without tools instead of failing.
+- Show non-provider errors (`AgentFailed`, runtime errors) in the composer error banner immediately instead of only inside a collapsed timeline note.
+
 ## 1.28.1
 
 - Fix the transcript going blank right after sending: the host now persists the user message before the started snapshot, and the agent no longer duplicates it, so Enter visibly sends and the conversation never renders empty while a run is busy.
