@@ -13,7 +13,9 @@ let session: ChatSession | undefined;
 
 export function activate(context: vscode.ExtensionContext) {
   const output = vscode.window.createOutputChannel('Kova');
-  const root =
+  // The agent's tool runtime is rooted at the active editor's folder, falling
+  // back to the first workspace folder; it follows folder changes live.
+  const currentRoot = (): string | null =>
     (vscode.window.activeTextEditor
       ? vscode.workspace.getWorkspaceFolder(vscode.window.activeTextEditor.document.uri)
       : undefined
@@ -23,7 +25,7 @@ export function activate(context: vscode.ExtensionContext) {
   const apiKeys = new ProviderApiKeyStore(context.secrets);
   const providers = new ProviderManager(apiKeys);
   const conversations = new WorkspaceConversationRepository(context.workspaceState);
-  session = new ChatSession(context, root, output, providers, conversations);
+  session = new ChatSession(context, currentRoot(), output, providers, conversations);
   const panels = new KovaPanelController(context, session);
   const sidebar = new KovaViewProvider(context, session, () => panels.show(), conversations);
   session.captureEditor(vscode.window.activeTextEditor);
@@ -42,7 +44,17 @@ export function activate(context: vscode.ExtensionContext) {
     output,
     panels,
     sidebar,
-    vscode.window.onDidChangeActiveTextEditor((editor) => session?.captureEditor(editor)),
+    vscode.window.onDidChangeActiveTextEditor((editor) => {
+      session?.captureEditor(editor);
+      void session
+        ?.setRoot(currentRoot())
+        .catch(() => output.appendLine('[WorkspaceRootUpdateFailed]'));
+    }),
+    vscode.workspace.onDidChangeWorkspaceFolders(() => {
+      void session
+        ?.setRoot(currentRoot())
+        .catch(() => output.appendLine('[WorkspaceRootUpdateFailed]'));
+    }),
     vscode.workspace.onDidChangeConfiguration((event) => {
       if (event.affectsConfiguration('kova')) void sidebar.render();
       if (event.affectsConfiguration('kova'))

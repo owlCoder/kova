@@ -22,6 +22,8 @@ export const sr: Readonly<Record<string, string>> = {
   'Find text': 'Pronađi tekst',
   Draft: 'Nacrt',
   'Your code. Your models. Your workspace.': 'Vaš kod. Vaši modeli. Vaš prostor.',
+  'Open a folder in VS Code to let Kova read, edit and test its files.':
+    'Otvorite folder u VS Code-u da biste dozvolili Kovi da čita, menja i testira njegove fajlove.',
   'Opening settings…': 'Otvaranje podešavanja…',
   'Conversation copied as Markdown.': 'Razgovor je kopiran kao Markdown.',
   'Conversation exported.': 'Razgovor je izvezen.',

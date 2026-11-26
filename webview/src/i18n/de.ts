@@ -22,6 +22,8 @@ export const de: Readonly<Record<string, string>> = {
   'Find text': 'Text suchen',
   Draft: 'Entwurf',
   'Your code. Your models. Your workspace.': 'Dein Code. Deine Modelle. Dein Arbeitsbereich.',
+  'Open a folder in VS Code to let Kova read, edit and test its files.':
+    'Öffne einen Ordner in VS Code, damit Kova dessen Dateien lesen, bearbeiten und testen kann.',
   'Opening settings…': 'Einstellungen werden geöffnet…',
   'Conversation copied as Markdown.': 'Gespräch als Markdown kopiert.',
   'Conversation exported.': 'Gespräch exportiert.',

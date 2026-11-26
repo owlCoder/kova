@@ -42,6 +42,12 @@ export function Welcome({
         <Icon name="shield" size={13} />
         {t('Your code. Your models. Your workspace.')}
       </div>
+      {snapshot && !snapshot.toolsEnabled && (
+        <div className="welcome-note">
+          <Icon name="folder" size={13} />
+          {t('Open a folder in VS Code to let Kova read, edit and test its files.')}
+        </div>
+      )}
     </section>
   );
 }

@@ -80,6 +80,10 @@ At the next run, Kova loads the configuration, starts changed servers and discov
 
 The full [ERS walkthrough](../examples/ers/README.md) includes the review skill, MCP config and hooks. Remote HTTP/SSE transports are not supported.
 
+## Workspace files
+
+With a folder open, Kova's agent works directly in it, like a CLI harness: it lists, searches and reads files, then creates or edits them with `write_file`/`edit_file` (for example `Domain/User.cs`) and can run commands such as `dotnet build` with the workspace root as the working directory. Every path is resolved and re-checked against the workspace root, so tools cannot touch files outside it; `.git`, `.vscode` and Kova's own config stay protected and always require approval. Tool calls and their results appear as rows in the transcript, and pending changes ask for approval with a diff preview (or run directly in **Edit**/**Auto**). The session follows the opened folder live: adding, removing or switching workspace folders rebuilds the tool runtime once the current run finishes, and with no folder open the chat still answers but file tools stay disabled (the welcome screen says so).
+
 ## Modes and hooks
 
 - **Plan:** read-only tools; no edits or commands.

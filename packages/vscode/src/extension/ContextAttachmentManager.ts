@@ -12,7 +12,7 @@ export class ContextAttachmentManager {
   private revision = 0;
 
   constructor(
-    private readonly root: string | null,
+    private readonly root: () => string | null,
     private readonly editable = () => true,
   ) {}
 
@@ -44,10 +44,11 @@ export class ContextAttachmentManager {
     uris?: readonly vscode.Uri[],
   ): Promise<void> {
     if (!this.editable()) throw new Error('Wait until generation stops.');
-    if (!this.root) throw new Error('Open a workspace to attach context.');
+    const root = this.root();
+    if (!root) throw new Error('Open a workspace to attach context.');
     const revision = this.revision;
     const captured: ContextAttachment[] = [];
-    const guard = new NodeWorkspacePathGuard(this.root);
+    const guard = new NodeWorkspacePathGuard(root);
     if (source === 'PickFiles') {
       const files =
         uris ??
@@ -59,7 +60,7 @@ export class ContextAttachmentManager {
       if ((files?.length ?? 0) > 10) throw new Error('Choose up to 10 files at a time.');
       for (const uri of files ?? []) {
         const cancellation = new CancellationSource();
-        const path = await guard.resolve(this.root, uri.fsPath, 'Read', cancellation);
+        const path = await guard.resolve(root, uri.fsPath, 'Read', cancellation);
         const { content } = await new BoundedTextFile().read(
           path.canonicalPath,
           cancellation,
@@ -78,7 +79,7 @@ export class ContextAttachmentManager {
       if (!editor || editor.document.uri.scheme !== 'file' || editor.document.isClosed)
         throw new Error('Open a text file first.');
       const path = await guard.resolve(
-        this.root,
+        root,
         editor.document.uri.fsPath,
         'Read',
         new CancellationSource(),

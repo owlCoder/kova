@@ -20,7 +20,7 @@ afterEach(async () => {
 describe('native editor attachment capture', () => {
   it('captures bounded text, refreshes it in place and clears attachments for a new conversation', async () => {
     picker.choose.mockResolvedValue([{ fsPath: join(directory, 'one.txt') }]);
-    const manager = new ContextAttachmentManager(directory);
+    const manager = new ContextAttachmentManager(() => directory);
     await manager.add('PickFiles');
     const firstId = manager.list()[0]?.id;
     await writeFile(join(directory, 'one.txt'), 'updated text');
@@ -31,7 +31,7 @@ describe('native editor attachment capture', () => {
     expect(manager.list()).toEqual([]);
   });
   it('does not retain a partial batch when a later file is binary or exceeds the byte limit', async () => {
-    const manager = new ContextAttachmentManager(directory);
+    const manager = new ContextAttachmentManager(() => directory);
     await writeFile(join(directory, 'binary'), Buffer.from([0, 1, 2]));
     picker.choose.mockResolvedValue([
       { fsPath: join(directory, 'one.txt') },
@@ -53,7 +53,10 @@ describe('native editor attachment capture', () => {
         }),
     );
     let editable = true;
-    const manager = new ContextAttachmentManager(directory, () => editable);
+    const manager = new ContextAttachmentManager(
+      () => directory,
+      () => editable,
+    );
     const first = manager.add('PickFiles');
     manager.clear();
     finish([{ fsPath: join(directory, 'one.txt') }]);

@@ -1,7 +1,6 @@
 import type { ActiveChatRun } from './ActiveChatRun.js';
 import { ChatResources } from './ChatResources.js';
 import { handlePresentationAction, presentationActions } from './handlePresentationAction.js';
-import { readUiPreferences } from './readUiPreferences.js';
 import { randomUUID } from 'node:crypto';
 import * as vscode from 'vscode';
 import { ChatAgent } from '../../../core/src/agents/ChatAgent.js';
@@ -13,7 +12,6 @@ import type { ContextUsage } from '../../../core/src/context/ContextUsage.js';
 import { TokenCounter } from '../../../core/src/context/TokenCounter.js';
 import { InMemoryConversationRepository } from '../../../core/src/conversations/InMemoryConversationRepository.js';
 import type { ConversationRepository } from '../../../core/src/conversations/ConversationRepository.js';
-import type { ModelInfo } from '../../../core/src/models/ModelInfo.js';
 import type { SkillMetadata } from '../../../core/src/skills/Skill.js';
 import { SkillLoader } from '../../../core/src/skills/SkillLoader.js';
 import type { HostMessage } from '../../../protocol/src/HostMessage.js';
@@ -25,16 +23,16 @@ import { ProviderManager } from '../providers/ProviderManager.js';
 import type { WorkspaceSkillRepository } from '../../../runtime/src/skills/WorkspaceSkillRepository.js';
 import type { WorkspaceProjectInstructions } from '../../../runtime/src/adapters/WorkspaceProjectInstructions.js';
 import { WebviewApprovalPort } from '../webview/WebviewApprovalPort.js';
-import { approvalView, projectEvent } from '../../../runtime/src/presentation/projectEvent.js';
-import { configuredContext } from './effectiveContext.js';
+import { projectEvent } from '../../../runtime/src/presentation/projectEvent.js';
 import { ContextAttachmentManager } from './ContextAttachmentManager.js';
-import { projectConversationMessages } from '../../../runtime/src/presentation/projectConversationMessages.js';
 import { nextStreamingMessage } from '../../../runtime/src/presentation/nextStreamingMessage.js';
-import { contextAttachmentViews } from '../../../runtime/src/presentation/contextAttachmentViews.js';
+import { composeSnapshot } from './sessionSnapshot.js';
 import { StreamEventBuffer } from '../../../runtime/src/presentation/StreamEventBuffer.js';
 import { logAgentEvent } from './logAgentEvent.js';
 import { readRunSettings } from './readRunSettings.js';
 import { createWorkspaceServices } from './createWorkspaceServices.js';
+import { WorkspaceRootController } from './WorkspaceRootController.js';
+import { ModelDiscovery } from './modelDiscovery.js';
 export class ChatSession {
   readonly hostSessionId = randomUUID();
   readonly currentConversationId = (): string => this.conversationId;
@@ -53,23 +51,19 @@ export class ChatSession {
   );
   private readonly counters = new Map<string, TokenCounter>();
   private readonly providers: ProviderManager;
+  private readonly discovery: ModelDiscovery;
   private readonly contextAttachments: ContextAttachmentManager;
   private conversationId = randomUUID();
   private activeRun: ActiveChatRun | null = null;
   private preparingRun: CancellationSource | null = null;
   private streamingResponse: SessionSnapshot['messages'][number] | null = null;
-  private modelDiscovery: CancellationSource | null = null;
   private initialization: Promise<void> | null = null;
   private initializationCancellation: CancellationSource | null = null;
   private runtime: WorkspaceRuntime | null = null;
   private skillsRepository: WorkspaceSkillRepository | null = null;
   private projectInstructions: WorkspaceProjectInstructions | null = null;
-  private models: readonly ModelInfo[] = [];
   private skills: readonly SkillMetadata[] = [];
   private skillId: string | null = null;
-  private selectedModel = '';
-  private providerFingerprint = '';
-  private providerStatus: 'Available' | 'Unavailable' | 'ModelMissing' = 'Unavailable';
   private state: AgentState = 'Idle';
   private mode: AgentMode = 'Manual';
   private usage: ContextUsage | null = null;
@@ -77,17 +71,36 @@ export class ChatSession {
   private disposed = false;
   private readonly listeners = new Set<(message: HostMessage) => void>();
   private readonly requests = new Set<string>();
+  private readonly roots: WorkspaceRootController;
   constructor(
     private readonly context: vscode.ExtensionContext,
-    private readonly root: string | null,
+    root: string | null,
     private readonly output: vscode.OutputChannel,
     providers?: ProviderManager,
     private readonly repository: ConversationRepository = new InMemoryConversationRepository(),
   ) {
     this.providers =
       providers ?? new ProviderManager(new ProviderApiKeyStore(this.context.secrets));
+    this.discovery = new ModelDiscovery(
+      this.providers,
+      (message) =>
+        this.emit({
+          type: 'ErrorOccurred',
+          code: 'ProviderUnavailable',
+          message,
+          recoverable: true,
+        }),
+      () => this.disposed,
+    );
+    this.roots = new WorkspaceRootController(root, {
+      busy: () => Boolean(this.activeRun || this.preparingRun || this.configuring),
+      disposed: () => this.disposed,
+      reset: () => this.resetWorkspace(),
+      reinitialize: () => this.initialize().catch(() => {}),
+      notify: () => this.snapshot('workspace-root'),
+    });
     this.contextAttachments = new ContextAttachmentManager(
-      root,
+      () => this.roots.current,
       () => !this.activeRun && !this.preparingRun && !this.configuring && !this.disposed,
     );
     this.resources = new ChatResources(
@@ -122,7 +135,7 @@ export class ChatSession {
       protocolVersion: 1 as const,
       hostSessionId: this.hostSessionId,
       sequence: ++this.sequence,
-      workspaceId: this.root,
+      workspaceId: this.roots.current,
     };
   }
   private emit(event: AgentEvent): void {
@@ -145,13 +158,14 @@ export class ChatSession {
     try {
       await this.initialization;
       if (await setup()) {
-        this.selectedModel = '';
+        this.discovery.selectedModel = '';
         this.providerRefreshPending = true;
       }
     } finally {
       this.configuring = false;
       if (this.providerRefreshPending) await this.configurationChanged();
       else await this.snapshot('setup-closed');
+      await this.applyPendingRoot();
     }
   }
   async configurationChanged(): Promise<void> {
@@ -160,6 +174,27 @@ export class ChatSession {
     this.providerRefreshPending = false;
     await this.refreshModels(true);
     await this.snapshot('provider-configuration');
+  }
+  /** Follows the opened workspace folder; queued while a run or setup is in flight. */
+  async setRoot(root: string | null): Promise<void> {
+    await this.roots.setRoot(root);
+  }
+  private async applyPendingRoot(): Promise<void> {
+    await this.roots.applyPending();
+  }
+  private async resetWorkspace(): Promise<void> {
+    this.initializationCancellation?.cancel();
+    await this.initialization?.catch(() => {});
+    this.initialization = null;
+    this.initializationCancellation = null;
+    await this.runtime?.dispose();
+    this.runtime = null;
+    this.skillsRepository = null;
+    this.projectInstructions = null;
+    this.skills = [];
+    this.skillId = null;
+    this.contextAttachments.clear();
+    this.usage = null;
   }
   initialize(): Promise<void> {
     if (this.activeRun) return Promise.resolve();
@@ -179,9 +214,9 @@ export class ChatSession {
     return task;
   }
   private async initializeSession(source: CancellationSource): Promise<void> {
-    if (this.root && !this.runtime) {
+    if (this.roots.current && !this.runtime) {
       const services = await createWorkspaceServices(
-        this.root,
+        this.roots.current,
         this.approval,
         { emit: (event) => this.emit(event) },
         source,
@@ -191,38 +226,11 @@ export class ChatSession {
       this.projectInstructions = services.instructions;
     }
     await this.runtime?.initialize(source);
-    this.skills = (await this.skillsRepository?.discover(this.root ?? '', source)) ?? [];
+    this.skills = (await this.skillsRepository?.discover(this.roots.current ?? '', source)) ?? [];
     await this.refreshModels();
   }
   async refreshModels(force = false): Promise<void> {
-    if (this.disposed) return;
-    this.modelDiscovery?.cancel();
-    const source = new CancellationSource();
-    this.modelDiscovery = source;
-    try {
-      const discovered = await this.providers.discover(source, force);
-      if (this.disposed || this.modelDiscovery !== source || source.isCancellationRequested) return;
-      const changedProvider = this.providerFingerprint !== discovered.fingerprint;
-      this.providerFingerprint = discovered.fingerprint;
-      this.models = discovered.models;
-      if (!this.selectedModel || changedProvider) this.selectedModel = discovered.defaultModelId;
-      this.providerStatus = this.models.some((model) => model.id === this.selectedModel)
-        ? 'Available'
-        : 'ModelMissing';
-    } catch (error) {
-      if (!source.isCancellationRequested) {
-        this.models = [];
-        this.providerStatus = 'Unavailable';
-        this.emit({
-          type: 'ErrorOccurred',
-          code: 'ProviderUnavailable',
-          message: `${this.providers.label()} is unavailable. ${
-            error instanceof Error ? error.message : 'Check provider configuration.'
-          }`,
-          recoverable: true,
-        });
-      }
-    }
+    await this.discovery.refresh(force);
   }
   async attachFiles(uris: readonly vscode.Uri[]): Promise<void> {
     await this.contextAttachments.add('PickFiles', uris);
@@ -230,45 +238,30 @@ export class ChatSession {
   }
   async snapshot(requestId: string): Promise<void> {
     const conversationId = this.conversationId;
-    const conversation = await this.repository.get(conversationId);
-    if (this.disposed) return;
-    if (conversationId !== this.conversationId) return this.snapshot(requestId);
-    const activeRun = this.activeRun;
-    const selected = this.models.find((model) => model.id === this.selectedModel);
-    const settings = vscode.workspace.getConfiguration('kova');
-    const messages = projectConversationMessages(
-      conversation?.entries ?? [],
-      this.partial,
-      activeRun,
-      this.streamingResponse,
-    );
-    const snapshot: SessionSnapshot = {
-      ...readUiPreferences(),
-      conversationId: this.conversationId,
+    const snapshot = await composeSnapshot({
+      context: this.context,
+      repository: this.repository,
+      providers: this.providers,
+      conversationId,
       draft: this.resources.draft.text,
-      activeRunId: activeRun?.id ?? null,
+      activeRun: this.activeRun,
       state: this.state,
       mode: this.mode,
-      selectedModelId: this.selectedModel || this.providers.defaultModelId(),
-      models: this.models.map((model) => ({ ...model })),
-      providerStatus: this.providerStatus,
-      providerLabel: this.providers.label(),
-      setupCompleted: this.context.globalState?.get<boolean>('kova.setupCompleted', false) ?? false,
-      configuringProvider: this.configuring,
-      toolsEnabled: Boolean(this.root && selected?.tools === 'Supported'),
-      skills: this.skills.map((skill) => ({ ...skill })),
-      activeSkillId: this.skillId,
-      usage: this.usage ? structuredClone(this.usage) : null,
-      messages,
-      contextAttachments: contextAttachmentViews(this.contextAttachments.list()),
-      pendingApproval: this.approval.requestPending
-        ? approvalView(this.approval.requestPending)
-        : null,
-      thinkingEnabled: activeRun?.thinkingEnabled ?? this.providers.thinkingEnabled(),
-      contextMaxTokens:
-        activeRun?.contextMaxTokens ??
-        configuredContext(settings, selected, this.providers.kind()).maxTokens,
-    };
+      selectedModel: this.discovery.selectedModel,
+      models: this.discovery.models,
+      providerStatus: this.discovery.status,
+      configuring: this.configuring,
+      root: this.roots.current,
+      skills: this.skills,
+      skillId: this.skillId,
+      usage: this.usage,
+      partial: this.partial,
+      streamingResponse: this.streamingResponse,
+      attachments: this.contextAttachments.list(),
+      pendingApproval: this.approval.requestPending,
+    });
+    if (this.disposed) return;
+    if (conversationId !== this.conversationId) return this.snapshot(requestId);
     this.events.flush();
     this.deliver({ ...this.envelope(), type: 'Snapshot', requestId, snapshot });
   }
@@ -288,7 +281,7 @@ export class ChatSession {
           id === this.conversationId && !this.activeRun && !this.preparingRun && !this.configuring,
         partial: this.partial,
         provider: this.providers.label(),
-        model: this.selectedModel,
+        model: this.discovery.selectedModel,
         notify: (message) => this.deliver({ ...this.envelope(), type: 'Notice', message }),
         copied: (requestId) =>
           this.deliver({ ...this.envelope(), type: 'ClipboardCopied', requestId }),
@@ -380,12 +373,12 @@ export class ChatSession {
         throw new Error('Unknown context attachment.');
       if (message.skillId && !this.skills.some((skill) => skill.id === message.skillId))
         throw new Error('Unknown selected skill.');
-      const model = this.models.find((item) => item.id === message.modelId);
+      const model = this.discovery.models.find((item) => item.id === message.modelId);
       if (!model) throw new Error('Selected model is unavailable. Retry model discovery.');
       const runSettings = readRunSettings(this.providers, model);
       const runId = randomUUID();
-      this.selectedModel = model.id;
-      this.providerStatus = 'Available';
+      this.discovery.selectedModel = model.id;
+      this.discovery.status = 'Available';
       this.mode = message.mode;
       this.skillId = message.skillId;
       this.partial = false;
@@ -395,7 +388,7 @@ export class ChatSession {
       const request = {
         runId,
         conversationId: this.conversationId,
-        workspaceId: this.root ?? '',
+        workspaceId: this.roots.current ?? '',
         prompt: message.prompt,
         modelId: model.id,
         mode: message.mode,
@@ -403,7 +396,7 @@ export class ChatSession {
         ...runSettings,
         attachments: this.contextAttachments.selected(message.attachmentIds),
         maxToolIterations: 10,
-        toolsEnabled: Boolean(this.root && model.tools === 'Supported'),
+        toolsEnabled: Boolean(this.roots.current && model.tools === 'Supported'),
       };
       const provider = await this.providers.forConversation(this.conversationId);
       if (this.providerRefreshPending)
@@ -450,12 +443,14 @@ export class ChatSession {
           if (this.providerRefreshPending) await this.configurationChanged();
           await this.snapshot(`completed-${runId}`);
           if (!this.activeRun) this.streamingResponse = null;
+          await this.applyPendingRoot();
         }
       })();
       return runId;
     } finally {
       if (this.preparingRun === cancellation) this.preparingRun = null;
       if (this.providerRefreshPending && !this.activeRun) await this.configurationChanged();
+      await this.applyPendingRoot();
     }
   }
   async newConversation(): Promise<void> {
@@ -484,7 +479,7 @@ export class ChatSession {
   async dispose(): Promise<void> {
     this.disposed = true;
     this.events.dispose();
-    this.modelDiscovery?.cancel();
+    this.discovery.cancel();
     this.initializationCancellation?.cancel();
     this.cancelActiveRun();
     await this.activeRun?.task;
