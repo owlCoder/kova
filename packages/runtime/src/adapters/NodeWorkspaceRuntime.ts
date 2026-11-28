@@ -34,6 +34,10 @@ import { NodeWorkspaceWriter } from './NodeWorkspaceWriter.js';
 import type { WorkspaceReader } from '../../../core/src/workspace/WorkspaceReader.js';
 import type { WorkspaceWriter } from '../../../core/src/workspace/WorkspaceWriter.js';
 import { WorkspaceConfigurationLoader } from '../adapters/WorkspaceConfigurationLoader.js';
+import type { CodeIndex } from '../../../core/src/indexing/CodeIndex.js';
+import { WorkspaceCodeIndex } from '../indexing/WorkspaceCodeIndex.js';
+import { OllamaConnection } from '../../../ollama/src/OllamaConnection.js';
+import { OllamaEmbeddingProvider } from '../../../ollama/src/OllamaEmbeddingProvider.js';
 
 export class NodeWorkspaceRuntime implements ToolRuntime {
   private readonly registry = new ToolRegistry();
@@ -46,18 +50,27 @@ export class NodeWorkspaceRuntime implements ToolRuntime {
   private serverKeys: Readonly<Record<string, string>> = {};
   private mcpNames: readonly string[] = [];
   private executing = false;
+  readonly index: CodeIndex | null;
   constructor(
     private readonly root: string,
     private readonly approval: ApprovalPort,
     private readonly events: AgentEventSink,
     private readonly extraGuardrails: readonly Guardrail[] = [],
     io?: { reader: WorkspaceReader; writer: WorkspaceWriter },
+    indexingEnabled = false,
+    embeddingModel = '',
+    ollamaBaseUrl = 'http://127.0.0.1:11434',
   ) {
     const guard = new NodeWorkspacePathGuard(root),
       reader = io?.reader ?? new NodeWorkspaceReader(guard),
       writer = io?.writer ?? new NodeWorkspaceWriter(guard);
     this.runner = new NodeProcessRunner(root);
     this.loader = new WorkspaceConfigurationLoader(root, guard);
+    const embedder =
+      indexingEnabled && embeddingModel
+        ? new OllamaEmbeddingProvider(new OllamaConnection(ollamaBaseUrl), embeddingModel)
+        : null;
+    this.index = indexingEnabled ? new WorkspaceCodeIndex(root, embedder) : null;
     for (const tool of [
       new ReadFileTool(guard, reader),
       new ListDirectoryTool(guard, reader),
@@ -107,6 +120,7 @@ export class NodeWorkspaceRuntime implements ToolRuntime {
       this.mcpHash = config.mcpHash;
       this.hooksHash = config.hooksHash;
       this.serverKeys = keys;
+      await this.index?.refresh(this.root, null, cancellation);
     } catch (failure) {
       cancellation.throwIfCancellationRequested();
       this.events.emit({
@@ -132,7 +146,26 @@ export class NodeWorkspaceRuntime implements ToolRuntime {
     if (this.executing) throw new Error('Tool execution is sequential');
     this.executing = true;
     try {
-      return await this.runtime.execute(call, mode, commandAllowlist, cancellation, events, runId);
+      const result = await this.runtime.execute(
+        call,
+        mode,
+        commandAllowlist,
+        cancellation,
+        events,
+        runId,
+      );
+      if (call.name === 'write_file' || call.name === 'edit_file') {
+        const rawPath =
+          typeof call.arguments.path === 'string'
+            ? call.arguments.path
+            : typeof call.arguments.file_path === 'string'
+              ? call.arguments.file_path
+              : null;
+        if (rawPath) {
+          await this.index?.refresh(this.root, [rawPath], cancellation);
+        }
+      }
+      return result;
     } finally {
       this.executing = false;
     }

@@ -16,3 +16,4 @@ All decisions are **Accepted with the amendments in [REVIEW-CHANGES.md](../REVIE
 
 - [010: Shared runtime and Electron desktop host](010-desktop-runtime.md) — superseded by 011
 - [011: Remove the desktop host; VS Code only](011-remove-desktop-host.md)
+- [012: Tree-sitter and hybrid semantic codebase indexing](012-semantic-codebase-indexing.md) — proposed in PR

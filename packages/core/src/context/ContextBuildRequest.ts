@@ -1,4 +1,5 @@
 import type { Conversation } from '../conversations/Conversation.js';
+import type { IndexedSnippet } from '../indexing/CodeSymbol.js';
 import type { Skill } from '../skills/Skill.js';
 import type { ToolDefinition } from '../tools/ToolDefinition.js';
 import type { ContextAttachment } from './ContextAttachment.js';
@@ -17,4 +18,5 @@ export interface ContextBuildRequest {
   /** False when the selected model cannot consume images; they become a text note. */
   readonly imagesSupported: boolean;
   readonly settings: ContextSettings;
+  readonly codeSnippets?: readonly IndexedSnippet[];
 }

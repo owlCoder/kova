@@ -12,11 +12,23 @@ export class WorkspaceRuntime extends NodeWorkspaceRuntime {
     approval: ApprovalPort,
     events: AgentEventSink,
     guards: readonly Guardrail[] = [],
+    indexingEnabled = false,
+    embeddingModel = '',
+    ollamaBaseUrl = 'http://127.0.0.1:11434',
   ) {
     const guard = new NodeWorkspacePathGuard(root);
-    super(root, approval, events, guards, {
-      reader: new VsCodeWorkspaceReader(guard),
-      writer: new VsCodeWorkspaceWriter(guard),
-    });
+    super(
+      root,
+      approval,
+      events,
+      guards,
+      {
+        reader: new VsCodeWorkspaceReader(guard),
+        writer: new VsCodeWorkspaceWriter(guard),
+      },
+      indexingEnabled,
+      embeddingModel,
+      ollamaBaseUrl,
+    );
   }
 }

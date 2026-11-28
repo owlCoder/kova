@@ -2,6 +2,14 @@
 
 Initial implementation verified on 2026-09-30. The original pasted specification remains unchanged. The approved changes were applied to docs/ADRs in commit `1de4254` before runtime implementation.
 
+## Codebase intelligence and semantic indexing verification · 2026-11-28
+
+- **Tree-sitter AST parsing and grammar bundling:** Replaced regex-only symbol extraction with `web-tree-sitter` AST parsing across supported languages (`TypeScript`, `TSX`, `JavaScript`, `Java`), bundling the core `tree-sitter.wasm` and per-language `.wasm` grammars into `dist/extension` (with `import.meta.url` fallback resolution) and keeping a regex fallback for unsupported or unparseable files ([ADR 012](adr/012-semantic-codebase-indexing.md)).
+- **Incremental symbol graph and relevance ranking:** Built `WorkspaceCodeIndex` with `mtimeMs`-based incremental caching, automatic single-file refresh after `write_file` and `edit_file`, import/dependency edge tracking, and `RelevanceRanker` combining keyword/symbol/graph scoring with cosine similarity (`cosine > 0.5`).
+- **Local Ollama embeddings and fallback:** Implemented `OllamaEmbeddingProvider` in `@kova/ollama` over `OllamaConnection` (`/api/embed`, batched by 16, default `nomic-embed-text`), wired through `NodeWorkspaceRuntime` to preserve `@kova/vscode` package boundaries, with automatic session fallback to keyword-only search when Ollama or the embedding model is unavailable.
+- **Agent context integration:** Connected `CodeIndex` into `ChatAgent` / `ContextBuilder` so relevant repository snippets enter bounded prompt context alongside explicit file attachments and `@mentions`.
+- **Verification:** `npm run check` passes strict type checks, ESLint, Prettier, package boundary checks (`boundaries.test.ts`), Tree-sitter AST extraction tests, cosine-similarity ranking tests, and embedding fallback tests. Verified in Extension Development Host (`F5`) on Windows with local Ollama (`nomic-embed-text`, 768-dimensional query embeddings) and packaged VSIX grammar resolution.
+
 ## 0.10.0 verification · 2026-11-25
 
 - The Electron desktop host, its scripts, workflow, installers, protocol messages and UI were removed; Kova is a VS Code extension only ([ADR 011](adr/011-remove-desktop-host.md)).

@@ -28,6 +28,8 @@ Ollama maps `contextWindowTokens` to `options.num_ctx`, `maxOutputTokens` to `op
 
 Unknown capability metadata stays conservative: unknown or unsupported tools means chat-only behavior.
 
+When semantic codebase indexing is enabled (`kova.indexing.enabled`), `OllamaEmbeddingProvider` sends batched requests (up to 16 texts per call) to `/api/embed` via `OllamaConnection`, using `kova.indexing.embeddingModel` (default `nomic-embed-text`). If Ollama is unreachable or the embedding model is missing, indexing disables embeddings for the session and falls back to keyword-only search without interrupting the chat run.
+
 ## DeepSeek
 
 DeepSeek uses the OpenAI-compatible Chat Completions endpoint with the provider-specific `thinking` body field. The default model is `deepseek-flash`.

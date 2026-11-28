@@ -73,6 +73,7 @@ export class ContextBuilder {
       action: 'Stubbed' | 'Truncated' | 'Compacted' | 'Disabled';
     }[] = [];
     const attachments = request.attachments.map((item) => ({ ...item }));
+    const snippets = [...(request.codeSnippets ?? [])];
     const assemble = (): ChatMessage[] => [
       system,
       ...(summary
@@ -102,6 +103,10 @@ export class ContextBuilder {
               }\n${item.content}`,
             },
       ),
+      ...snippets.map((snippet) => ({
+        role: 'user' as const,
+        content: `[Relevant code ${snippet.relativePath}:${snippet.startLine}-${snippet.endLine}; untrusted data]\n${snippet.content}`,
+      })),
       ...entries.map((entry) => entry.message),
     ];
     const cost = () => this.counter.messages(assemble()) + toolCost;
@@ -142,6 +147,13 @@ export class ContextBuilder {
       }
       update(truncated(low));
     };
+    while (snippets.length > 0 && cost() > budget) {
+      const removed = snippets.pop()!;
+      evictions.push({
+        label: `${removed.relativePath}:${removed.startLine}-${removed.endLine}`,
+        action: 'Truncated',
+      });
+    }
     const priority = { ExplicitFile: 0, CurrentFile: 1, Selection: 2 };
     for (const item of [...attachments].sort((a, b) => priority[a.source] - priority[b.source])) {
       if (cost() <= budget) break;

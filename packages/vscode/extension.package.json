@@ -201,6 +201,16 @@
           "minimum": 0,
           "maximum": 0.5
         },
+        "kova.indexing.enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Build a local code index (symbols, dependencies) to select relevant context. Disabled by default."
+        },
+        "kova.indexing.embeddingModel": {
+          "type": "string",
+          "default": "nomic-embed-text",
+          "description": "Local Ollama embedding model for semantic code search. Leave empty for keyword-only search. Run 'ollama pull nomic-embed-text' first."
+        },
         "kova.commands.allow": {
           "type": "array",
           "items": {

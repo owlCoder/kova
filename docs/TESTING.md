@@ -10,27 +10,30 @@ The deterministic suite uses fake providers, temporary files, native-adapter dou
 
 ## Behavior acceptance matrix
 
-| Component              | Required cases                                                                                                                                                                                |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ContextBuilder         | Count definitions/framing; Plan cost reduction; specified eviction order; pinned user/skill/system; current-step paired results; overflow; multiple result budgets; bounded persisted history |
-| TokenCounter           | Empty/ASCII/multibyte text; conservative framing; stable rounding; provider-estimate correction cannot reduce safety reserves                                                                 |
-| ConversationCompactor  | Complete-turn grouping; bounded structured summary; keep current turn/call pairs; prior-summary merge; no false successful-change claims                                                      |
-| PermissionPolicy       | Every mode/risk cell; protected-write escalation; nonallowlisted Auto process; unknown MCP default; stronger Block retained                                                                   |
-| ToolRegistry           | Duplicate rejection; registration/removal; Plan definitions; disconnected tools; captured per-run view                                                                                        |
-| AgentLoop              | Prose completion; streamed deltas; multiple serial calls; exact iteration cap; terminal outcomes; cancellation during stream/approval/process; captured settings; unknown tools               |
-| Malformed repair       | Invalid JSON/schema/name not executed; initial error + two repairs; IDs/names cannot reset allowance; repaired valid continuation; max-iteration accounting                                   |
-| Repeated calls         | Sorted-argument fingerprint; second returns no execution; third stops; denied/blocked repeat; different arguments; per-user-turn reset                                                        |
-| SkillLoader            | Required safe frontmatter; matching ID; duplicate IDs; cap; selected body only; path containment; clear selection                                                                             |
-| HookPipeline           | Ordered reports; observe/veto; timeout/pre-error fail closed; post-error cannot change result; immutable input; no argument mutation/approval                                                 |
-| GuardrailEvaluator     | Strictest merge retaining reasons; run after hooks in every mode; already-blocked call still evaluated; exception fails closed; approval cannot bypass Block                                  |
-| ProtectedPathGuardrail | Exact config paths; `.git`/`.vscode` descendants; case/aliases; both requested and resolved path; every mode; read vs write                                                                   |
-| CommandRiskClassifier  | All destructive examples and flag reorderings; exact parsed argv; extra args; quotes; separators/redirection/substitution/newlines; unknown/ambiguous parse                                   |
-| WorkspacePathGuard     | Traversal; sibling-prefix attack; absolute inside/outside; symlink outside; link into protected tree; missing descendant; Windows drive/UNC; macOS case variants; symlink race recheck        |
-| File tools             | One-based ranges; bounded output; edit zero/one/multiple/overlapping matches; no mutation on error; current editor content; stale version; preview recomputation; oversized/binary files      |
-| ToolOutputLimiter      | Exact caps include omission marker; omission count; zero/short budget; narrowing hint; separate model/UI cap                                                                                  |
-| Ollama mapping         | Explicit num_ctx/num_predict/think/keep_alive; native tool schemas and history; fragmented UTF-8 NDJSON; final usage; malformed call data; length; abort/timeout/runtime/model errors         |
-| MCP adapter            | Handshake; paginated discovery; names/collisions; default/local override risk; Tool adaptation; bounded results; disconnect/unregister; no replay on timeout; process cleanup                 |
-| ProcessRunner          | Bounded stdout/stderr under sustained output; exit code; timeout; cancellation terminates descendants; safe simple argv and explicitly approved shell expression                              |
+| Component               | Required cases                                                                                                                                                                                |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ContextBuilder          | Count definitions/framing; Plan cost reduction; specified eviction order; pinned user/skill/system; current-step paired results; overflow; multiple result budgets; bounded persisted history |
+| TokenCounter            | Empty/ASCII/multibyte text; conservative framing; stable rounding; provider-estimate correction cannot reduce safety reserves                                                                 |
+| ConversationCompactor   | Complete-turn grouping; bounded structured summary; keep current turn/call pairs; prior-summary merge; no false successful-change claims                                                      |
+| PermissionPolicy        | Every mode/risk cell; protected-write escalation; nonallowlisted Auto process; unknown MCP default; stronger Block retained                                                                   |
+| ToolRegistry            | Duplicate rejection; registration/removal; Plan definitions; disconnected tools; captured per-run view                                                                                        |
+| AgentLoop               | Prose completion; streamed deltas; multiple serial calls; exact iteration cap; terminal outcomes; cancellation during stream/approval/process; captured settings; unknown tools               |
+| Malformed repair        | Invalid JSON/schema/name not executed; initial error + two repairs; IDs/names cannot reset allowance; repaired valid continuation; max-iteration accounting                                   |
+| Repeated calls          | Sorted-argument fingerprint; second returns no execution; third stops; denied/blocked repeat; different arguments; per-user-turn reset                                                        |
+| SkillLoader             | Required safe frontmatter; matching ID; duplicate IDs; cap; selected body only; path containment; clear selection                                                                             |
+| HookPipeline            | Ordered reports; observe/veto; timeout/pre-error fail closed; post-error cannot change result; immutable input; no argument mutation/approval                                                 |
+| GuardrailEvaluator      | Strictest merge retaining reasons; run after hooks in every mode; already-blocked call still evaluated; exception fails closed; approval cannot bypass Block                                  |
+| ProtectedPathGuardrail  | Exact config paths; `.git`/`.vscode` descendants; case/aliases; both requested and resolved path; every mode; read vs write                                                                   |
+| CommandRiskClassifier   | All destructive examples and flag reorderings; exact parsed argv; extra args; quotes; separators/redirection/substitution/newlines; unknown/ambiguous parse                                   |
+| WorkspacePathGuard      | Traversal; sibling-prefix attack; absolute inside/outside; symlink outside; link into protected tree; missing descendant; Windows drive/UNC; macOS case variants; symlink race recheck        |
+| File tools              | One-based ranges; bounded output; edit zero/one/multiple/overlapping matches; no mutation on error; current editor content; stale version; preview recomputation; oversized/binary files      |
+| ToolOutputLimiter       | Exact caps include omission marker; omission count; zero/short budget; narrowing hint; separate model/UI cap                                                                                  |
+| Ollama mapping          | Explicit num_ctx/num_predict/think/keep_alive; native tool schemas and history; fragmented UTF-8 NDJSON; final usage; malformed call data; length; abort/timeout/runtime/model errors         |
+| MCP adapter             | Handshake; paginated discovery; names/collisions; default/local override risk; Tool adaptation; bounded results; disconnect/unregister; no replay on timeout; process cleanup                 |
+| ProcessRunner           | Bounded stdout/stderr under sustained output; exit code; timeout; cancellation terminates descendants; safe simple argv and explicitly approved shell expression                              |
+| WorkspaceCodeIndex      | Tree-sitter AST symbol/snippet extraction (`TypeScript`, `TSX`, `JavaScript`, `Java`), regex fallback, `mtimeMs` incremental cache, post-edit refresh, keyword fallback when embedder fails   |
+| RelevanceRanker         | Combined keyword/symbol/graph scoring, cosine similarity bonus (`cosine > 0.5`), vector-only tie-breaking, graceful handling when vectors are absent                                          |
+| OllamaEmbeddingProvider | Batched `/api/embed` requests (up to 16 texts), vector validation, cancellation/timeout/HTTP error propagation via `OllamaConnection`                                                         |
 
 ## Required integration scenarios
 
@@ -80,3 +83,9 @@ Draft tests cover persistence across new store/extension instances, isolation, b
 Native review: save a draft and a message, adapt a template, search saved text, edit, remove/undo, insert into an existing draft without sending, close/reopen and restart the app. Check keyboard focus in browse/edit modes, Escape restoration, all three languages, both themes and the largest text setting in a narrow VS Code sidebar. Confirm that the lazy library module and stylesheet load under the installed extension's CSP. Copy code and verify success feedback after the native clipboard write.
 
 For the concurrent-view regression, open the library in both the VS Code sidebar and editor tab. Edit the same saved prompt in each, then save one view. The other must retain its draft, disable stale save/removal and offer Save a copy. Saving that copy must leave the committed prompt and its original ID unchanged while adding the retained draft as a new item.
+
+## Codebase indexing and semantic search
+
+Unit and runtime tests verify Tree-sitter AST symbol extraction (`TypeScript`, `TSX`, `JavaScript`, `Java`), regex fallback for unparseable/unsupported files, incremental `mtimeMs` refresh after `write_file` and `edit_file`, cosine-similarity ranking in `RelevanceRanker`, and automatic session fallback to keyword-only search when `EmbeddingProvider` throws or is disabled. Architecture boundary tests (`tests/architecture/boundaries.test.ts`) verify that `@kova/vscode` does not import `@kova/ollama` directly.
+
+For manual Extension Development Host (`F5`) verification, pull `nomic-embed-text` (`ollama pull nomic-embed-text`), enable `kova.indexing.enabled`, reload the window, and ask descriptive questions without exact symbol names while confirming no live Ollama server is required for deterministic CI.

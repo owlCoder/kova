@@ -18,6 +18,12 @@ const bundled = await build({
   sourcemap: true,
   legalComments: 'external',
   metafile: true,
+  define: {
+    'import.meta.url': 'importMetaUrl',
+  },
+  banner: {
+    js: "const importMetaUrl = require('node:url').pathToFileURL(__filename).href;",
+  },
 });
 await copyFile('packages/vscode/extension.package.json', 'dist/extension/package.json');
 for (const name of ['README.md', 'CHANGELOG.md', 'LICENSE'])
@@ -26,6 +32,19 @@ for (const name of ['logo.png', 'logo_mono.png'])
   await copyFile(`assets/${name}`, `dist/extension/media/${name}`);
 // Activity Bar icons are alpha masks. Use the supplied monochrome artwork's
 // luminance as the mask so its opaque background cannot become a solid square.
+
+// Tree-sitter: the runtime and grammars are loaded from files at runtime, so they
+// must ship next to the bundle (node_modules is not part of the packaged extension).
+await mkdir('dist/extension/grammars', { recursive: true });
+await copyFile(
+  'node_modules/web-tree-sitter/tree-sitter.wasm',
+  'dist/extension/grammars/tree-sitter.wasm',
+);
+for (const name of ['typescript', 'tsx', 'javascript'])
+  await copyFile(
+    `node_modules/tree-sitter-wasms/out/tree-sitter-${name}.wasm`,
+    `dist/extension/grammars/tree-sitter-${name}.wasm`,
+  );
 const mono = await readFile('assets/logo_mono.png');
 const iconWidth = mono.readUInt32BE(16),
   iconHeight = mono.readUInt32BE(20);
