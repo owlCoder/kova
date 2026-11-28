@@ -28,11 +28,21 @@ export async function createWorkspaceServices(
         ),
       ]
     : [];
-  const indexingEnabled = vscode.workspace
-    .getConfiguration('kova')
-    .get<boolean>('indexing.enabled', false);
+  const config = vscode.workspace.getConfiguration('kova');
+  const indexingEnabled = config.get<boolean>('indexing.enabled', false);
+  const embeddingModel = config.get<string>('indexing.embeddingModel', 'nomic-embed-text').trim();
+  const ollamaBaseUrl = config.get<string>('ollama.baseUrl', 'http://127.0.0.1:11434').trim();
+
   return {
-    runtime: new WorkspaceRuntime(root, approval, sink, guards, indexingEnabled),
+    runtime: new WorkspaceRuntime(
+      root,
+      approval,
+      sink,
+      guards,
+      indexingEnabled,
+      embeddingModel,
+      ollamaBaseUrl,
+    ),
     skills: new WorkspaceSkillRepository(root, (message) =>
       sink.emit({
         type: 'ErrorOccurred',

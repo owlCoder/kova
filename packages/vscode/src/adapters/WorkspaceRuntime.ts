@@ -13,6 +13,8 @@ export class WorkspaceRuntime extends NodeWorkspaceRuntime {
     events: AgentEventSink,
     guards: readonly Guardrail[] = [],
     indexingEnabled = false,
+    embeddingModel = '',
+    ollamaBaseUrl = 'http://127.0.0.1:11434',
   ) {
     const guard = new NodeWorkspacePathGuard(root);
     super(
@@ -25,6 +27,8 @@ export class WorkspaceRuntime extends NodeWorkspaceRuntime {
         writer: new VsCodeWorkspaceWriter(guard),
       },
       indexingEnabled,
+      embeddingModel,
+      ollamaBaseUrl,
     );
   }
 }

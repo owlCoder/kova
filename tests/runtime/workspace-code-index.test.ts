@@ -155,4 +155,20 @@ describe('WorkspaceCodeIndex', () => {
       endLine: 7,
     });
   });
+
+  it('falls back to keyword search when embedding fails', async () => {
+    const failing = {
+      async embed(): Promise<never> {
+        throw new Error('model missing');
+      },
+    };
+    const index = new WorkspaceCodeIndex(directory, failing);
+    await index.refresh(directory, null, activeToken);
+    const snippets = await index.findRelevantSnippets(
+      directory,
+      { queryText: 'OrderService', maxSnippets: 1 },
+      activeToken,
+    );
+    expect(snippets[0]?.relativePath).toBe('src/service.ts');
+  });
 });

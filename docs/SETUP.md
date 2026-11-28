@@ -20,6 +20,11 @@ Choose a permission mode in the guide, then **Start chatting**. **Set up later**
 
 `ollama` remains the default. The default endpoint is `http://127.0.0.1:11434`; no model is preselected — you choose one during setup (for example `qwen3:4b`) or later in the chat. Installed models are discovered from Ollama. Models without confirmed tool support run chat only.
 
+For optional semantic codebase indexing (`kova.indexing.enabled`), pull the default embedding model (`kova.indexing.embeddingModel`, `nomic-embed-text`):
+
+```sh
+ollama pull nomic-embed-text
+
 ### DeepSeek
 
 Choose `deepseek`, then run **Kova: Set Provider API Key**. The key is stored with VS Code `SecretStorage`; it is never written to `settings.json`.
@@ -61,3 +66,4 @@ Use trusted projects. `.kova/mcp.json` can start local servers and `.kova/hooks.
 For source development, run `npm ci`, `npm run check` and `npm run build`, then press F5 in VS Code. `npm run package` creates `dist/kova-local-0.9.0.vsix`; the filename follows the extension manifest name and version. Run `npm run verify:package` to inspect the archive and `npm run smoke:vsix` to test an isolated installation.
 
 For tool use with the supplied Qwen3 installation, enable Thinking. The local Ollama 0.35.0/Qwen3 combination previously produced reasoning as ordinary text and reached its output limit with `think: false`; `think: true` returned native tool calls. Kova preserves the requested setting and does not execute tool-like text.
+```

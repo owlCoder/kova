@@ -12,6 +12,7 @@ import { RelevanceRanker } from '../../../core/src/indexing/RelevanceRanker.js';
 import { BoundedTextFile } from '../adapters/BoundedTextFile.js';
 import { NodeWorkspacePathGuard } from '../adapters/NodeWorkspacePathGuard.js';
 import { TreeSitterSymbolExtractor } from './TreeSitterSymbolExtractor.js';
+import type { EmbeddingProvider } from '../../../core/src/indexing/EmbeddingProvider.js';
 
 const IGNORED_DIRS = new Set([
   'node_modules',
@@ -179,8 +180,12 @@ export class WorkspaceCodeIndex implements CodeIndex {
   private readonly ranker = new RelevanceRanker();
   private readonly treeSitter = new TreeSitterSymbolExtractor();
   private readonly files = new Map<string, FileRecord>();
+  private embeddingDisabled = false;
 
-  constructor(private readonly root: string) {
+  constructor(
+    private readonly root: string,
+    private readonly embedder: EmbeddingProvider | null = null,
+  ) {
     this.guard = new NodeWorkspacePathGuard(root);
   }
 
@@ -225,7 +230,10 @@ export class WorkspaceCodeIndex implements CodeIndex {
         edges = null;
       }
       edges ??= extractEdges(normalized, content);
-      const snippets = buildSnippets(normalized, content, symbols);
+      const snippets = await this.embedSnippets(
+        buildSnippets(normalized, content, symbols),
+        cancellation,
+      );
       return { mtimeMs: info.mtimeMs, symbols, edges, snippets };
     } catch {
       cancellation.throwIfCancellationRequested();
@@ -264,6 +272,32 @@ export class WorkspaceCodeIndex implements CodeIndex {
     }
 
     return found;
+  }
+
+  /** Adds vectors to snippets. Any failure switches to keyword-only for this session. */
+  private async embedSnippets(
+    snippets: readonly IndexedSnippet[],
+    cancellation: CancellationToken,
+  ): Promise<readonly IndexedSnippet[]> {
+    if (!this.embedder || this.embeddingDisabled || snippets.length === 0) return snippets;
+    try {
+      const vectors: (readonly number[])[] = [];
+      for (let i = 0; i < snippets.length; i += 16) {
+        const batch = snippets.slice(i, i + 16);
+        vectors.push(
+          ...(await this.embedder.embed(
+            batch.map((s) => `${s.relativePath}\n${s.content.slice(0, 2000)}`),
+            cancellation,
+          )),
+        );
+      }
+      if (vectors.length !== snippets.length) return snippets;
+      return snippets.map((snippet, i) => ({ ...snippet, vector: vectors[i]! }));
+    } catch {
+      cancellation.throwIfCancellationRequested();
+      this.embeddingDisabled = true; // model missing or Ollama down: keyword search only
+      return snippets;
+    }
   }
 
   async refresh(
@@ -349,7 +383,19 @@ export class WorkspaceCodeIndex implements CodeIndex {
       allEdges.push(...record.edges);
     }
 
-    return this.ranker.rank(allSnippets, allEdges, query).map((item) => item.snippet);
+    let effective = query;
+    if (this.embedder && !this.embeddingDisabled) {
+      try {
+        const [queryVector] = await this.embedder.embed([query.queryText], cancellation);
+        if (queryVector) {
+          effective = { ...query, queryVector };
+        }
+      } catch {
+        cancellation.throwIfCancellationRequested();
+        this.embeddingDisabled = true;
+      }
+    }
+    return this.ranker.rank(allSnippets, allEdges, effective).map((item) => item.snippet);
   }
 
   async getDependencies(

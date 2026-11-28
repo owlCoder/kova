@@ -36,6 +36,8 @@ import type { WorkspaceWriter } from '../../../core/src/workspace/WorkspaceWrite
 import { WorkspaceConfigurationLoader } from '../adapters/WorkspaceConfigurationLoader.js';
 import type { CodeIndex } from '../../../core/src/indexing/CodeIndex.js';
 import { WorkspaceCodeIndex } from '../indexing/WorkspaceCodeIndex.js';
+import { OllamaConnection } from '../../../ollama/src/OllamaConnection.js';
+import { OllamaEmbeddingProvider } from '../../../ollama/src/OllamaEmbeddingProvider.js';
 
 export class NodeWorkspaceRuntime implements ToolRuntime {
   private readonly registry = new ToolRegistry();
@@ -56,13 +58,19 @@ export class NodeWorkspaceRuntime implements ToolRuntime {
     private readonly extraGuardrails: readonly Guardrail[] = [],
     io?: { reader: WorkspaceReader; writer: WorkspaceWriter },
     indexingEnabled = false,
+    embeddingModel = '',
+    ollamaBaseUrl = 'http://127.0.0.1:11434',
   ) {
     const guard = new NodeWorkspacePathGuard(root),
       reader = io?.reader ?? new NodeWorkspaceReader(guard),
       writer = io?.writer ?? new NodeWorkspaceWriter(guard);
     this.runner = new NodeProcessRunner(root);
     this.loader = new WorkspaceConfigurationLoader(root, guard);
-    this.index = indexingEnabled ? new WorkspaceCodeIndex(root) : null;
+    const embedder =
+      indexingEnabled && embeddingModel
+        ? new OllamaEmbeddingProvider(new OllamaConnection(ollamaBaseUrl), embeddingModel)
+        : null;
+    this.index = indexingEnabled ? new WorkspaceCodeIndex(root, embedder) : null;
     for (const tool of [
       new ReadFileTool(guard, reader),
       new ListDirectoryTool(guard, reader),

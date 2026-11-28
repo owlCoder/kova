@@ -37,6 +37,7 @@ kova/
 │   │   ├── models/          ModelCatalog, ModelInfo
 │   │   ├── conversations/   ConversationRepository, ConversationCompactor, summaries
 │   │   ├── context/         ContextBuilder, TokenCounter, attachments, usage and result DTOs
+│   │   ├── indexing/        CodeIndex, CodeSymbol, EmbeddingProvider, RelevanceRanker
 │   │   ├── tools/           Tool, ToolRegistry, ToolInputValidator, previews, calls and results
 │   │   ├── skills/          Skill, SkillRepository, SkillLoader
 │   │   ├── permissions/     policies, risks, approvals, guardrail ports
@@ -44,7 +45,7 @@ kova/
 │   │   ├── workspace/       reader, writer, search, path guard, Git and project-rules ports
 │   │   ├── processes/       ProcessRunner
 │   │   └── mcp/             McpClient, stdio configuration DTOs
-│   ├── ollama/src/          OllamaLlmProvider, OllamaModelCatalog
+│   ├── ollama/src/          OllamaLlmProvider, OllamaModelCatalog, OllamaEmbeddingProvider, OllamaModelCatalog
 │   ├── mcp/src/             StdioMcpClient, McpTool
 │   ├── runtime/src/         adapters/, tools/, providers/, skills/, integrations/, presentation/
 │   ├── vscode/src/
@@ -70,29 +71,30 @@ Each public class/behavioral interface lives alone in its file. Cohesive DTOs/un
 
 ## Core contracts and ownership
 
-| Contract                                                                | Responsibility                                                       | Implementation/owner                     |
-| ----------------------------------------------------------------------- | -------------------------------------------------------------------- | ---------------------------------------- |
-| `Agent`                                                                 | Run orchestration; emits events, returns terminal outcome            | `ChatAgent` in Core                      |
-| `LlmProvider`                                                           | Stream normalized model events                                       | Ollama package                           |
-| `ModelCatalog`                                                          | Installed model and capability discovery                             | Ollama package                           |
-| `ConversationRepository`                                                | Session-scoped conversation storage                                  | In-memory Core implementation            |
-| `ContextBuilder` / `TokenCounter`                                       | Budget a request, compact stored history, estimate framed tokens     | Core                                     |
-| `ConversationCompactor`                                                 | Deterministically summarize old complete turns                       | Core                                     |
-| `Tool`                                                                  | Read-only preparation and authorized execution                       | Built-in VS Code adapters / MCP adapter  |
-| `ToolRegistry`                                                          | Register unique tools; expose mode-appropriate definitions           | Core                                     |
-| `ToolInputValidator`                                                    | JSON/schema validation; no model arguments execute before validation | Concrete Core schema validator           |
-| `CommandRiskClassifier`                                                 | Dynamic invocation risk; parse command and detect hazards            | Core                                     |
-| `PermissionPolicy`                                                      | Mode-specific baseline allow/approval/block                          | Core                                     |
-| `HookPipeline` / `Hook`                                                 | Ordered lifecycle observations/vetoes                                | Core pipeline, command adapter           |
-| `GuardrailEvaluator` / `Guardrail`                                      | Strictest decision, after hooks, every mode                          | Core; pluggable ERS adapter              |
-| `ApprovalPort`                                                          | Await one user decision bound to preview and invocation              | VS Code host                             |
-| `WorkspacePathGuard`                                                    | Resolve platform paths and containment                               | VS Code/Node adapter                     |
-| `WorkspaceReader` / `WorkspaceWriter` / `WorkspaceSearch` / `GitReader` | Explicit bounded workspace IO                                        | VS Code adapters                         |
-| `ProcessRunner`                                                         | Bounded, cancellable process execution after policy                  | VS Code/Node adapter                     |
-| `SkillRepository` / `SkillLoader`                                       | Discover metadata, load only selected procedural context             | Workspace adapter / Core loader          |
-| `ProjectInstructionsRepository`                                         | Read the bounded root `AGENTS.md` for every run                      | Workspace adapter                        |
-| `McpClient`                                                             | Start configured stdio servers and return normal tools               | MCP package                              |
-| `AgentEventSink`                                                        | Observability channel; no permission authority                       | Host projection + redacted Output logger |
+| Contract                                                                | Responsibility                                                                                              | Implementation/owner                                                                                        |
+| ----------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `Agent`                                                                 | Run orchestration; emits events, returns terminal outcome                                                   | `ChatAgent` in Core                                                                                         |
+| `LlmProvider`                                                           | Stream normalized model events                                                                              | Ollama package                                                                                              |
+| `ModelCatalog`                                                          | Installed model and capability discovery                                                                    | Ollama package                                                                                              |
+| `ConversationRepository`                                                | Session-scoped conversation storage                                                                         | In-memory Core implementation                                                                               |
+| `ContextBuilder` / `TokenCounter`                                       | Budget a request, compact stored history, estimate framed tokens                                            | Core                                                                                                        |
+| `ConversationCompactor`                                                 | Deterministically summarize old complete turns                                                              | Core                                                                                                        |
+| `Tool`                                                                  | Read-only preparation and authorized execution                                                              | Built-in VS Code adapters / MCP adapter                                                                     |
+| `ToolRegistry`                                                          | Register unique tools; expose mode-appropriate definitions                                                  | Core                                                                                                        |
+| `ToolInputValidator`                                                    | JSON/schema validation; no model arguments execute before validation                                        | Concrete Core schema validator                                                                              |
+| `CommandRiskClassifier`                                                 | Dynamic invocation risk; parse command and detect hazards                                                   | Core                                                                                                        |
+| `PermissionPolicy`                                                      | Mode-specific baseline allow/approval/block                                                                 | Core                                                                                                        |
+| `HookPipeline` / `Hook`                                                 | Ordered lifecycle observations/vetoes                                                                       | Core pipeline, command adapter                                                                              |
+| `GuardrailEvaluator` / `Guardrail`                                      | Strictest decision, after hooks, every mode                                                                 | Core; pluggable ERS adapter                                                                                 |
+| `ApprovalPort`                                                          | Await one user decision bound to preview and invocation                                                     | VS Code host                                                                                                |
+| `WorkspacePathGuard`                                                    | Resolve platform paths and containment                                                                      | VS Code/Node adapter                                                                                        |
+| `WorkspaceReader` / `WorkspaceWriter` / `WorkspaceSearch` / `GitReader` | Explicit bounded workspace IO                                                                               | VS Code adapters                                                                                            |
+| `CodeIndex` / `EmbeddingProvider` / `RelevanceRanker`                   | Index symbols/snippets (`mtimeMs` incremental); combine keyword and cosine similarity with keyword fallback | Core (`CodeIndex`, `RelevanceRanker`) + Ollama (`OllamaEmbeddingProvider`) + Runtime (`WorkspaceCodeIndex`) |
+| `ProcessRunner`                                                         | Bounded, cancellable process execution after policy                                                         | VS Code/Node adapter                                                                                        |
+| `SkillRepository` / `SkillLoader`                                       | Discover metadata, load only selected procedural context                                                    | Workspace adapter / Core loader                                                                             |
+| `ProjectInstructionsRepository`                                         | Read the bounded root `AGENTS.md` for every run                                                             | Workspace adapter                                                                                           |
+| `McpClient`                                                             | Start configured stdio servers and return normal tools                                                      | MCP package                                                                                                 |
+| `AgentEventSink`                                                        | Observability channel; no permission authority                                                              | Host projection + redacted Output logger                                                                    |
 
 Use interfaces only at real IO/process/model/UI boundaries or for actual test fakes; pure single-implementation policies, compactor and loader are concrete classes. Provider/SDK JSON validation libraries are adapters, never Core dependencies. File tools remain in infrastructure because they perform platform IO through workspace ports; policy and orchestration remain in Core. The Core knows origin metadata for context accounting/observability, but execution is always through `Tool`, without origin-specific branches.
 
@@ -105,6 +107,8 @@ One run at a time per selected workspace. A busy host rejects a second submissio
 MCP initialization and hook configuration loading happen when a workspace session is initialized. Stdio MCP commands start without an extra trust dialog. Hook programs run at their configured lifecycle event, not merely because the configuration is read. At each idle run start, compare MCP/hook config content hashes. Reload changed hooks, restart only changed MCP servers, stop removed ones and emit ConfigurationReloaded. Never reload midway through a run. Agent writes to executable configs remain protected.
 
 Adapters translate cancellation to fetch abort, VS Code tokens, pending-approval rejection and process-tree termination. Disposal terminates MCP processes and process resources. Core receives only `CancellationToken`. Cancellation callbacks must also fire for already-cancelled tokens; `throwIfCancellationRequested()` uses one recognizable cancellation error, distinguished from failure by the adapter/Core boundary.
+
+When `kova.indexing.enabled` is active, `WorkspaceCodeIndex` parses supported source files with `web-tree-sitter` (using bundled `.wasm` language grammars with a regex fallback) to extract symbols, code snippets and import edges, refreshing on session initialization and after `write_file` / `edit_file` while skipping unchanged files via `mtimeMs`. When `kova.indexing.embeddingModel` is set (default `nomic-embed-text`), `NodeWorkspaceRuntime` wires `OllamaEmbeddingProvider` over `OllamaConnection` (`/api/embed`, batched) so `RelevanceRanker` adds cosine-similarity score above `0.5` on top of keyword and dependency-graph scoring; if embedding fails or the model/Ollama is unavailable, it disables embeddings for the session and falls back to keyword-only search without breaking the run.
 
 ## Application flow and UI
 

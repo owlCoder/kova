@@ -37,6 +37,19 @@ function tokenize(text: string): string[] {
   return [...terms].filter((term) => term.length >= 2 && !STOP_WORDS.has(term));
 }
 
+function cosine(a: readonly number[], b: readonly number[]): number {
+  if (a.length === 0 || a.length !== b.length) return 0;
+  let dot = 0,
+    normA = 0,
+    normB = 0;
+  for (let i = 0; i < a.length; i++) {
+    dot += a[i]! * b[i]!;
+    normA += a[i]! * a[i]!;
+    normB += b[i]! * b[i]!;
+  }
+  return normA && normB ? dot / Math.sqrt(normA * normB) : 0;
+}
+
 export interface RankedSnippet {
   readonly snippet: IndexedSnippet;
   readonly score: number;
@@ -76,6 +89,10 @@ export class RelevanceRanker {
           score += 1;
         }
       }
+
+      // Semantic part: only clearly related snippets (cosine above 0.5) earn points.
+      if (query.queryVector && snippet.vector)
+        score += Math.max(0, cosine(query.queryVector, snippet.vector) - 0.5) * 40;
 
       return { snippet, score };
     });

@@ -75,4 +75,15 @@ describe('RelevanceRanker', () => {
     });
     expect(ranked[0]?.snippet.id).toBe('s1');
   });
+
+  it('uses vector similarity when vectors are present', () => {
+    const near = { ...makeSnippet('s1', 'src/a.ts', 'aaa'), vector: [1, 0] };
+    const far = { ...makeSnippet('s2', 'src/b.ts', 'bbb'), vector: [0, 1] };
+    const ranked = ranker.rank([far, near], [], {
+      queryText: 'qqq',
+      queryVector: [1, 0],
+      maxSnippets: 5,
+    });
+    expect(ranked.map((item) => item.snippet.id)).toEqual(['s1']);
+  });
 });
